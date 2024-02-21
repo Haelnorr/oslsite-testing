@@ -81,7 +81,7 @@ const staffMembers = [
 		<h2 class="text-white text-3xl pt-10 pb-5">Other</h2>
 		<div class="flex flex-wrap justify-evenly gap-y-5">
 			{staffMembers.filter((member) => member.role !== "League Coordinator" && member.role !== "Commissioner").map((member) => (
-				<Card heading={member.name} image={{ alt:"Test", href: member.image}} body={member.body} footer={member.role} />
+				<Card heading={member.name} image={{ alt: member.name, href: member.image}} body={member.body} footer={member.role} />
 			))}
 		</div>
 	</main>

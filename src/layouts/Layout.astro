@@ -1,6 +1,5 @@
 ---
 import Header from "../components/Header.tsx"
-import LocalLogoImage from "../assets/logo.png";
 
 interface Props {
 	title: string;
@@ -19,7 +18,7 @@ const { title } = Astro.props;
 		<meta name="generator" content={Astro.generator} />
 		<title>OSL | {title}</title>
 	</head>
-	<body class=" bg-neutral-800">
+	<body class="bg-neutral-800 bg-no-repeat bg-center bg-fixed">
 		<Header client:load />
 		<slot />
 	</body>
@@ -27,6 +26,9 @@ const { title } = Astro.props;
 <style is:global>
 	html {
 		font-family: system-ui, sans-serif;
+	}
+	body {
+		background-image: linear-gradient(rgba(35, 35, 35, 0.99), rgba(35, 35, 35, 0.99)), url('../assets/logo.png');
 	}
 	code {
 		font-family:

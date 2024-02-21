@@ -29,7 +29,7 @@ const Header = () => {
 		{
 			id: 3,
 			label: "Discord",
-			dest: "https://discord.gg/osl",
+			dest: "https://slapshot.gg/OSL",
 		},
 		{
 			id: 4,

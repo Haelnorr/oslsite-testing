@@ -45,7 +45,7 @@ const Articles:ArticleType[] = [
     {
         id: "S18W4-5",
         title: "Week 2 means it's time to grind!",
-        date: new Date("2024/01/29"),
+        date: new Date("2024/02/19"),
         author: "Doot",
         link: "https://cdn.discordapp.com/attachments/894858078959317012/1209117871918022676/OSL_Slaplog_w4-5_S18.pdf?ex=65e5c1c4&is=65d34cc4&hm=d2447a1749c58e289faf1d095aa24682cbfad5bfbf65971cafe95d82feb1bbbd&",
     },

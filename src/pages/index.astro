@@ -1,0 +1,88 @@
+---
+import Layout from '../layouts/Layout.astro';
+import LinkCard from '../components/LinkCard.astro'
+import Card from '../components/Card.astro';
+import SparImage from '../assets/staff/spar.png';
+import KevaliImage from '../assets/staff/kevali.webp';
+import NessImage from '../assets/staff/ness.webp';
+import JoyceyImage from '../assets/staff/joycey.webp';
+import SnowwolfImage from '../assets/staff/snowwolf.webp';
+import SkitzImage from '../assets/staff/skitz.webp';
+import CorgoImage from '../assets/staff/corgo.webp';
+
+const staffMembers = [
+	{
+		name: 'Spar',
+		image: SparImage,
+		body: 'Handsome devil he is...',
+		role: 'Commissioner'
+	},
+	{
+		name: 'Kevali',
+		image: KevaliImage,
+		body: 'Kevin Kevali Slapshot',
+		role: 'Commissioner'
+	},
+	{
+		name: "Ness",
+		role: "League Coordinator",
+		image: NessImage,
+		body: "Its shire or nothing"
+	},
+	{
+		name: "Joycey",
+		role: "League Coordinator",
+		image: JoyceyImage,
+		body: "Chaewon enjoyer"
+	},
+	{
+		name: "Skitz",
+		role: "Moderator",
+		image: SkitzImage,
+		body: "Old as a dinosaur"
+	},
+	{
+		name: "Snowwolf",
+		role: "Moderator",
+		image: SnowwolfImage,
+		body: "Thin ice mate"
+	},
+	{
+		name: "Corgo",
+		role: "Programmer",
+		image: CorgoImage,
+		body: "Henlo who is u?"
+	}
+]
+---
+
+<Layout title="Home">
+	<main class="py-10 sm:container mx-auto">
+		<h1 class="text-center text-white text-5xl">Register to play!</h1>
+		<p class="text-center text-white pt-3">Excited to join the competition and vie for fantastic prizes? It's time to register and become a part of the action in the current season of OSL! We offer 3 leagues to accommodate various skill levels, ensuring close, thrilling, and enjoyable competition for everyone. Don't wait any longer—<b>register now!</b></p>
+		<div class="flex justify-evenly flex-wrap my-5">
+			<LinkCard label="Free Agent" href="https://forms.gle/MxSDjKaKg6Ethagv8" />
+			<LinkCard label="Team" href="https://forms.gle/xEiz4go1Cxj8niZW7" />
+		</div>
+		<hr />
+		<h1 class="text-center text-white text-5xl pt-10">Meet the Team</h1>
+		<h2 class="text-white text-3xl pt-10 pb-5">Commissioners</h2>
+		<div class="flex flex-wrap justify-evenly gap-y-5">
+			{staffMembers.filter((member) => member.role === "Commissioner").map((member) => (
+				<Card heading={member.name} image={{ alt:"Test", href: member.image}} body={member.body} footer={member.role} />
+			))}
+		</div>
+		<h2 class="text-white text-3xl pt-10 pb-5">League Coordinators</h2>
+		<div class="flex flex-wrap justify-evenly gap-y-5">
+			{staffMembers.filter((member) => member.role === "League Coordinator").map((member) => (
+				<Card heading={member.name} image={{ alt:"Test", href: member.image}} body={member.body} footer={member.role} />
+			))}
+		</div>
+		<h2 class="text-white text-3xl pt-10 pb-5">Other</h2>
+		<div class="flex flex-wrap justify-evenly gap-y-5">
+			{staffMembers.filter((member) => member.role !== "League Coordinator" && member.role !== "Commissioner").map((member) => (
+				<Card heading={member.name} image={{ alt:"Test", href: member.image}} body={member.body} footer={member.role} />
+			))}
+		</div>
+	</main>
+</Layout>

@@ -1,0 +1,42 @@
+---
+import Header from "../components/Header.tsx"
+import LocalLogoImage from "../assets/logo.png";
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Astro description" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/logo.svg?v=1" />
+		<meta name="generator" content={Astro.generator} />
+		<title>OSL | {title}</title>
+	</head>
+	<body class=" bg-neutral-800">
+		<Header client:load />
+		<slot />
+	</body>
+</html>
+<style is:global>
+	html {
+		font-family: system-ui, sans-serif;
+	}
+	code {
+		font-family:
+			Menlo,
+			Monaco,
+			Lucida Console,
+			Liberation Mono,
+			DejaVu Sans Mono,
+			Bitstream Vera Sans Mono,
+			Courier New,
+			monospace;
+	}
+</style>

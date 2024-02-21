@@ -1,0 +1,29 @@
+---
+import { Image } from 'astro:assets'
+
+interface Props {
+    image?: {
+        alt:string,
+        href:any,
+    },
+    heading:string,
+    body?:string,
+    footer?:string,
+}
+
+const {image, heading, body, footer} = Astro.props
+---
+<div class="rounded-lg text-white bg-zinc-900 hover:shadow-lg hover:scale-105 transition-all ease-in-out duration-1000 shadow-black">
+    {image === undefined ? null : <Image src={image.href} alt={image.alt} inferSize={true} class="h-60 w-60 rounded-t-lg" loading={'lazy'} />}
+    <h2 class="text-lg px-4 pt-2">{heading}</h2>
+    {body === undefined ? null : 
+        <div>
+            <p class="text-base px-4 py-2">{body}</p>
+        </div>
+    }
+    {footer === undefined ? null : 
+        <div class="border-t border-gray-800">
+            <p class="text-zinc-600 px-4 py-2">{footer}</p>
+        </div>
+    }
+</div>

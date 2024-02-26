@@ -1,0 +1,64 @@
+---
+export const prerender = true;
+import Layout from '../../layouts/Layout.astro';
+import { Download, ArrowRightCircle, ChevronRight, ChevronLeft } from 'astro-feather-icons2';
+import Articles from '../../data/pond-articles.json';
+import Articles2 from '../../data/pond-articles.json'
+
+export function compareDate(article1:any, article2:any) {
+    const date1 = new Date(article1.date);
+    const date2 = new Date(article2.date)
+    return date1.getTime() - date2.getTime()
+}
+
+export async function getStaticPaths({ paginate }) {
+  const articles = Articles
+  // Generate pages from our array of astronauts, with 2 to a page
+  return paginate(articles.sort(compareDate).reverse(), { pageSize: 5 });
+}
+
+const { page } = Astro.props as any;
+console.log(page);
+console.log(Articles2[0].content);
+
+---
+
+<Layout title="The Pond">
+    <main class="container mx-auto">
+        <h1 class="text-center text-white text-4xl pt-10">The Pond</h1>
+        <p class="text-center text-white pt-5 pb-10">Welcome to The Pond! This is an archive of all old and new #the-pond post, mainly consisting of the beloved Weekly Slap!</p>
+        <table class="table-auto bg-white w-full rounded-md">
+            <thead class="border-b-2">
+                <tr class=" text-left">
+                    <th class="p-2">ID</th>
+                    <th class="p-2">Title</th>
+                    <th class="p-2">Date</th>
+                    <th class="p-2">Author</th>
+                    <th class="p-2"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {page.data.map((article, index) => (
+                    <tr class={`hover:bg-neutral-200 ${index % 2 ? `bg-gray-100` : null }`} onclick="">
+                        <td class="p-2">{article.id}</td>
+                        <td class="p-2">{article.title}</td>
+                        <td class="p-2">{new Date(article.date).toDateString()}</td>
+                        <td class="p-2">{article.author}</td>
+                        <td class="p-2 flex gap-5">
+                            {article.download === undefined ? <Download stroke="gray" /> : <a href={article.download}><Download /></a>}
+                            <a href={`/the-pond/articles/${article.id}`}><ArrowRightCircle stroke="black" /></a>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+        <div class="flex pt-4 float-end">
+            <a href={page.url.prev ? `${page.url.prev}` : null} class="p-2">
+                <ChevronLeft stroke={page.url.prev ? `white` : 'gray'} />
+            </a>
+            <a href={page.url.next ? `${page.url.next}` : null} class="p-2">
+                <ChevronRight stroke={page.url.next ? `white` : 'gray'} />
+            </a>
+        </div>
+    </main>
+</Layout>

@@ -1,0 +1,35 @@
+---
+type BodyType = {
+    type:string,
+    items:String[]|ContentType[]
+}
+
+type ItemType = {
+    heading:string,
+    body: BodyType[]|String[]
+}
+
+type ContentType = {
+    items: ItemType[]
+}
+
+type Props = {
+    content:ContentType,
+    paddingTop?:number
+}
+
+const {content, paddingTop} = Astro.props;
+---
+
+<section class={`flex w-full justify-between gap-5 pt-${paddingTop}`}>
+    {content.items.map((item) => (
+        <div>
+            <h4 class="text-2xl">{item.heading}</h4>
+            {item.body.map((body) => (
+                <p class="py-2">{body.split("\n").map((sect) => (
+                    <span>{sect}</span><br/>
+                ))}</p>
+            ))}
+        </div>
+    ))}
+</section>

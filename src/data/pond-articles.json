@@ -1,0 +1,139 @@
+[
+    {
+        "id": "S18W1",
+        "author": "Doot",
+        "title": "Season 18 kicks off with a bang!",
+        "tagline": "Weekly slap returns for season 18!\n12 Teams, 3 Leagues, livestreams and more!",
+        "date": "2024/01/22",
+        "download": "https://cdn.discordapp.com/attachments/894858078959317012/1203730138206961734/OSL_Slaplog_w3_S18_PDF.pdf?ex=65e49d0d&is=65d2280d&hm=2b6f44e3301610d344f1bf03202589438fce5bfb27b6f3ffb4de45d1831e0777&",
+        "content": [
+            {
+                "body": [
+                    "Welcome back Slappas!"
+                ]
+            },
+            {
+                "body": [
+                    "Firstly, thank you to everyone who has signed up and a huge welcome to all of our new players and teams!",
+                    "We are thrilled to be supporting 3 divisions this season, and it has been exciting to see the quality of games all round.",
+                    "Season 18 (S18) kicked off on Tuesday night with a super tight game between the Intermediate League (IM) rivals 501st Legion (LEG) and Mucca Mad Boys (MMB). Unfortunately for LEG, MMB came in clutch mere seconds before the final whistle, narrowly securing the win.",
+                    "To make sure you don't miss out on future League games, keep an eye out in in the OSL discord. #official-streams",
+                    "We would also like to welcome the following teams joining us in week 2:",
+                    {
+                        "type": "list",
+                        "decoration": true,
+                        "items": [
+                            "Pro: Ping Kings (PK)",
+                            "Open: Peanut Butter (PB)",
+                            "Open: Massive Monkeys (MM)"
+                        ]
+
+                    },
+                    "Don’t forget, If you haven’t signed up yet, you still have until the end of Matchweek 3 to register a new team."
+                ]
+            },
+            {
+                "heading": "Other OSL News",
+                "body": [
+                    "This week we hit a record of 24 RPUGs in 1 day! Another big thank you to our streamers for covering EVERY League game this week.",
+                    {
+                        "type": "inline",
+                        "items": [
+                            {
+                                "heading": "Player of the Week",
+                                "body": [
+                                    "S18 Week 1 POTW goes to...\nVinegear Vipers very own Zenonix!",
+                                    "Boasting 7 goals, 4 assists and 4 saves across only 2 games, Zenonix leads the Open League in Goals and Assists, and is 2nd in saves. Congrats!"
+                                ] 
+                            },
+                            {
+                                "heading": "Clip of the Month",
+                                "body": [
+                                    "This season we are looking to introduce a “Clip of the Month” segment, where YOU can submit your best clips (league games only) for a chance to feature in upcoming Weekly Slaplogs.",
+                                    "For more info, check #announcements"
+                                ] 
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "S18W2",
+        "author": "Doot",
+        "title": "Week 2 means it's time to grind!",
+        "tagline": "Week 2 Shenanigans\n2am RPUGs, League games galore and more teams!",
+        "date": "2024/01/29",
+        "content": [
+            {
+                "body": [
+                    "Happy Monday Slappas!"
+                ]
+            },
+            {
+                "body": [
+                    "With week 2 coming to a close, OSL is as active as ever.",
+                    "With a total of 15 With a total of 15 League matches throughout the week, it’s no wonder that RPUGs have continued to blow up night after night, and It’s good to see our newer players getting more involved within the community. Speaking of which, the Open League has been going off, and we now have 8 teams following the introduction of Taka Co.",
+                    "And with the season well underway and League rivalries forming, a number of players towards the infamous ‘yappa of the season’ award.",
+                    "In other news, earlier this week we saw a rare appearance of OSL OG’s Jakew100 and Howdy Partner. Welcome back lads!",
+                    "Don’t forget, you only have ONE more week to register a new team before registration closes."
+                ]
+            },
+            {
+                "heading": "Clip of the Month",
+                "body": [
+                    "As mentioned in last week’ edition, “Clip of the Month” is coming to OSL. \n This is a reminder to submit your (League game) clips to #media and tag @DooT for a chance to win!\nEntries close 31 Jan 11:59 PM",
+                    "To make sure you don’t miss out on future League games, keep an eye out in #official-steams in the OSL discord."
+                ]
+            },
+            {
+                "body":[
+                    {
+                        "type": "inline",
+                        "items": [
+                            {
+                                "heading": "Player of the Week",
+                                "body": [
+                                    "Our picks for S18 W2 POTW are",
+                                    "MM Pedri! PGAS 7-7-2-3\nCooking up 7 goals, he showed that the RPUG grind pays off!",
+                                    "MMB Dwarf! PGAS 6-4-6-11\nA defensive masterclass this week, to keep MMB up there!",
+                                    "WW Munby! PGAS 2-0-4-6\nA display of absolute class in only 2 periods."
+                                ]
+                            },
+                            {
+                                "heading": "Match of the Week",
+                                "body": [
+                                    "This week’s match to catch was the Thursday night clash between open rivals:",
+                                    "Peanut Butter vs Bananashire",
+                                    "This cracker of a game is sure to leave you on the edge of your seats. Go check out the VOD! twitch.tv/dootoce"
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "S18W3",
+        "tagline": "Week 3\nNew teams, New rivals, and a New Slapshot update!",
+        "author": "Doot",
+        "date": "2024/02/05",
+        "title": "OSL heats up with controversy",
+        "content": [
+            {
+                "body": [
+                    "Happy February Slappas!",
+                    "OSL has been absolutely cracking this week. Between the rumoured return of chim.os Thursdays and the heated debates in #general spanning multiple days, there has been a ton happening so keep reading to catch up on week 3’s events!",
+                    "This week OSL has been completely absorbed by the ongoing debate over old-generation vs new-generation. Players swarmed to the defense of OG teams following an offhand comment from Jhili: \"Messi and mukey would get rocked if they played how they did back then\".",
+                    "This is what players had to say following the discussion in OSL #general chat.",
+                    "\"Man those old ass players don’t give enough credit to the new players... new players are gonna show their worth\"\n- Jhili",
+                    "\"Wait hili have you even made it to the finals?\"\n- Baccy",
+                    "\"The whole debate about new gen vs old gen will never be properly answered... Looks like this whole debate started in order to gain some recognition. its just too soon before we see a noticeable difference in meta or playstyle. anyways, bbc gets smoked by prime og teams”\n- endEd",
+                    "\"I hope Snowwolf is happy\"\n- Corgo"
+                ]
+            }
+        ]
+    }
+]

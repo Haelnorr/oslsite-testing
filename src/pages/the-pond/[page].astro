@@ -2,10 +2,13 @@
 export const prerender = true;
 import Layout from '../../layouts/Layout.astro';
 import { Download, ArrowRightCircle, ChevronRight, ChevronLeft } from 'astro-feather-icons2';
-import Articles from '../../assets/the-pond-data';
+import Articles from '../../data/pond-articles.json';
+import Articles2 from '../../data/pond-articles.json'
 
 export function compareDate(article1:any, article2:any) {
-    return article1.date - article2.date
+    const date1 = new Date(article1.date);
+    const date2 = new Date(article2.date)
+    return date1.getTime() - date2.getTime()
 }
 
 export async function getStaticPaths({ paginate }) {
@@ -16,6 +19,7 @@ export async function getStaticPaths({ paginate }) {
 
 const { page } = Astro.props as any;
 console.log(page);
+console.log(Articles2[0].content);
 
 ---
 
@@ -38,11 +42,11 @@ console.log(page);
                     <tr class={`hover:bg-neutral-200 ${index % 2 ? `bg-gray-100` : null }`} onclick="">
                         <td class="p-2">{article.id}</td>
                         <td class="p-2">{article.title}</td>
-                        <td class="p-2">{article.date.toDateString()}</td>
+                        <td class="p-2">{new Date(article.date).toDateString()}</td>
                         <td class="p-2">{article.author}</td>
                         <td class="p-2 flex gap-5">
-                            {article.link.length === 0 ? <Download stroke="gray" /> : <a href={article.link}><Download /></a>}
-                            <ArrowRightCircle stroke="gray" />
+                            {article.download === undefined ? <Download stroke="gray" /> : <a href={article.download}><Download /></a>}
+                            <a href={`/the-pond/articles/${article.id}`}><ArrowRightCircle stroke="black" /></a>
                         </td>
                     </tr>
                 ))}

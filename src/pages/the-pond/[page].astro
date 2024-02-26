@@ -1,11 +1,22 @@
 ---
+export const prerender = true;
 import Layout from '../../layouts/Layout.astro';
-import { Download, ArrowRightCircle } from 'astro-feather-icons2';
-import Articles from '../../assets/the-pond-data.ts';
+import { Download, ArrowRightCircle, ChevronRight, ChevronLeft } from 'astro-feather-icons2';
+import Articles from '../../assets/the-pond-data';
 
-function compareDate(article1:any, article2:any) {
+export function compareDate(article1:any, article2:any) {
     return article1.date - article2.date
 }
+
+export async function getStaticPaths({ paginate }) {
+  const articles = Articles
+  // Generate pages from our array of astronauts, with 2 to a page
+  return paginate(articles.sort(compareDate).reverse(), { pageSize: 5 });
+}
+
+const { page } = Astro.props as any;
+console.log(page);
+
 ---
 
 <Layout title="The Pond">
@@ -23,11 +34,11 @@ function compareDate(article1:any, article2:any) {
                 </tr>
             </thead>
             <tbody>
-                {Articles.sort(compareDate).reverse().map((article, index) => (
+                {page.data.map((article, index) => (
                     <tr class={`hover:bg-neutral-200 ${index % 2 ? `bg-gray-100` : null }`} onclick="">
                         <td class="p-2">{article.id}</td>
                         <td class="p-2">{article.title}</td>
-                        <td class="p-2">{article.date.toLocaleDateString()}</td>
+                        <td class="p-2">{article.date.toDateString()}</td>
                         <td class="p-2">{article.author}</td>
                         <td class="p-2 flex gap-5">
                             {article.link.length === 0 ? <Download stroke="gray" /> : <a href={article.link}><Download /></a>}
@@ -35,8 +46,15 @@ function compareDate(article1:any, article2:any) {
                         </td>
                     </tr>
                 ))}
-                
             </tbody>
         </table>
+        <div class="flex pt-4 float-end">
+            <a href={page.url.prev ? `${page.url.prev}` : null} class="p-2">
+                <ChevronLeft stroke={page.url.prev ? `white` : 'gray'} />
+            </a>
+            <a href={page.url.next ? `${page.url.next}` : null} class="p-2">
+                <ChevronRight stroke={page.url.next ? `white` : 'gray'} />
+            </a>
+        </div>
     </main>
 </Layout>

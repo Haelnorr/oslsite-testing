@@ -3,7 +3,6 @@ export const prerender = true;
 import Layout from '../../layouts/Layout.astro';
 import { Download, ArrowRightCircle, ChevronRight, ChevronLeft } from 'astro-feather-icons2';
 import Articles from '../../data/pond-articles.json';
-import Articles2 from '../../data/pond-articles.json'
 
 export function compareDate(article1:any, article2:any) {
     const date1 = new Date(article1.date);
@@ -13,14 +12,10 @@ export function compareDate(article1:any, article2:any) {
 
 export async function getStaticPaths({ paginate }) {
   const articles = Articles
-  // Generate pages from our array of astronauts, with 2 to a page
   return paginate(articles.sort(compareDate).reverse(), { pageSize: 5 });
 }
 
 const { page } = Astro.props as any;
-console.log(page);
-console.log(Articles2[0].content);
-
 ---
 
 <Layout title="The Pond">

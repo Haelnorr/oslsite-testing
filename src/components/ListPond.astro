@@ -1,0 +1,12 @@
+---
+type Props = {
+    decoration: boolean,
+    items: string[]
+}
+
+const {decoration = false, items} = Astro.props
+---
+
+<ul class={`${decoration ? 'list-disc' : null} pl-5`}>
+    {items.map((item) => (<li>{item}</li>))}
+</ul>

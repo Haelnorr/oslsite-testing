@@ -65,6 +65,7 @@
         "title": "Week 2 means it's time to grind!",
         "tagline": "Week 2 Shenanigans\n2am RPUGs, League games galore and more teams!",
         "date": "2024/01/29",
+        "download": "https://cdn.discordapp.com/attachments/894858078959317012/1201360330425634939/OSL_Slaplog_w2_S18_PDF.pdf?ex=65e5387e&is=65d2c37e&hm=8da7c76972418e4d178beda03762693108f1afec3f8f4846d5ea2facad7dbf3a&",
         "content": [
             {
                 "body": [
@@ -121,6 +122,7 @@
         "author": "Doot",
         "date": "2024/02/05",
         "title": "OSL heats up with controversy",
+        "download": "https://cdn.discordapp.com/attachments/894858078959317012/1203730138206961734/OSL_Slaplog_w3_S18_PDF.pdf?ex=65e49d0d&is=65d2280d&hm=2b6f44e3301610d344f1bf03202589438fce5bfb27b6f3ffb4de45d1831e0777&",
         "content": [
             {
                 "body": [
@@ -133,7 +135,75 @@
                     "\"The whole debate about new gen vs old gen will never be properly answered... Looks like this whole debate started in order to gain some recognition. its just too soon before we see a noticeable difference in meta or playstyle. anyways, bbc gets smoked by prime og teams”\n- endEd",
                     "\"I hope Snowwolf is happy\"\n- Corgo"
                 ]
+            },
+            {
+                "body": [
+                    {
+                        "type": "inline",
+                        "items": [
+                            {
+                                "heading": "OSL League News",
+                                "body": [
+                                    "We would like to welcome the following teams joining our open league from Week 4:",
+                                    {
+                                        "type": "list",
+                                        "decoration": true,
+                                        "items": [
+                                            "CBR Milk",
+                                            "BriteBombers"
+                                        ]
+                                    },
+                                    "This brings us to a total of 10 open teams this season!?",
+                                    "With Matchweek 3 now over, registrations for new teams are closed. You can still sign up as a Free Agent (FA) or join an existing team though!",
+                                    "To make sure you don’t miss out on future League games, keep an eye on #official-streams!"
+                                ]
+                            },
+                            {
+                                "heading": "Corgo's Corner",
+                                "body": [
+                                    "The addition of ‘Select RPUGs’ is intended to enhance the competitive experience for players through an exclusive queue limited to experienced players with a high number of games and skill.",
+                                    "The daily-shop has a new look! Now automated with SlapBot, players can view the in-game shop via the discord channel.",
+                                    "Following a community vote, a new tier has been introduced to the RPUGs end of season roll for 50,000 pux.\nThe April EOS roll now includes 200+ matches = 40 tickets."
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "heading":"Match of the Week",
+                "body": [
+                    "This week’s match to catch was our Wednesday night banger between IM Ladder warriors:",
+                    "Dixen Spiders & Mucca Mad Boys"
+                ]
             }
         ]
+    },
+    {
+        "id": "VOL2",
+        "title": "WEEK ONE RECAP- OSL OFF SEASON DRAFT LEAGUE",
+        "date": "2021/10/13",
+        "author": "EndEd",
+        "tagline": "",
+        "download": "https://cdn.discordapp.com/attachments/894858078959317012/897743995868950568/Draft_-_The_Weekly_Slap_Vol_2_October_13_2021.pdf?ex=65e817bf&is=65d5a2bf&hm=a7d40b174ca7edeeddaa9ac8c3dd8a4709e72f99c7bcdb1073626718ccd1f1b9&",
+        "content": []
+    },
+    {
+        "id": "VOL1",
+        "title": "A NEW SEASON BEGINS!",
+        "date": "2021/10/05",
+        "author": "EndEd",
+        "tagline": "",
+        "download": "https://cdn.discordapp.com/attachments/894858078959317012/894858151944413194/The_Weekly_Slap_Vol_1_October_5_2021.pdf?ex=65e6d299&is=65d45d99&hm=9a19b0eee71d177a24a6b8ce3916af8477c5873cd2fb28a8cedf40eef8854b4b&",
+        "content": []
+    },
+    {
+        "id": "S18W4-5",
+        "title": "Week 2 means it's time to grind!",
+        "date": "2024/02/19",
+        "author": "Doot",
+        "tagline": "",
+        "download": "https://cdn.discordapp.com/attachments/894858078959317012/1209117871918022676/OSL_Slaplog_w4-5_S18.pdf?ex=65e5c1c4&is=65d34cc4&hm=d2447a1749c58e289faf1d095aa24682cbfad5bfbf65971cafe95d82feb1bbbd&",
+        "content": []
     }
 ]

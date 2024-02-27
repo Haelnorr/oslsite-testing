@@ -1,6 +1,9 @@
 ---
+import ListPond from './ListPond.astro';
+
 type BodyType = {
     type:string,
+    decoration?:boolean,
     items:String[]|ContentType[]
 }
 
@@ -25,11 +28,21 @@ const {content, paddingTop} = Astro.props;
     {content.items.map((item) => (
         <div>
             <h4 class="text-2xl">{item.heading}</h4>
-            {item.body.map((body) => (
-                <p class="py-2">{body.split("\n").map((sect) => (
-                    <span>{sect}</span><br/>
-                ))}</p>
-            ))}
+            {item.body.map((body) => {
+                if (typeof body === 'string') {
+                    return (
+                        <p class="py-2">{body.split("\n").map((sect) => (
+                            <span>{sect}</span><br/>
+                        ))}</p>
+                    )
+                } else if (typeof body === 'object') {
+                    if (body.type === 'list') {
+                        return (
+                            <ListPond decoration={body.decoration} items={body.items} />
+                        )
+                    }
+                }
+            })}
         </div>
     ))}
 </section>

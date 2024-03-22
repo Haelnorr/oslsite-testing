@@ -1,0 +1,34 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import { getTokens, getUser } from '../../../../util/discordUtils';
+
+const code = Astro.url.searchParams.get('code');
+
+if (!code) {
+    return Astro.redirect('/login?error=discordauth');
+}
+const data = await getTokens(code);
+
+Astro.cookies.set('refresh_token', data.refresh_token, { 
+    maxAge: 60480000,
+    httpOnly: true,
+    path: '/'
+})
+Astro.cookies.set('access_token', data.access_token, { 
+    maxAge: 604800,
+    httpOnly: true,
+    path: '/'
+})
+
+const userResponse = await getUser(data.access_token);
+
+if (!userResponse) {
+    return Astro.redirect('/login?error=discordauth');
+}
+
+return Astro.redirect('/profile');
+---
+
+<Layout title='Validating credentials...'>
+    <p class="text-white"></p>
+</Layout>

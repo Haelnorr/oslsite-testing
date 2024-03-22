@@ -13,6 +13,7 @@ export default {
 						500: '#FFB901',
 					},
 				},
+				discord: "#7289da"
 			},
 		},
 	},

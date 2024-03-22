@@ -1,40 +1,27 @@
-# Astro Starter Kit: Basics
+# Oceanic Slapshot League Website
+[![Netlify Status](https://api.netlify.com/api/v1/badges/e7966536-4763-42f0-ac5d-2f765cb90390/deploy-status)](https://app.netlify.com/sites/slapshot-oce/deploys)
 
-```sh
-npm create astro@latest -- --template basics
-```
+## Run Dev
+There are a few steps that need to be set up being you can run the website on your local machine or docker (not available as of yet). To run the project it is assumed you have npm installed and are familiar with some basic commands.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+1. Clone the Repository and run the following to install and dependencies.
+    ```bash
+    npm install
+    ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+2. In the root creat a file called `.env.development` and add the following variables.
+    ```env
+    DISCORD_CLIENT_ID=""
+    DISCORD_CLIENT_SECRET=""
+    DISCORD_REDIRECT_URI="http://localhost:4321/auth/discord/callback"
+    PUBLIC_DISCORD_AUTH_URI= ""
+    ```
+    *Note: To get the discord client ID, secret and auth uri you will need register a new application with discord, or you could use a current one you might already have.*
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── components/
-│   │   └── Card.astro
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
+3. After that you can run the following command, and bish bosh you should be able to view the website on [localhost:4321](http://www.localhost:4321)
+    ```ENV
+    npm run dev
+    ```
 
 ## 🧞 Commands
 
@@ -49,6 +36,3 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
 
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).

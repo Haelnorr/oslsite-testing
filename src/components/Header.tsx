@@ -36,6 +36,11 @@ const Header = () => {
 			label: "The Pond",
 			dest: "/the-pond",
 		},
+		{
+			id: 5,
+			label: "Profile",
+			dest: "/profile"
+		}
 	];
 
 	return (

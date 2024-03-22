@@ -13,7 +13,7 @@ interface Props {
 
 const {image, heading, body, footer} = Astro.props
 ---
-<div class="rounded-lg text-white bg-zinc-900 hover:shadow-lg hover:scale-105 transition-all ease-in-out duration-1000 shadow-black">
+<div class="rounded-lg text-white bg-zinc-900 hover:shadow-lg hover:scale-105 transition-all ease-in-out duration-1000 shadow-black max-w-[45%]">
     {image === undefined ? null : <Image src={image.href} alt={image.alt} inferSize={true} class="h-52 w-52 rounded-t-lg" loading={'lazy'} />}
     <h2 class="text-lg px-4 pt-2">{heading}</h2>
     {body === undefined ? null : 

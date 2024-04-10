@@ -40,6 +40,11 @@ const Header = () => {
 			id: 5,
 			label: "Profile",
 			dest: "/profile"
+		},
+		{
+			id: 6,
+			label: "League",
+			dest: "/league"
 		}
 	];
 

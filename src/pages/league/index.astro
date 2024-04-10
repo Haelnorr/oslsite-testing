@@ -1,0 +1,76 @@
+---
+import type { Props } from 'astro/components/ViewTransitions.astro';
+import Layout from '../../layouts/Layout.astro';
+import SeasonCard from '../league/components/SeasonCard.astro';
+import { convert_link, srlm_get, type Collection, type League, type Season } from '../../util/srlmUtils';
+
+const league_data: League = await srlm_get('/leagues/osl');
+
+function get_yesterday() {
+    let date = new Date();
+    let options = [
+        {year: 'numeric'},
+        {month: '2-digit'},
+        {day: '2-digit'}
+    ];
+    date.setDate(date.getDate() - 1);
+
+    function format(option: {}) {
+        let formatter = new Intl.DateTimeFormat('en', option);
+        return formatter.format(date)
+    }
+    return options.map(format).join('-')
+}
+
+const yesterday: string = get_yesterday();
+
+const current_seasons: Season[] = await srlm_get('/seasons?league=osl&current=True').then((response) => response['items'])
+const last_season: Season[] = await srlm_get('/seasons?league=osl&last=True').then((response) => response['items'][0])
+const upcoming_seasons: Season[] = await srlm_get('/seasons?league=osl&next=True').then((response) => response['items'])
+const completed_seasons: Season[] = await srlm_get('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday).then((response) => response['items'])
+
+---
+<Layout title="League">
+    <main class="py-10 sm:container mx-auto text-white">
+        <div class="grid grid-cols-1 xl:grid-cols-[80%_20%] gap-3 px-4 py-4">
+            <div id="league-title-card" class="bg-zinc-500 rounded-xl h-28 col-span-2">
+                <h3>{league_data.name} ({league_data.acronym})</h3>
+                <p>brief desc on the league here idk</p>
+            </div>
+            <div id="seasons-info-pane" class="bg-zinc-500 rounded-xl">
+                <div id="seasons-active">
+                    <h2>Current</h2>
+                    {
+                        current_seasons.map(season => (
+                            <SeasonCard season={season} />
+                        ))
+                    }
+                </div>
+                <hr>
+                <div id="seasons-upcoming">
+                    <h2>Upcoming</h2>
+                    {
+                        upcoming_seasons.map(season => (
+                            <SeasonCard season={season} />
+                        ))
+                    }
+                </div>
+                <hr>
+                <div id="season-recent">
+                    <h2>Recently Completed</h2>
+                    <SeasonCard season={last_season} />
+                </div>
+            </div>
+            <div id="seasons-completed-pane" class="bg-zinc-500 rounded-xl">
+                Completed Seasons
+                <ol>
+                {
+                    completed_seasons.map(season => (
+                        <li><a href={"league" + convert_link(season._links.self)}>{season.name}</a></li>
+                    ))
+                }
+                </ol>
+            </div>
+        </div>
+    </main>
+</Layout>

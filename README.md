@@ -36,3 +36,9 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
 
+
+## Development Dependencies
+
+Various request calls are made to the backend API currently in development. A local instance of the SRLM docker image will need to be running.  
+[Slapshot: Rebound League Manager](https://github.com/Haelnorr/srlm/tree/dev-0.8)  
+You will need to pull the latest version from the dev branch to ensure all functionality works. (Current version required - 0.8.1)

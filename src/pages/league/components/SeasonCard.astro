@@ -1,0 +1,30 @@
+---
+import { convert_link } from "../../../util/srlmUtils";
+
+const { season } = Astro.props;
+
+function display_date(date_str: string) {
+    var date = new Date(date_str)
+    return date.toDateString();
+}
+
+function date_is_none(date_field: any) {
+    if (date_field) {
+        return display_date(date_field);
+    } else {
+        return '';
+    }
+}
+
+
+const start_date = date_is_none(season.start_date);
+const end_date = date_is_none(season.end_date);
+const finals_start = date_is_none(season.finals_start);
+const finals_end = date_is_none(season.finals_end);
+
+
+---
+<div>
+    <h2><a href={"league" + convert_link(season._links.self)}>{season.name}</a></h2>
+    <p>Start: {start_date} | End: {end_date} | Finals Start: {finals_start} | Finals End: {finals_end}</p>
+</div>

@@ -25,6 +25,6 @@ const finals_end = date_is_none(season.finals_end);
 
 ---
 <div>
-    <h2><a href={"league" + convert_link(season._links.self)}>{season.name}</a></h2>
+    <h2><a href={"../league" + convert_link(season._links.self)}>{season.name}</a></h2>
     <p>Start: {start_date} | End: {end_date} | Finals Start: {finals_start} | Finals End: {finals_end}</p>
 </div>

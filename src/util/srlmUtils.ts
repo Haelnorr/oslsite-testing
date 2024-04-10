@@ -5,6 +5,7 @@ const api = {
     key: import.meta.env.SRLM_API_APP_KEY
 };
 
+// makes a request to the SRLM API
 export async function srlm_get(endpoint:string, user_token:string='') {
     const request_url = api['uri'] + endpoint;
     const api_token = api['key'] + user_token;
@@ -16,7 +17,7 @@ export async function srlm_get(endpoint:string, user_token:string='') {
     }).then((response) => response.data).catch((err) => err);
 };
 
-
+// strip a link from the SRLM API of its /api prefix, allowing it to be used for url routing
 export function convert_link(link: string) {
     return link.replace('/api', '')
 }

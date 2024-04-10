@@ -17,17 +17,17 @@ function get_yesterday() {
 
     function format(option: {}) {
         let formatter = new Intl.DateTimeFormat('en', option);
-        return formatter.format(date)
+        return formatter.format(date);
     }
-    return options.map(format).join('-')
+    return options.map(format).join('-');
 }
 
 const yesterday: string = get_yesterday();
 
-const current_seasons: Season[] = await srlm_get('/seasons?league=osl&current=True').then((response) => response['items'])
-const last_season: Season[] = await srlm_get('/seasons?league=osl&last=True').then((response) => response['items'][0])
-const upcoming_seasons: Season[] = await srlm_get('/seasons?league=osl&next=True').then((response) => response['items'])
-const completed_seasons: Season[] = await srlm_get('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday).then((response) => response['items'])
+const current_seasons: Season[] = await srlm_get('/seasons?league=osl&current=True').then((response) => response['items']);
+const last_season: Season[] = await srlm_get('/seasons?league=osl&last=True').then((response) => response['items'][0]);
+const upcoming_seasons: Season[] = await srlm_get('/seasons?league=osl&next=True').then((response) => response['items']);
+const completed_seasons: Season[] = await srlm_get('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday).then((response) => response['items']);
 
 ---
 <Layout title="League">

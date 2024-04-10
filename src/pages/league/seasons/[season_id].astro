@@ -1,0 +1,15 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { srlm_get, type Season } from "../../../util/srlmUtils";
+
+const { season_id } = Astro.params;
+
+const season: Season = await srlm_get(`/seasons/${season_id}`);
+---
+<Layout title="Season">
+    <h1>{season.name}</h1>
+    <p></p>
+    {
+    // for valid fields of season, see type Season in srlmUtils
+    }
+</Layout>

@@ -12,9 +12,19 @@ const end_date: string = Astro.url.searchParams.get('end_date')! || '3000-01-01'
 const order: string = Astro.url.searchParams.get('order')! || 'desc';
 const order_by: string = Astro.url.searchParams.get('order_by')! || 'start_date';
 
-const query = `league=${league}&page=${page}&per_page=${per_page}&start_date=${start_date}&end_date=${end_date}&order=${order}&order_by=${order_by}`
+// Currently, invalid params will result in a failed query and another request will be made with the default query. Need to update validation for individual params 
+const default_query = 'league=osl&per_page=50';
+const query = `league=${league}&page=${page}&per_page=${per_page}&start_date=${start_date}&end_date=${end_date}&order=${order}&order_by=${order_by}`;
 
-const seasons: Season[] = await srlm_get(`/seasons?${query}`).then((response) => response['items'])
+var response_data = await srlm_get(`/seasons?${query}`);
+console.log(response_data.message)
+if (!response_data['items']) {
+    console.log('invalid query');
+    response_data = await srlm_get(`/seasons?${default_query}`);
+}
+
+const seasons: Season[] = response_data['items'];
+
 
 ---
 <Layout title="Seasons">

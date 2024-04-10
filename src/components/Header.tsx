@@ -1,4 +1,5 @@
 import LocalLogoImage from "../assets/logo.png";
+import ProfileImage from "../assets/icons8-male-user-96.png";
 
 type HeaderLink = {
 	id:number,
@@ -6,6 +7,7 @@ type HeaderLink = {
 	image?:{
 		obj:any,
 		alt:string,
+		isLogo:boolean,
 	},
 	dest:string,
 };
@@ -18,31 +20,32 @@ const Header = () => {
 			image: {
 				alt: "OSL",
 				obj: LocalLogoImage,
+				isLogo:true,
 			},
 			dest: "/",
 		},
 		{
 			id: 2,
-			label: "Register",
-			dest: "/#main",
-		},
-		{
-			id: 3,
 			label: "Discord",
 			dest: "https://slapshot.gg/OSL",
 		},
 		{
-			id: 4,
+			id: 3,
 			label: "The Pond",
 			dest: "/the-pond",
 		},
 		{
-			id: 5,
+			id: 4,
 			label: "Profile",
-			dest: "/profile"
+			dest: "/profile",
+			image: {
+				alt: "Login",
+				obj: ProfileImage,
+				isLogo:false,
+			}
 		},
 		{
-			id: 6,
+			id: 5,
 			label: "League",
 			dest: "/league"
 		}
@@ -54,7 +57,7 @@ const Header = () => {
 				<a href={link.dest} key={link.id}>
 					{link.image === undefined ?
 						<p className="text-white font-bold text-base py-2">{link.label}</p>:
-						<img className="text-white font-bold text-base h-10" src={link.image.obj.src} alt={link.image.alt} loading="lazy" />
+						<img className={`${link.image.isLogo ? 'h-10' : 'h-7 mt-2'} text-white font-bold text-base`} src={link.image.obj.src} alt={link.image.alt} loading="lazy" />
 					}
 				</a>
 			))}

@@ -1,8 +1,8 @@
 ---
 import type { Props } from 'astro/components/ViewTransitions.astro';
 import Layout from '../../layouts/Layout.astro';
-import SeasonCard from '../league/components/SeasonCard.astro';
-import { convert_link, srlm_get, type Collection, type League, type Season } from '../../util/srlmUtils';
+import SeasonCard from '../../components/SeasonCard.astro';
+import { convert_link, srlm_get, type League, type Season } from '../../util/srlmUtils';
 
 const league_data: League = await srlm_get('/leagues/osl');
 
@@ -62,7 +62,7 @@ const completed_seasons: Season[] = await srlm_get('/seasons?league=osl&order=de
                 </div>
             </div>
             <div id="seasons-completed-pane" class="bg-zinc-500 rounded-xl">
-                Completed Seasons
+                Completed Seasons | <a href="/league/seasons">View all</a>
                 <ol>
                 {
                     completed_seasons.map(season => (

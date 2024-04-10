@@ -1,0 +1,27 @@
+---
+import SeasonCard from "../../../components/SeasonCard.astro";
+import Layout from "../../../layouts/Layout.astro";
+import { srlm_get, type Season } from "../../../util/srlmUtils";
+
+// Search params from url - VALIDATION NEEDS TO BE IMPLEMENTED. INVALID PARAMS CURRENTLY UNHANDLED
+const league: string = Astro.url.searchParams.get('league')! || 'osl';
+const page: string = Astro.url.searchParams.get('page')! || '1';
+const per_page: string = Astro.url.searchParams.get('per_page')! || '50';
+const start_date: string = Astro.url.searchParams.get('start_date')! || '2000-01-01';
+const end_date: string = Astro.url.searchParams.get('end_date')! || '3000-01-01';
+const order: string = Astro.url.searchParams.get('order')! || 'desc';
+const order_by: string = Astro.url.searchParams.get('order_by')! || 'start_date';
+
+const query = `league=${league}&page=${page}&per_page=${per_page}&start_date=${start_date}&end_date=${end_date}&order=${order}&order_by=${order_by}`
+
+const seasons: Season[] = await srlm_get(`/seasons?${query}`).then((response) => response['items'])
+
+---
+<Layout title="Seasons">
+    {
+        seasons.map(season => (
+            <SeasonCard season={season}/>
+        ))
+    }
+    
+</Layout>

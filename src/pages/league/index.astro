@@ -2,7 +2,8 @@
 import type { Props } from 'astro/components/ViewTransitions.astro';
 import Layout from '../../layouts/Layout.astro';
 import SeasonCard from '../../components/SeasonCard.astro';
-import { convert_link, srlm_get, type League, type Season } from '../../util/srlmUtils';
+import { convert_link, srlm_get, type League } from '../../util/srlmUtils';
+import type { SeasonCollection } from '../../util/srlmUtils';
 
 const league_data: League = await srlm_get('/leagues/osl');
 
@@ -24,10 +25,12 @@ function get_yesterday() {
 
 const yesterday: string = get_yesterday();
 
-const current_seasons: Season[] = await srlm_get('/seasons?league=osl&current=True').then((response) => response['items']);
-const last_season: Season[] = await srlm_get('/seasons?league=osl&last=True').then((response) => response['items'][0]);
-const upcoming_seasons: Season[] = await srlm_get('/seasons?league=osl&next=True').then((response) => response['items']);
-const completed_seasons: Season[] = await srlm_get('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday).then((response) => response['items']);
+
+
+const current_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&current=True');
+const last_season: SeasonCollection = await srlm_get('/seasons?league=osl&last=True');
+const upcoming_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&next=True');
+const completed_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday);
 
 ---
 <Layout title="League">
@@ -38,34 +41,41 @@ const completed_seasons: Season[] = await srlm_get('/seasons?league=osl&order=de
                 <p>brief desc on the league here idk</p>
             </div>
             <div id="seasons-info-pane" class="bg-zinc-500 rounded-xl">
-                <div id="seasons-active">
-                    <h2>Current</h2>
-                    {
-                        current_seasons.map(season => (
-                            <SeasonCard season={season} />
-                        ))
-                    }
-                </div>
+                {current_seasons && (current_seasons.items.length > 0) &&
+                    <div id="seasons-active">
+                        <h2>Current</h2>
+                        {   
+                            current_seasons.items.map(season => (
+                                <SeasonCard season={season} />
+                            ))
+                        }
+                    </div>
                 <hr>
-                <div id="seasons-upcoming">
-                    <h2>Upcoming</h2>
-                    {
-                        upcoming_seasons.map(season => (
-                            <SeasonCard season={season} />
-                        ))
-                    }
-                </div>
-                <hr>
+                }
+                
+                {upcoming_seasons && (upcoming_seasons.items.length > 0) &&
+                    <div id="seasons-upcoming">
+                        <h2>Upcoming</h2>
+                        {
+                            upcoming_seasons.items.map(season => (
+                                <SeasonCard season={season} />
+                            ))
+                        }
+                    </div>
+                    <hr>
+                }
+                {last_season && (last_season.items.length > 0) &&
                 <div id="season-recent">
                     <h2>Recently Completed</h2>
-                    <SeasonCard season={last_season} />
+                    <SeasonCard season={last_season.items[0]} />
                 </div>
+                }
             </div>
             <div id="seasons-completed-pane" class="bg-zinc-500 rounded-xl">
                 Completed Seasons | <a href="/league/seasons">View all</a>
                 <ol>
                 {
-                    completed_seasons.map(season => (
+                    completed_seasons.items.map(season => (
                         <li><a href={"league" + convert_link(season._links.self)}>{season.name}</a></li>
                     ))
                 }

@@ -35,12 +35,8 @@ const completed_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&
 ---
 <Layout title="League">
     <main class="py-10 sm:container mx-auto text-white">
-        <div class="grid grid-cols-1 xl:grid-cols-[80%_20%] gap-3 px-4 py-4">
-            <div id="league-title-card" class="bg-zinc-500 rounded-xl h-28 col-span-2">
-                <h3>{league_data.name} ({league_data.acronym})</h3>
-                <p>brief desc on the league here idk</p>
-            </div>
-            <div id="seasons-info-pane" class="bg-zinc-500 rounded-xl">
+        <div class="flex flex-wrap justify-between">
+            <div class="w-3/4">
                 {current_seasons && (current_seasons.items.length > 0) &&
                     <div id="seasons-active">
                         <h2>Current</h2>
@@ -50,7 +46,13 @@ const completed_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&
                             ))
                         }
                     </div>
-                <hr>
+                }
+
+                {last_season && (last_season.items.length > 0) &&
+                    <div id="season-recent">
+                        <h2>Recently Completed</h2>
+                        <SeasonCard season={last_season.items[0]} />
+                    </div>
                 }
                 
                 {upcoming_seasons && (upcoming_seasons.items.length > 0) &&
@@ -62,21 +64,17 @@ const completed_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&
                             ))
                         }
                     </div>
-                    <hr>
                 }
-                {last_season && (last_season.items.length > 0) &&
-                <div id="season-recent">
-                    <h2>Recently Completed</h2>
-                    <SeasonCard season={last_season.items[0]} />
-                </div>
-                }
+                
             </div>
-            <div id="seasons-completed-pane" class="bg-zinc-500 rounded-xl">
+            <div class="w-1/5">
                 Completed Seasons | <a href="/league/seasons">View all</a>
-                <ol>
+                <ol class="text-right">
                 {
                     completed_seasons.items.map(season => (
-                        <li><a href={"league" + convert_link(season._links.self)}>{season.name}</a></li>
+                        <li class="text-sm border-b hover:text-osl-yellow-500 hover:border-b-osl-yellow-500 transition-all duration-200 hover:text-base">
+                            <a href={"league" + convert_link(season._links.self)}><p class="py-2">{season.name}</p></a>
+                        </li>
                     ))
                 }
                 </ol>

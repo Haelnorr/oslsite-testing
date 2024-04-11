@@ -34,17 +34,32 @@ function convert_sd_link(link) {
 
 
 ---
-<div class="bg-black mt-2.5">
-    <h2><a href={"../league" + convert_link(season._links.self)}>{season.name}</a></h2>
-    <p>Start: {start_date} | End: {end_date} | Finals Start: {finals_start} | Finals End: {finals_end}</p>
+<div class="pt-3 pb-10">
+    <h1 class="text-4xl pb-3"><a href={"../league" + convert_link(season._links.self)}>{season.name}</a></h1>
+    <hr>
+    <h3 class="text-2xl pt-5">Timeline:</h3>
+    <div class="flex flex-wrap justify-between max-w-96">
+        <div class="pb-3">
+            <h4 class="text-xl pb-1 pt-2">Regular Season</h4>
+            <p>Start: {start_date}</p>
+            <p>End: {end_date}</p>
+        </div>
+        <div>
+            <h4 class="text-xl pb-1 pt-2">Finals</h4>
+            <p>Start: {finals_start}</p>
+            <p>End: {finals_end}</p>
+        </div>
+    </div>
+    
     {season.divisions && (season.divisions.length > 0) && 
-        <div class="right">
-            <h3>Divisions</h3>
-            {
-                season.divisions.map(division => (
-                    <div><a href={convert_sd_link(division._link)}>{division.name}</a></div>
-                ))
-            }
+        <hr class="mt-5 mb-3">
+            <h3 class="text-2xl">Divisions</h3>
+            <div class="flex flex-wrap justify-evenly pt-3">
+                {season.divisions.map(division => (
+                    <div class="font-bold bg-osl-blue-700 rounded-md hover:bg-blue-400 transition-colors duration-300 mt-2">
+                        <a href={convert_sd_link(division._link)}><p class="py-3 px-5">{division.name}</p></a>
+                    </div>
+                ))}
         </div>
     }
 </div>

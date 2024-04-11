@@ -56,7 +56,11 @@ function query_to_dict(query) {
 
 
 function update_query(link) {
-    const old_query = query_to_dict(Astro.url.search);
+    var old_query = query_to_dict(Astro.url.search);
+    if (!Astro.url.search) {
+        old_query = {}
+    }
+    
     const new_query = query_to_dict(link.replace('/api/seasons', ''));
 
     const updated_params = {
@@ -111,10 +115,10 @@ function update_query(link) {
         {
             <p>
             {seasons._links.prev &&
-                <a href={"../league" + update_query(seasons._links.prev)}>Prev</a>
+                <a href={"../league/seasons" + update_query(seasons._links.prev)}>Prev</a>
             }
             {seasons._links.next &&
-                <a href={"../league" + update_query(seasons._links.next)}>Next</a>
+                <a href={"../league/seasons" + update_query(seasons._links.next)}>Next</a>
             }
         </p>
         }

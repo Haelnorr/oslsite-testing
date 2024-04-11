@@ -11,9 +11,13 @@ const api = {
 // returns null
 function handle_err(err) {
     if (err) {
-        console.log(err.response.data['message']);
-        console.log(err.request._header)
-        return null
+        if (err.response) {
+            console.log(err.response.data['message']);
+        } else {
+            // console.log(err.data)
+        }
+        console.log(err.request._header);
+        return null;
     }
 }
 
@@ -142,6 +146,11 @@ export type League = {
     };
 }
 
+type DivisionLink = {
+    name: string;
+    _link: string;
+}
+
 
 export type Season = {
     id: number;
@@ -153,6 +162,7 @@ export type Season = {
     finals_start: Date;
     finals_end: Date;
     match_type: string;
+    divisions: Array<DivisionLink>
     _links: {
         self: string;
         league: string;
@@ -192,8 +202,8 @@ export type Division = {
 
 export type SeasonDivision = {
     id: number;
-    season: string;
-    division: string;
+    season: Season;
+    division: Division;
     league: string;
     teams_count: number;
     free_agents_count: number;
@@ -210,5 +220,14 @@ export type SeasonDivision = {
         rookies: string;
         matches: string;
         finals: string;
+    }
+}
+
+export type SimpleTeam = {
+    name: string;
+    acronym: string;
+    color: string;
+    _links: {
+        self: string;
     }
 }

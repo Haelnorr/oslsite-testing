@@ -1,0 +1,9 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { convert_link } from "../../../util/srlmUtils";
+import { srlm_get, type SeasonDivision, type SimpleTeam } from "../../../util/srlmUtils";
+
+
+const { season_division_id } = Astro.params;
+const season_division: SeasonDivision = await srlm_get(`/season_division/${season_division_id}`);
+

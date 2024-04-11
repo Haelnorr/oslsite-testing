@@ -26,16 +26,21 @@ const Header = () => {
 		},
 		{
 			id: 2,
+			label: "League",
+			dest: "/league"
+		},
+		{
+			id: 3,
 			label: "Discord",
 			dest: "https://slapshot.gg/OSL",
 		},
 		{
-			id: 3,
+			id: 4,
 			label: "The Pond",
 			dest: "/the-pond",
 		},
 		{
-			id: 4,
+			id: 5,
 			label: "Profile",
 			dest: "/profile",
 			image: {
@@ -43,11 +48,6 @@ const Header = () => {
 				obj: ProfileImage,
 				isLogo:false,
 			}
-		},
-		{
-			id: 5,
-			label: "League",
-			dest: "/league"
 		}
 	];
 

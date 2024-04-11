@@ -4,7 +4,10 @@ import { srlm_get, type Season } from "../../../util/srlmUtils";
 
 const { season_id } = Astro.params;
 
-const season: Season = await srlm_get(`/seasons/${season_id}`);
+const season: Season = await srlm_get(`/seasons/${season_id}?league=osl`);
+if (!season) {
+    return Astro.redirect('/league/seasons')
+}
 ---
 <Layout title="Season">
     <h1>{season.name}</h1>

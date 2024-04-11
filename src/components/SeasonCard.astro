@@ -1,4 +1,6 @@
 ---
+import type { SeasonDivision } from "../util/srlmUtils";
+import { srlm_get } from "../util/srlmUtils";
 import { convert_link } from "../util/srlmUtils";
 
 const { season } = Astro.props;
@@ -22,9 +24,27 @@ const end_date = date_is_none(season.end_date);
 const finals_start = date_is_none(season.finals_start);
 const finals_end = date_is_none(season.finals_end);
 
+function convert_sd_link(link) {
+    var converted = link.replace('/api/', '');
+    converted = converted.replace('season_division', 'sd');
+
+    converted = "../league/" + converted;
+    return converted
+}
+
 
 ---
-<div>
+<div class="bg-black mt-2.5">
     <h2><a href={"../league" + convert_link(season._links.self)}>{season.name}</a></h2>
     <p>Start: {start_date} | End: {end_date} | Finals Start: {finals_start} | Finals End: {finals_end}</p>
+    {season.divisions && (season.divisions.length > 0) && 
+        <div class="right">
+            <h3>Divisions</h3>
+            {
+                season.divisions.map(division => (
+                    <div><a href={convert_sd_link(division._link)}>{division.name}</a></div>
+                ))
+            }
+        </div>
+    }
 </div>

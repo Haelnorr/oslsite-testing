@@ -1,0 +1,51 @@
+---
+import Layout from "../../../../layouts/Layout.astro";
+import { convert_link, srlm_get, type SeasonDivision, type SimpleTeam } from "../../../../util/srlmUtils";
+
+var {season, division} = Astro.params;
+
+// if (division == 'im') {division = 'intermediate'}
+
+const season_division: SeasonDivision = await srlm_get(`/season_division?league=osl&season=${season}&division=${division}`);
+
+if (!season_division) {
+    return Astro.redirect(`/league/seasons/${season}`)
+}
+
+type Teams = {
+    id: number;
+    season: string;
+    division: string;
+    league: string;
+    _links: {
+        self: string;
+        season_division: string;
+        league: string;
+    },
+    teams: Array<SimpleTeam>;
+}
+
+const teams: Teams = await srlm_get(`/season_division/${season_division.id}/teams`);
+
+---
+<Layout title="SeasonDivision">
+    <main class="py-10 sm:container mx-auto text-white">
+        <h2>{season_division.season.name}: {season_division.division.name}</h2>
+        <div>
+            <h3>Teams:</h3>
+            <p>
+                {teams && (teams.teams.length > 0) &&
+                    <ul>
+                        {
+                            teams.teams.map(team => (
+                                <li><a href={convert_link(team._links.self)}>{team.name} ({team.acronym})</a></li>
+                            ))
+                        }
+                    </ul>
+                }
+                
+            </p>
+        </div>
+    </main>
+</Layout>
+

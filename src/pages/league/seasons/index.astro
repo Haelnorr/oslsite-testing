@@ -1,37 +1,124 @@
 ---
+import { Key } from "astro-feather-icons2";
 import SeasonCard from "../../../components/SeasonCard.astro";
 import Layout from "../../../layouts/Layout.astro";
-import { srlm_get, type Season } from "../../../util/srlmUtils";
+import { convert_link, srlm_get, type SeasonCollection } from "../../../util/srlmUtils";
+import type { NewLineKind } from "typescript";
 
-// Search params from url - VALIDATION NEEDS TO BE IMPLEMENTED. INVALID PARAMS CURRENTLY UNHANDLED
-const league: string = Astro.url.searchParams.get('league')! || 'osl';
-const page: string = Astro.url.searchParams.get('page')! || '1';
-const per_page: string = Astro.url.searchParams.get('per_page')! || '50';
-const start_date: string = Astro.url.searchParams.get('start_date')! || '2000-01-01';
-const end_date: string = Astro.url.searchParams.get('end_date')! || '3000-01-01';
-const order: string = Astro.url.searchParams.get('order')! || 'desc';
-const order_by: string = Astro.url.searchParams.get('order_by')! || 'start_date';
+var page: string = Astro.url.searchParams.get('page')! || '1';
+var per_page: string = Astro.url.searchParams.get('per_page')! || '10';
+var start_date: string = Astro.url.searchParams.get('start_date')! || null;
+var end_date: string = Astro.url.searchParams.get('end_date')! || null;
+var order: string = Astro.url.searchParams.get('order')! || 'desc';
+var order_by: string = Astro.url.searchParams.get('order_by')! || null;
 
-// Currently, invalid params will result in a failed query and another request will be made with the default query. Need to update validation for individual params 
-const default_query = 'league=osl&per_page=50';
-const query = `league=${league}&page=${page}&per_page=${per_page}&start_date=${start_date}&end_date=${end_date}&order=${order}&order_by=${order_by}`;
+const date_regex: RegExp = /^[0-9]{4}\-[0-9]{2}\-[0-9]{2}?$/;
 
-var response_data = await srlm_get(`/seasons?${query}`);
-console.log(response_data.message)
-if (!response_data['items']) {
-    console.log('invalid query');
-    response_data = await srlm_get(`/seasons?${default_query}`);
+if (isNaN(+page)) {page='1'}
+if (isNaN(+per_page)) {per_page='10'}
+if (!date_regex.test(start_date)) {start_date = null}
+if (!date_regex.test(end_date)) {end_date = null}
+if (order != 'desc' && order != 'asc') {order = 'desc'}
+if (order_by != 'start_date' &&
+    order_by != 'end_date' &&
+    order_by != 'finals_start' &&
+    order_by != 'finals_end' &&
+    order_by != 'name' &&
+    order_by != 'league') {order_by = null}
+
+var query = `league=osl&page=${page}&per_page=${per_page}&order=${order}`;
+if (start_date) {
+    query = query + `&start_date=${start_date}`;
+}
+if (end_date) {
+    query = query + `&end_date=${end_date}`;
+}
+if (order_by) {
+    query = query + `&order_by=${order_by}`;
+}
+const seasons: SeasonCollection = await srlm_get(`/seasons?${query}`);
+
+function query_to_dict(query) {
+    var params_list = query.replace('?', '').split('&');
+
+    var params = {};
+
+    params_list.forEach(split_param);
+
+    function split_param(param: string) {
+        const keypair = param.split('=');
+        params[keypair[0]] = keypair[1];
+    }
+
+
+    return params;
 }
 
-const seasons: Season[] = response_data['items'];
 
+function update_query(link) {
+    const old_query = query_to_dict(Astro.url.search);
+    const new_query = query_to_dict(link.replace('/api/seasons', ''));
 
+    const updated_params = {
+        ...old_query, 
+        ...new_query
+    }
+
+    var updated_query = '?';
+
+    for (let key in updated_params) {
+        if (updated_query != '?') {updated_query = updated_query + '&'}
+        updated_query = updated_query + `${key}=${updated_params[key]}`
+    }
+    return updated_query;
+    
+}
 ---
 <Layout title="Seasons">
-    {
-        seasons.map(season => (
-            <SeasonCard season={season}/>
-        ))
-    }
-    
+    <main class="text-white">
+        <table>
+            <tr>
+                <td>ID</td>
+                <td>Name</td>
+                <td>Acronym</td>
+                <td>Start Date</td>
+                <td>End Date</td>
+                <td>Finals Start</td>
+                <td>Finals End</td>
+                <td>Match Type</td>
+                <td>Divisions</td>
+            </tr>
+            {
+                seasons.items.map(season => (
+                    <tr>
+                        <td>{season.id}</td>
+                        <td>{season.name}</td>
+                        <td>{season.acronym}</td>
+                        <td>{season.start_date}</td>
+                        <td>{season.end_date}</td>
+                        <td>{season.finals_start}</td>
+                        <td>{season.finals_end}</td>
+                        <td>{season.match_type}</td>
+                        <td>{
+                            season.divisions.map(division => (
+                                <a href={"../league" + convert_link(division._link)}>{division.name}</a><br>
+                            ))
+                        }</td>
+                    </tr>
+                ))
+            }
+        </table>
+        {
+            <p>
+            {seasons._links.prev &&
+                <a href={"../league" + update_query(seasons._links.prev)}>Prev</a>
+            }
+            {seasons._links.next &&
+                <a href={"../league" + update_query(seasons._links.next)}>Next</a>
+            }
+        </p>
+        }
+        
+
+    </main>   
 </Layout>

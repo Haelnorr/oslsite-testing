@@ -63,10 +63,14 @@ function update_query(link) {
     
     const new_query = query_to_dict(link.replace('/api/seasons', ''));
 
+    console.log(old_query)
+    console.log(new_query)
+
     const updated_params = {
         ...old_query, 
         ...new_query
     }
+    console.log(updated_params)
 
     var updated_query = '?';
 

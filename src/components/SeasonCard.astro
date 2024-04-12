@@ -1,41 +1,26 @@
 ---
-import type { SeasonDivision } from "../util/srlmUtils";
-import { srlm_get } from "../util/srlmUtils";
-import { convert_link } from "../util/srlmUtils";
+import { date_is_none } from "../util/srlmUtils";
+
 
 const { season } = Astro.props;
-
-function display_date(date_str: string) {
-    var date = new Date(date_str)
-    return date.toDateString();
-}
-
-function date_is_none(date_field: any) {
-    if (date_field) {
-        return display_date(date_field);
-    } else {
-        return '';
-    }
-}
-
 
 const start_date = date_is_none(season.start_date);
 const end_date = date_is_none(season.end_date);
 const finals_start = date_is_none(season.finals_start);
 const finals_end = date_is_none(season.finals_end);
 
-function convert_sd_link(link) {
-    var converted = link.replace('/api/', '');
-    converted = converted.replace('season_division', 'sd');
+const base_url = Astro.url.host;
 
-    converted = "../league/" + converted;
-    return converted
+function convert_sd_link(season_division) {
+    const path_to_sd = `//${base_url}/league/seasons/${season.acronym}/${season_division.acronym}`;
+
+    return path_to_sd;
 }
 
 
 ---
 <div class="pt-3 pb-10">
-    <h1 class="text-4xl pb-3"><a href={"../league" + convert_link(season._links.self)}>{season.name}</a></h1>
+    <h1 class="text-4xl pb-3"><a href={`//${base_url}/league/seasons/${season.acronym}`}>{season.name}</a></h1>
     <hr>
     <h3 class="text-2xl pt-5">Timeline:</h3>
     <div class="flex flex-wrap justify-between max-w-96">
@@ -57,7 +42,7 @@ function convert_sd_link(link) {
             <div class="flex flex-wrap justify-evenly pt-3">
                 {season.divisions.map(division => (
                     <div class="font-bold bg-osl-blue-700 rounded-md hover:bg-blue-400 transition-colors duration-300 mt-2">
-                        <a href={convert_sd_link(division._link)}><p class="py-3 px-5">{division.name}</p></a>
+                        <a href={convert_sd_link(division)}><p class="py-3 px-5">{division.name}</p></a>
                     </div>
                 ))}
         </div>

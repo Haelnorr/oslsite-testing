@@ -1,6 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { convert_link, srlm_get, type SeasonCollection } from "../../../util/srlmUtils";
+import type { SeasonCollection } from "../../../util/srlmTypes";
+import { convert_link, srlm_get } from "../../../util/srlmUtils";
 
 var page: string = Astro.url.searchParams.get('page')! || '1';
 var per_page: string = Astro.url.searchParams.get('per_page')! || '10';
@@ -77,7 +78,7 @@ function update_query(link) {
 }
 ---
 <Layout title="Seasons">
-    <main class="text-white">
+    <main class="text-white sm:container py-10 px-40">
         <table>
             <tr>
                 <td>ID</td>
@@ -94,7 +95,7 @@ function update_query(link) {
                 seasons.items.map(season => (
                     <tr>
                         <td>{season.id}</td>
-                        <td>{season.name}</td>
+                        <td><a href={`../league/seasons/${season.acronym}`}>{season.name}</a></td>
                         <td>{season.acronym}</td>
                         <td>{season.start_date}</td>
                         <td>{season.end_date}</td>

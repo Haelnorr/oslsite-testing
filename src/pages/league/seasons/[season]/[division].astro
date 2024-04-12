@@ -1,6 +1,7 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
-import { convert_link, srlm_get, type SeasonDivision, type SimpleTeam } from "../../../../util/srlmUtils";
+import type { SeasonDivision } from "../../../../util/srlmTypes";
+import { convert_link, srlm_get } from "../../../../util/srlmUtils";
 
 var {season, division} = Astro.params;
 
@@ -22,10 +23,30 @@ type Teams = {
         season_division: string;
         league: string;
     },
-    teams: Array<SimpleTeam>;
+    teams: Array<{
+        id: number;
+        name: string;
+        acronym: string;
+        color: string;
+        players: Array<{
+                id: number;
+                name: string;
+                dates: Array<{
+                    start: Date;
+                    end: Date;
+                }>
+                _links: {
+                    self: string;
+                }
+        }>
+        _links: {
+            self: string;
+        }
+    }>;
 }
 
 const teams: Teams = await srlm_get(`/season_division/${season_division.id}/teams`);
+
 
 ---
 <Layout title="SeasonDivision">
@@ -38,12 +59,38 @@ const teams: Teams = await srlm_get(`/season_division/${season_division.id}/team
                     <ul>
                         {
                             teams.teams.map(team => (
-                                <li><a href={convert_link(team._links.self)}>{team.name} ({team.acronym})</a></li>
+                                <li>
+                                    <table>
+                                        <tr><a href={convert_link(team._links.self)}>{team.name} ({team.acronym})</a></tr>
+                                        <tr>
+                                            <td>Player</td>
+                                            <td>Periods</td>
+                                            <td>Goals</td>
+                                            <td>Shots</td>
+                                            <td>Assists</td>
+                                            <td>Saves</td>
+                                        </tr>
+                                        {
+                                            team.players.map(player => (
+                                                <tr>
+                                                    <td><a href={`//${Astro.url.host}/league/players/${player.id}`}>{player.name}</a></td>
+                                                    <td>stats</td>
+                                                    <td>will</td>
+                                                    <td>go</td>
+                                                    <td>in</td>
+                                                    <td>here</td>
+                                                </tr>
+                                            ))
+                                        }
+                                        
+                                    </table>
+                                </li>
                             ))
                         }
                     </ul>
                 }
-                
+                This page will show the teams, the standings, scores, leaderboards etc.
+                All the main details people want to see
             </p>
         </div>
     </main>

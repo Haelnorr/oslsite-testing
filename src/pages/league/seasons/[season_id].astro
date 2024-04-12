@@ -1,6 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { srlm_get, type Season } from "../../../util/srlmUtils";
+import type { Season } from "../../../util/srlmTypes";
+import { date_is_none, srlm_get } from "../../../util/srlmUtils";
 
 const { season_id } = Astro.params;
 
@@ -8,11 +9,51 @@ const season: Season = await srlm_get(`/seasons/${season_id}?league=osl`);
 if (!season) {
     return Astro.redirect('/league/seasons')
 }
+
+
+const start_date = date_is_none(season.start_date);
+const end_date = date_is_none(season.end_date);
+const finals_start = date_is_none(season.finals_start);
+const finals_end = date_is_none(season.finals_end);
+
+const base_url = Astro.url.host;
+
+function convert_sd_link(season_division) {
+    const path_to_sd = `//${base_url}/league/seasons/${season.acronym}/${season_division.acronym}`;
+
+    return path_to_sd;
+}
+
 ---
 <Layout title="Season">
-    <h1>{season.name}</h1>
-    <p></p>
-    {
-    // for valid fields of season, see type Season in srlmUtils
-    }
+    <div class="pt-3 pb-10">
+        <h1 class="text-4xl pb-3"><a href={`//${base_url}/league/seasons/${season.acronym}`}>{season.name}</a></h1>
+        <hr>
+        <h3 class="text-2xl pt-5">Timeline:</h3>
+        <div class="flex flex-wrap justify-between max-w-96">
+            <div class="pb-3">
+                <h4 class="text-xl pb-1 pt-2">Regular Season</h4>
+                <p>Start: {start_date}</p>
+                <p>End: {end_date}</p>
+            </div>
+            <div>
+                <h4 class="text-xl pb-1 pt-2">Finals</h4>
+                <p>Start: {finals_start}</p>
+                <p>End: {finals_end}</p>
+            </div>
+        </div>
+        This page to have an overview of all the divisions in that season.. List of stats, maybe some leaderboards. Full info on each division will be in the /[season]/[division] page
+        
+        {season.divisions && (season.divisions.length > 0) && 
+            <hr class="mt-5 mb-3">
+                <h3 class="text-2xl">Divisions</h3>
+                <div class="flex flex-wrap justify-evenly pt-3">
+                    {season.divisions.map(division => (
+                        <div class="font-bold bg-osl-blue-700 rounded-md hover:bg-blue-400 transition-colors duration-300 mt-2">
+                            <a href={convert_sd_link(division)}><p class="py-3 px-5">{division.name}</p></a>
+                        </div>
+                    ))}
+            </div>
+        }
+    </div>
 </Layout>

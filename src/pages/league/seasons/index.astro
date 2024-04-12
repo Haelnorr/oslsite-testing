@@ -1,9 +1,6 @@
 ---
-import { Key } from "astro-feather-icons2";
-import SeasonCard from "../../../components/SeasonCard.astro";
 import Layout from "../../../layouts/Layout.astro";
 import { convert_link, srlm_get, type SeasonCollection } from "../../../util/srlmUtils";
-import type { NewLineKind } from "typescript";
 
 var page: string = Astro.url.searchParams.get('page')! || '1';
 var per_page: string = Astro.url.searchParams.get('per_page')! || '10';

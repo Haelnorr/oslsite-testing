@@ -153,6 +153,7 @@ if (player) {
             }
             </div>
         <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
+        <h2 class="text-white text-center underline"><a href="/logout">(Not you?)</a></h2>
         <section class="flex flex-wrap justify-between pt-10">
             {!player &&
                 <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
@@ -173,10 +174,11 @@ if (player) {
                             <li class="py-1"><b>Manager(s):</b> </li>
                         </ul>
                         <hr>
-                        <h4 class="text-white font-bold py-2">Matches</h4>
+                        
                         
                     }
-                    <!--<div class="flex flex-wrap gap-2">
+                    <!--<h4 class="text-white font-bold py-2">Matches</h4>
+                        <div class="flex flex-wrap gap-2">
                             {team.matches.map((match) => (
                                 <div class={`${match.score ? 'opacity-40': 'opacity-100'} rounded-md bg-orange-300 py-2 shadow-inner shadow-black`}>
                                     <p class="px-2">{match.id}</p>

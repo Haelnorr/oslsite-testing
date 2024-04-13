@@ -11,7 +11,7 @@ const api = {
 function handle_err(err) {
     if (err) {
         if (err.response) {
-            console.log(JSON.stringify(err.response.data));
+            console.error(JSON.stringify(err.response.data));
         } else {
             // console.log(err.data)
         }

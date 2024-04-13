@@ -1,5 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { srlm_basic_auth } from '../../util/srlmUtils';
+import { set_cookies } from '../../util/authUtils';
 
 
 const error = {
@@ -15,15 +17,44 @@ if (error.has) {
     } else if(errorParam === 'sessionexpire') {
         error.message = 'Login again.'
         error.header = 'Session Expired'
+    } else if(errorParam === 'loginfailed') {
+        error.message = 'Username/Password combo does not match'
+        error.header = 'Login failed'
     }
 }
+
+if (Astro.request.method === "POST") {
+    try {
+        const form_data = await Astro.request.formData();
+        const username = form_data.get('username').toString();
+        const password = form_data.get('password').toString();
+        
+        const user_auth = await srlm_basic_auth(username, password);
+        
+        if (!user_auth) {
+            return Astro.redirect('/login?error=loginfailed')
+        } else {
+            return set_cookies(Astro, user_auth);
+        }
+
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+        }
+    }
+}
+
+
+
+
+
 
 ---
 
 <Layout title="Login">
 	<main class="py-10">
         <div class="flex justify-evenly">
-            <form class="flex gap-5 flex-col w-2/3 lg:w-1/3">
+            <form class="flex gap-5 flex-col w-2/3 lg:w-1/3" method="post">
                 <div id="callout" class={`${error.has ? 'visible' : 'hidden'} bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative`} role="alert">
                     <strong class="font-bold">{error.header}</strong>
                     <span class="block sm:inline">{error.message}</span>
@@ -35,7 +66,7 @@ if (error.has) {
                 </label>
                 <label class="text-white font-bold flex flex-col gap-2">
                     Password:
-                    <input class="text-black font-normal p-1" type="password" name="password" required minlength="6" />
+                    <input class="text-black font-normal p-1" type="password" name="password" required minlength="4" />
                 </label>
                 <div class="py-2 flex gap-5">
                     <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">

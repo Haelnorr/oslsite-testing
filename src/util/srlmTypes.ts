@@ -133,3 +133,37 @@ export type SeasonDivision = {
         finals: string;
     }
 }
+
+
+export type Player = {
+    id:number,
+    user:string,
+    slap_id:number,
+    rookie:boolean,
+    first_season:string,
+    current_team:string,
+    teams:number,
+    free_agent_seasons:number,
+    awards:number,
+}
+
+export type PlayerTeams = {
+    player: string,
+    teams: Array<{
+        name: string,
+        acronym: string,
+        color: string,
+        dates: {
+            start:Date,
+            end:Date
+        }
+    }>,
+}
+
+export type Twitch = {
+    user: string,
+    twitch_id: string,
+    access_token: string,
+    refresh_token: string,
+    token_expiration: string,
+}

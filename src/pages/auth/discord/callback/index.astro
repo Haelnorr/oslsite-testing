@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
 import { getTokens, getUser } from '../../../../util/discordUtils';
+import { srlm_basic_auth, srlm_post } from '../../../../util/srlmUtils';
 
 const code = Astro.url.searchParams.get('code');
 
@@ -9,12 +10,20 @@ if (!code) {
 }
 const data = await getTokens(code);
 
-Astro.cookies.set('refresh_token', data.refresh_token, { 
+const discord_login = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_in: data.expires_in
+}
+
+const user_token = await srlm_post('/auth/discord', '', discord_login);
+
+Astro.cookies.set('user_token', user_token.token, { 
     maxAge: 60480000,
     httpOnly: true,
     path: '/'
 })
-Astro.cookies.set('access_token', data.access_token, { 
+Astro.cookies.set('token_expiry', user_token.expires, { 
     maxAge: 604800,
     httpOnly: true,
     path: '/'

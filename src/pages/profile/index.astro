@@ -3,6 +3,9 @@ import Layout from '../../layouts/Layout.astro';
 import Greetings from '../../data/greetings.json';
 import { getUser, refreshToken } from '../../util/discordUtils';
 import { Image } from 'astro:assets';
+import type { Discord, Player, PlayerTeams, Twitch, User } from '../../util/srlmTypes';
+import { srlm_get, srlm_post } from '../../util/srlmUtils';
+import { verify_user } from '../../util/authUtils';
 
 type AwardType = {
     season:number,
@@ -41,33 +44,55 @@ type DiscordUserType = {
 
 const randomGreeting = Greetings[Math.floor((Math.random() * Greetings.length))];
 
-const access_token = await Astro.cookies.get('access_token')?.value;
-const user = await getUser(access_token);
+const user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    return Astro.redirect('/login');
+}
+const user_id = await verify_user(user_token);
 
-if (user.status_code) {
-    const refresh_token = await Astro.cookies.get('refresh_token')?.value;
-    if (!refresh_token) {
+if (!user_id) {
+    return Astro.redirect('/login?error=sessionexpire');
+}
+const user: User = await srlm_get(`/users/${user_id.user}`, user_token);
+const discord: Discord = await srlm_get(`/users/${user.id}/discord`, user_token);
+const player: Player = await srlm_get(`/players/${user.player}`);
+const twitch: Twitch = await srlm_get(`/users/${user.id}/twitch`, user_token);
+
+const discord_profile = await getUser(discord.access_token);
+
+if (discord_profile.status_code) {
+    if (!discord.refresh_token) {
         return Astro.redirect('/login?error=sessionexpire');
     }
     
-    const data = await refreshToken(refresh_token);
+    const data = await refreshToken(discord.refresh_token);
     
     if (data.response && data.response.status === 400) {
         return Astro.redirect('/login?error=sessionexpire');
     }
-    Astro.cookies.set('refresh_token', data.refresh_token, { 
+
+    const discord_login = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in
+    }
+
+    const user_token = await srlm_post('/auth/discord', '', discord_login);
+
+    Astro.cookies.set('user_token', user_token.token, { 
         maxAge: 60480000,
         httpOnly: true,
         path: '/'
     })
-    Astro.cookies.set('access_token', data.access_token, { 
+    Astro.cookies.set('token_expiry', user_token.expires, { 
         maxAge: 604800,
         httpOnly: true,
         path: '/'
     })
+
     return Astro.redirect('/profile');
 }
-
+/** 
 const team = {
     id: "SIL",
     name: "Such Is Life",
@@ -97,52 +122,99 @@ const team = {
             schedule: "2024-05-15"
         }
     ]
+}*/
+
+type Team = {
+    name: string,
+    acronym: string,
+    color: string,
+    dates: {
+        start:Date,
+        end:Date
+    }
 }
+
+var team: Team;
+if (player) {
+    const resp: PlayerTeams = await srlm_get(`/players/${player.id}/teams?current`)
+    if (resp) {team = resp.teams[0]}
+}
+
 ---
 
 <Layout title="Profile">
 	<main class="py-10 sm:container mx-auto">
         <div class="flex justify-center pb-2">
-            <Image class="rounded-full h-40 w-40 text-center text-white" src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.jpg?size=4096`} alt={`${user.username} Profile Picture`} height={500} width={500} />
-        </div>
-        <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.global_name}</h1>
+            {discord &&
+                <Image 
+                    class="rounded-full h-40 w-40 text-center text-white" 
+                    src={`https://cdn.discordapp.com/avatars/${discord_profile.id}/${discord_profile.avatar}.jpg?size=4096`} 
+                    alt={`${discord_profile.username} Profile Picture`} height={500} width={500} />
+            }
+            </div>
+        <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
         <section class="flex flex-wrap justify-between pt-10">
-            <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
-                <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
-                <hr>
-                <ul class="text-white py-2">
-                    <li class="py-1"><b>Team ID:</b> {team.id}</li>
-                    <li class="py-1"><b>Team Name:</b> {team.name}</li>
-                    <li class="py-1"><b>Captain:</b> {team.captain}</li>
-                </ul>
-                <hr>
-                <h4 class="text-white font-bold py-2">Matches</h4>
-                <div class="flex flex-wrap gap-2">
-                    {team.matches.map((match) => (
-                        <div class={`${match.score ? 'opacity-40': 'opacity-100'} rounded-md bg-orange-300 py-2 shadow-inner shadow-black`}>
-                            <p class="px-2">{match.id}</p>
-                            <p class="px-2">{team.id} vs {match.opponent}</p>   
-                            <p class="px-2">{match.schedule}</p>
-                            {match.score ? <p class="px-2">{match.score}</p> : null}   
-                        </div>
-                    ))}
+            {!player &&
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                    <h3 class="text-white text-lg font-bold pb-2">Link Player</h3>
+                    <hr>
+                    <p class="text-white w-44">To register for league matches, join a team, or view your stats - link your Steam account!</p>
+                    
                 </div>
-            </div>
-            <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
-                <h3 class="text-white text-lg font-bold pb-2">Streamer Overview</h3>
-                <hr>
-                <p class="text-white py-2 font-bold">Availability</p>
-                <ul class="text-white pt-2 pb-4">
-                    <li><p><b>Mon:</b></p></li>
-                    <li><p><b>Tues:</b></p></li>
-                    <li><p><b>Wed:</b></p></li>
-                    <li><p><b>Thur:</b></p></li>
-                    <li><p><b>Fri:</b></p></li>
-                    <li><p><b>Sat:</b></p></li>
-                    <li><p><b>Sun</b></p></li>
-                </ul>
-                <a href="#" class="p-2 rounded-md bg-green-600 text-white hover:bg-opacity-70">Adjust Streaming Availability</a>
-            </div>
+            }
+            {player &&
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                    <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
+                    <hr>
+                    {team &&
+                        <ul class="text-white py-2">
+                            <li class="py-1"><b>Team ID:</b> {team.acronym}</li>
+                            <li class="py-1"><b>Team Name:</b> {team.name}</li>
+                            <li class="py-1"><b>Manager(s):</b> </li>
+                        </ul>
+                        <hr>
+                        <h4 class="text-white font-bold py-2">Matches</h4>
+                        
+                    }
+                    <!--<div class="flex flex-wrap gap-2">
+                            {team.matches.map((match) => (
+                                <div class={`${match.score ? 'opacity-40': 'opacity-100'} rounded-md bg-orange-300 py-2 shadow-inner shadow-black`}>
+                                    <p class="px-2">{match.id}</p>
+                                    <p class="px-2">{team.id} vs {match.opponent}</p>   
+                                    <p class="px-2">{match.schedule}</p>
+                                    {match.score ? <p class="px-2">{match.score}</p> : null}   
+                                </div>
+                            ))}
+                        </div> -->
+                    {!team && 
+                        <p>No current team</p>
+                    }
+                </div>
+            }
+            {twitch &&
+                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                    <h3 class="text-white text-lg font-bold pb-2">Streamer Overview</h3>
+                    <hr>
+                    <p class="text-white py-2 font-bold">Availability</p>
+                    <ul class="text-white pt-2 pb-4">
+                        <li><p><b>Mon:</b></p></li>
+                        <li><p><b>Tues:</b></p></li>
+                        <li><p><b>Wed:</b></p></li>
+                        <li><p><b>Thur:</b></p></li>
+                        <li><p><b>Fri:</b></p></li>
+                        <li><p><b>Sat:</b></p></li>
+                        <li><p><b>Sun</b></p></li>
+                    </ul>
+                    <a href="#" class="p-2 rounded-md bg-green-600 text-white hover:bg-opacity-70">Adjust Streaming Availability</a>
+                </div>
+            }
+            {!twitch &&
+                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                    <h3 class="text-white text-lg font-bold pb-2">Twitch</h3>
+                    <hr>
+                    <p class="text-white py-2 font-bold w-48">To access streamer functions, link your twitch account</p>
+                </div>
+            }
             <div class="bg-green-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
                 <h3 class="text-white text-lg font-bold pb-2">Moderator Overview</h3>
                 <hr>

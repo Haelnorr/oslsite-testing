@@ -158,6 +158,15 @@ export type PlayerTeams = {
             end:Date
         }
     }>,
+    current_team: {
+        name: string,
+        acronym: string,
+        color: string,
+        dates: {
+            start:Date,
+            end:Date
+        }
+    }
 }
 
 export type Twitch = {

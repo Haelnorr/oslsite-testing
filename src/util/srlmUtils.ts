@@ -11,11 +11,11 @@ const api = {
 function handle_err(err) {
     if (err) {
         if (err.response) {
-            console.error(JSON.stringify(err.response.data));
+            console.error(err.response.data);
         } else {
             // console.log(err.data)
         }
-        console.log(err.request._header);
+        console.log('Method ' + err.request.method + ' at path ' + err.request.path);
         return null;
     }
 }

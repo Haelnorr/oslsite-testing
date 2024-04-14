@@ -1,0 +1,30 @@
+---
+import { verify_user } from "../../../../util/authUtils";
+import { srlm_post } from "../../../../util/srlmUtils";
+import { steam } from "../../../../util/steamUtils";
+
+
+try {
+
+    const steam_resp = await steam.authenticate(Astro.request)
+
+    const user_token: string = Astro.cookies.get('user_token')?.value;
+
+    const user = await verify_user(user_token);
+
+    if (user) {
+        const resp = await srlm_post(`/users/${user.user}/steam`, '', {steam_id: steam_resp.steamid});
+    }
+
+    return Astro.redirect(`//${Astro.url.host}/profile`)
+
+} catch (error) {
+    console.error(error)
+}
+
+
+
+
+
+---
+

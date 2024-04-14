@@ -6,6 +6,8 @@ import { Image } from 'astro:assets';
 import type { Discord, Player, PlayerTeams, Twitch, User } from '../../util/srlmTypes';
 import { srlm_get, srlm_post } from '../../util/srlmUtils';
 import { verify_user } from '../../util/authUtils';
+import { steam } from '../../util/steamUtils';
+import steamLoginImg from '../../assets/steam.png';
 
 type AwardType = {
     season:number,
@@ -136,9 +138,11 @@ type Team = {
 
 var team: Team;
 if (player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${player.id}/teams?current`)
-    if (resp) {team = resp.teams[0]}
+    const resp: PlayerTeams = await srlm_get(`/players/${player.id}/teams?current=true`)
+    if (resp) {team = resp.current_team}
 }
+
+const steam_redirect = await steam.getRedirectUrl()
 
 ---
 
@@ -154,15 +158,7 @@ if (player) {
             </div>
         <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
         <h2 class="text-white text-center underline"><a href="/logout">(Not you?)</a></h2>
-        <section class="flex flex-wrap justify-between pt-10">
-            {!player &&
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
-                    <h3 class="text-white text-lg font-bold pb-2">Link Player</h3>
-                    <hr>
-                    <p class="text-white w-44">To register for league matches, join a team, or view your stats - link your Steam account!</p>
-                    
-                </div>
-            }
+        <section class="flex flex-wrap justify-between pt-10">           
             {player &&
                 <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
                     <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
@@ -191,6 +187,17 @@ if (player) {
                     {!team && 
                         <p>No current team</p>
                     }
+                </div>
+            }
+            {!player &&
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                    <h3 class="text-white text-lg font-bold pb-2">Link Player</h3>
+                    <hr>
+                    <p class="text-white w-44">To register for league matches, join a team, or view your stats - link your Steam account!</p>
+                        <a href={steam_redirect}><Image 
+                    class="w-24 h-16 mt-5 m-auto" 
+                    src={steamLoginImg}
+                    alt="Login with Steam" height={200} width={200} /></a>
                 </div>
             }
             {twitch &&

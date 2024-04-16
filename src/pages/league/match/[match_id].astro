@@ -1,0 +1,48 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import type { Match, MatchStats } from "../../../util/srlmTypes";
+import { srlm_get } from "../../../util/srlmUtils";
+
+const { match_id } = Astro.params;
+
+const match: Match = await srlm_get(`/match/${match_id}`);
+
+const match_stats: MatchStats = await srlm_get(`/match/${match_id}/stats`);
+
+---
+<Layout title="match">
+    <main class="py-10">
+        <div class="flex justify-evenly text-white">
+            {!match &&
+                <p>No match found</p>
+            }
+            {match &&
+                <div>
+                    <p>Season: {match.season_division}</p>
+                    <p>Round: {match.round}</p>
+                    <p>Match Week: {match.match_week}</p>
+                    <p>Home Team: {match.home_team.name}</p>
+                    <p>Away Team: {match.away_team.name}</p>
+                    {match.results &&
+                        <div>
+                            Results:
+                            <p>Score: {match.results.winner} || {match.results.score_winner}-{match.results.score_loser} || {match.results.loser}</p>
+                        </div>
+                    }
+                    {(!match.results && match.current_lobby) &&
+                        <p>Lobby password: {match.current_lobby.password}</p>
+                        <form method="post"><button>Delete Lobby</button></form> <!-- This button is for testing purposes only -->
+                    }
+                    {(!match.results && !match.current_lobby) &&
+                        <form method="post">
+                            <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
+                                Create lobby
+                            </button>
+                        </form>
+                        <a href={`upload-logs?match=${match.id}`}>Upload Logs</a>
+                    }
+                </div>
+            }
+        </div>
+    </main>
+</Layout>

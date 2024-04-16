@@ -24,9 +24,12 @@ There are a few steps that need to be set up being you can run the website on yo
     PUBLIC_DISCORD_AUTH_URI= ""
     SRLM_API_URI="http://localhost:8000/api"
     SRLM_API_APP_KEY=""
+    STEAM_API_KEY=""
+    STEAM_OPENID_REALM="http://localhost:4321"
     ```
     *Note: To get the discord client ID, secret and auth uri you will need register a new application with discord, or you could use a current one you might already have.*
     *Note: The SRLM_API_APP_KEY is provided by Haelnorr the owner of the backend api repository*
+    *Note: To get a steam API key, go to https://steamcommunity.com/dev/apikey*
 
 3. After that you can run the following command, and bish bosh you should be able to view the website on [localhost:4321](http://www.localhost:4321)
     ```ENV

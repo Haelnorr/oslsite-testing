@@ -1,0 +1,144 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import type { SeasonDivision } from "../../../util/srlmTypes";
+import { srlm_get, srlm_post } from "../../../util/srlmUtils";
+
+const season_division_id = Astro.url.searchParams.get('season_division');
+
+
+if (Astro.request.method === "POST") {
+    try {
+        const form_data = await Astro.request.formData();
+
+        const match_data = {
+            season_division_id: parseInt(season_division_id),
+            round: parseInt(form_data.get('round').toString()),
+            match_week: parseInt(form_data.get('match_week').toString()),
+            home_team_id: parseInt(form_data.get('home_team_id').toString()),
+            away_team_id: parseInt(form_data.get('away_team_id').toString())
+        }
+
+        
+        const create_match = await srlm_post('/match', '', match_data);
+        
+        if (!create_match) {
+            return Astro.redirect('/login?error=loginfailed')
+        } else {
+            return Astro.redirect(`../match/${create_match.location.replace('/api/match/', '')}`)
+        }
+
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error(error.message);
+        }
+    }
+}
+
+
+var valid_form = true;
+
+if (!season_division_id) {
+    valid_form = false;
+}
+
+const season_division: SeasonDivision = await srlm_get(`/season_division/${season_division_id}`);
+
+if (!season_division) {
+    valid_form = false;
+}
+
+const teams_resp = await srlm_get(`/season_division/${season_division_id}/teams`);
+
+type Team = {
+    id: number,
+    name: string,
+    acronym: string,
+    color: string
+}
+
+var teams: Team[];
+
+if (teams_resp) {
+    teams = teams_resp['teams']
+}
+
+
+
+---
+<Layout title="create-match">
+    <main class="py-10">
+        <div class="flex justify-evenly">
+            {valid_form &&
+                <form class="flex gap-5 flex-col w-2/3 lg:w-1/3 text-white" method="post">
+                    <h2 class="text-4xl">Create Match</h2>
+                    <label>
+                        <b>Season:</b> {season_division.season.name} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Division:</b> {season_division.division.name}
+                    </label>
+                    <table>
+                        <tr>
+                            <td class="py-5">
+                                <label>
+                                    Round:
+                                    <input class="text-black" type="number" name="round"/>
+                                </label>
+                            </td>
+                            <td>
+                                <label>
+                                    Match Week:
+                                    <input class="text-black" type="number" name="match_week"/>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="home_team_id">
+                                    Home Team:
+                                </label>
+                                <select class="text-black" name="home_team_id" required>
+                                    {
+                                        teams.map(team => (
+                                            <option 
+                                                value={team.id}
+                                                style={`background-color: #${team.color}`} >
+                                                    {team.name}
+                                            </option>    
+                                        ))
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <label>
+                                    Away Team:
+
+                                </label>
+                                <select class="text-black" name="away_team_id" required>
+                                    {
+                                        teams.map(team => (
+                                            <option 
+                                                value={team.id}
+                                                style={`background-color: #${team.color}`} >
+                                                    {team.name}
+                                            </option>    
+                                        ))
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="py-5 ">
+                                <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
+                                    Create Match
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                </form>
+            }
+            {!valid_form &&
+                <p class="text-white font-bold">Invalid/missing SeasonDivision ID</p>
+            }
+            
+        </div>
+    </main>
+</Layout>

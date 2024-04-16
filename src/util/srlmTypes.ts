@@ -1,3 +1,5 @@
+import type { number } from "astro/zod";
+
 export type Token = {
     token: string;
     expires: Date;
@@ -175,4 +177,106 @@ export type Twitch = {
     access_token: string,
     refresh_token: string,
     token_expiration: string,
+}
+
+type Team = {
+    id: number,
+    name: string,
+    acronym: string,
+    color: string
+}
+
+
+export type Match = {
+    id: number,
+    season_division: string,
+    home_team: Team,
+    away_team: Team,
+    round: number,
+    match_week: number,
+    cancelled: string,
+    streamer: {
+        user: string,
+        twitch_id: string
+    }
+    final: boolean,
+    scheduled_time: string,
+    current_lobby: {
+        id: number,
+        password: string
+    }
+    results: {
+        winner: string,
+        loser: string,
+        draw: boolean,
+        score_winner: number,
+        score_loser: number,
+        overtime: boolean,
+        forfeit: boolean,
+        vod: string
+    }
+}
+
+export type Gamemode = {
+    value: string,
+    label: string,
+    info: string
+}
+
+type PlayerData = {
+    id: number,
+    player: string,
+    team: string,
+    goals: number,
+    shots: number,
+    assists: number,
+    saves: number,
+    primary_assists: number,
+    secondary_assists: number,
+    passes: number,
+    blocks: number,
+    takeaways: number,
+    turnovers: number,
+    possession_time_sec: number,
+    game_winning_goals: number,
+    post_hits: number,
+    faceoffs_won: number,
+    faceoffs_lost: number,
+    score: number
+}
+
+type Period = {
+    id: number,
+    lobby_id: number,
+    processed: boolean,
+    accepted: boolean,
+    match_id: string,
+    region: string,
+    gamemode: string,
+    created: string,
+    arena: string,
+    home_score: number,
+    away_score: number,
+    winner: string,
+    current_period: number,
+    periods_enabled: boolean,
+    custom_mercy_rule: string,
+    end_reason: string,
+    source: string,
+    player_data: Array<PlayerData>
+}
+
+export type MatchStats = {
+    match_id: number,
+    match_details: {
+        id: number,
+        home_team: Team,
+        away_team: Team,
+        result: string,
+        round: number,
+        match_week: number,
+        final: boolean,
+        scheduled_time: string
+    },
+    periods: Array<Period>
 }

@@ -61,39 +61,43 @@ const discord: Discord = await srlm_get(`/users/${user.id}/discord`, user_token)
 const player: Player = await srlm_get(`/players/${user.player}`);
 const twitch: Twitch = await srlm_get(`/users/${user.id}/twitch`, user_token);
 
-const discord_profile = await getUser(discord.access_token);
+var discord_profile;
 
-if (discord_profile.status_code) {
-    if (!discord.refresh_token) {
-        return Astro.redirect('/login?error=sessionexpire');
-    }
+if (discord) {
+    discord_profile = await getUser(discord.access_token);
     
-    const data = await refreshToken(discord.refresh_token);
-    
-    if (data.response && data.response.status === 400) {
-        return Astro.redirect('/login?error=sessionexpire');
-    }
+    if (discord_profile.status_code) {
+        if (!discord.refresh_token) {
+            return Astro.redirect('/login?error=sessionexpire');
+        }
+        
+        const data = await refreshToken(discord.refresh_token);
+        
+        if (data.response && data.response.status === 400) {
+            return Astro.redirect('/login?error=sessionexpire');
+        }
 
-    const discord_login = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_in: data.expires_in
-    }
+        const discord_login = {
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            expires_in: data.expires_in
+        }
 
-    const user_token = await srlm_post('/auth/discord', '', discord_login);
+        const user_token = await srlm_post('/auth/discord', '', discord_login);
 
-    Astro.cookies.set('user_token', user_token.token, { 
-        maxAge: 60480000,
-        httpOnly: true,
-        path: '/'
-    })
-    Astro.cookies.set('token_expiry', user_token.expires, { 
-        maxAge: 604800,
-        httpOnly: true,
-        path: '/'
-    })
+        Astro.cookies.set('user_token', user_token.token, { 
+            maxAge: 60480000,
+            httpOnly: true,
+            path: '/'
+        })
+        Astro.cookies.set('token_expiry', user_token.expires, { 
+            maxAge: 604800,
+            httpOnly: true,
+            path: '/'
+        })
 
-    return Astro.redirect('/profile');
+        return Astro.redirect('/profile');
+}
 }
 /** 
 const team = {

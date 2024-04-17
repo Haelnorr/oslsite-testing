@@ -33,6 +33,19 @@ export function perms_has_one_of(user, perms: Array<string>) {
     return has_perm;
 }
 
+export function is_team_manager(user, teams: Array<number>) {
+    var is_manager = false;
+    if (user.has_perms['team_manager']) {
+        teams.forEach((team: number) => {
+            if (team === parseInt(user.has_perms['team_manager'])) {
+                is_manager = true;
+            }
+        })
+    }
+    return is_manager;
+    
+}
+
 export function set_cookies(Astro, user_token) {
 
 

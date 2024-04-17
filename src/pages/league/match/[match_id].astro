@@ -1,5 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
+import { is_team_manager } from "../../../util/authUtils";
 import { perms_has_one_of, verify_user } from "../../../util/authUtils";
 import type { Match, MatchStats } from "../../../util/srlmTypes";
 import { srlm_get } from "../../../util/srlmUtils";
@@ -8,7 +9,7 @@ var user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
     user_token = '';
 }
-const required_perms = ['admin', 'leag_coord', 'leag_comm'];
+const required_perms = ['admin', 'leag_coord', 'leag_comm', 'team_manager'];
 const user_validate = await verify_user(user_token, required_perms);
 const user_authorized = perms_has_one_of(user_validate, required_perms);
 
@@ -277,11 +278,13 @@ const match_stats: MatchStats = await srlm_get(`/match/${match_id}/stats`);
                     }
                     {(!match.results && !match.current_lobby) && 
                         <div>
-                            <form method="post">
-                                <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
-                                    Create lobby
-                                </button>
-                            </form>
+                            {(is_team_manager(user_validate, [match.home_team.id, match.away_team.id]) || user_authorized) &&
+                                <form method="post">
+                                    <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
+                                        Create lobby
+                                    </button>
+                                </form>
+                            }
                             {user_authorized &&
                                 <a href={`upload-logs?match=${match.id}`}>Upload Logs</a>
                             }

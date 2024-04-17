@@ -5,7 +5,7 @@ import { getUser, refreshToken } from '../../util/discordUtils';
 import { Image } from 'astro:assets';
 import type { Discord, Player, PlayerTeams, Twitch, User } from '../../util/srlmTypes';
 import { srlm_get, srlm_post } from '../../util/srlmUtils';
-import { verify_user } from '../../util/authUtils';
+import { perms_has_one_of, verify_user } from '../../util/authUtils';
 import { steam } from '../../util/steamUtils';
 import steamLoginImg from '../../assets/steam.png';
 
@@ -50,12 +50,13 @@ const user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
     return Astro.redirect('/login');
 }
-const user_id = await verify_user(user_token);
 
-if (!user_id) {
+const user_verify = await verify_user(user_token);
+
+if (!user_verify) {
     return Astro.redirect('/login?error=sessionexpire');
 }
-const user: User = await srlm_get(`/users/${user_id.user}`, user_token);
+const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
 const discord: Discord = await srlm_get(`/users/${user.id}/discord`, user_token);
 const player: Player = await srlm_get(`/players/${user.player}`);
 const twitch: Twitch = await srlm_get(`/users/${user.id}/twitch`, user_token);

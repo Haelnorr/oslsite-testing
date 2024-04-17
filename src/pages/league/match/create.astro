@@ -1,7 +1,20 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
+import { perms_has_one_of, verify_user } from "../../../util/authUtils";
 import type { SeasonDivision } from "../../../util/srlmTypes";
 import { srlm_get, srlm_post } from "../../../util/srlmUtils";
+
+const user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    return Astro.redirect('/403');
+}
+const required_perms = ['admin', 'leag_coord', 'leag_comm'];
+const user_validate = await verify_user(user_token, required_perms);
+const user_authorized = perms_has_one_of(user_validate, required_perms);
+
+if (!user_authorized) {
+    return Astro.redirect('/403');
+}
 
 const season_division_id = Astro.url.searchParams.get('season_division');
 

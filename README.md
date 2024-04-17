@@ -5,7 +5,7 @@
 
 ### Prerequisite
 The project contains a dependency as the back-end API is located on a different repository. The following API and instructions on how to run a dev instance can be found by clicking the following link [Slapshot: Rebound OSL Back-End API](https://github.com/Haelnorr/srlm/tree/dev-0.8)
-Current required version is 0.8.8.
+Current required version is 0.8.9.
 
 
 ### Steps
@@ -29,7 +29,7 @@ There are a few steps that need to be set up being you can run the website on yo
     ```
     *Note: To get the discord client ID, secret and auth uri you will need register a new application with discord, or you could use a current one you might already have.*
     *Note: The SRLM_API_APP_KEY is provided by Haelnorr the owner of the backend api repository*
-    *Note: To get a steam API key, go to https://steamcommunity.com/dev/apikey*
+    *Note: To get a steam API key, go to [https://steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)*
 
 3. After that you can run the following command, and bish bosh you should be able to view the website on [localhost:4321](http://www.localhost:4321)
     ```ENV

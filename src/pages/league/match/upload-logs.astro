@@ -2,6 +2,19 @@
 import Layout from "../../../layouts/Layout.astro";
 import { srlm_get, srlm_post } from "../../../util/srlmUtils";
 import { type Match } from "../../../util/srlmTypes";
+import { verify_user, perms_has_one_of } from "../../../util/authUtils";
+
+const user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    return Astro.redirect('/403');
+}
+const required_perms = ['admin', 'leag_coord', 'leag_comm'];
+const user_validate = await verify_user(user_token, required_perms);
+const user_authorized = perms_has_one_of(user_validate, required_perms);
+
+if (!user_authorized) {
+    return Astro.redirect('/403');
+}
 
 const match_id = Astro.url.searchParams.get('match');
 

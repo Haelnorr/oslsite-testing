@@ -5,7 +5,7 @@
 
 ### Prerequisite
 The project contains a dependency as the back-end API is located on a different repository. The following API and instructions on how to run a dev instance can be found by clicking the following link [Slapshot: Rebound OSL Back-End API](https://github.com/Haelnorr/srlm/tree/dev-0.8)
-Current required version is 0.8.8.
+Current required version is 0.8.9.
 
 
 ### Steps

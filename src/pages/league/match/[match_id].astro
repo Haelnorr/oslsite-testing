@@ -9,6 +9,8 @@ const match: Match = await srlm_get(`/match/${match_id}`);
 
 const match_stats: MatchStats = await srlm_get(`/match/${match_id}/stats`);
 
+console.log(JSON.stringify(match_stats));
+
 ---
 <Layout title="match">
     <main class="py-10">

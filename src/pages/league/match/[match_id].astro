@@ -24,9 +24,242 @@ const match_stats: MatchStats = await srlm_get(`/match/${match_id}/stats`);
                     <p>Home Team: {match.home_team.name}</p>
                     <p>Away Team: {match.away_team.name}</p>
                     {match.results &&
-                        <div>
-                            Results:
-                            <p>Score: {match.results.winner} || {match.results.score_winner}-{match.results.score_loser} || {match.results.loser}</p>
+                        <br><div>
+                            <h2 class="text-3xl">Results:</h2>
+                            <table class="inline">
+                                <tr class="text-2xl">
+                                    <th colspan="4">{match.home_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{
+                                        (match.home_team.name === match.results.winner) && 
+                                            match.results.score_winner
+                                    }{
+                                        (match.home_team.name === match.results.loser) &&
+                                            match.results.score_loser
+                                    }</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.stat_totals.home.map(player => (
+                                    <tr>
+                                        <th>{player.player}</th>
+                                        <th>{player.periods_played}</th>
+                                        <th>{player.goals}</th>
+                                        <th>{player.shots}</th>
+                                        <th>{player.assists}</th>
+                                        <th>{player.saves}</th>
+                                    </tr>
+                                    ))
+                                }
+                            </table>
+                            <table class="inline border-collapse">
+                                <tr class="text-2xl">
+                                    <th colspan="4">{match.away_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{
+                                        (match.away_team.name === match.results.winner) && 
+                                            match.results.score_winner
+                                    }{
+                                        (match.away_team.name === match.results.loser) &&
+                                            match.results.score_loser
+                                    }</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.stat_totals.away.map(player => (
+                                        <tr>
+                                            <th>{player.player}</th>
+                                            <th>{player.periods_played}</th>
+                                            <th>{player.goals}</th>
+                                            <th>{player.shots}</th>
+                                            <th>{player.assists}</th>
+                                            <th>{player.saves}</th>
+                                        </tr>
+                                    ))
+                                }
+                            </table>
+                        </div>
+                        <br><div>
+                            <h2 class="text-3xl">Period Breakdown:</h2>
+                            <table class="inline">
+                                <tr class="text-2xl">
+                                    <th colspan="6">Period 1</th>
+                                </tr>
+                                <tr class="text-xl">
+                                    <th colspan="4">{match.home_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{match_stats.periods.period1.home_score}</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.periods.period1.player_data.home.map(player => (
+                                        <tr>
+                                            <th>{player.player}</th>
+                                            <th>{player.periods_played}</th>
+                                            <th>{player.goals}</th>
+                                            <th>{player.shots}</th>
+                                            <th>{player.assists}</th>
+                                            <th>{player.saves}</th>
+                                        </tr>
+                                    ))
+                                }
+                                <tr class="text-xl">
+                                    <th colspan="4">{match.away_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{match_stats.periods.period1.away_score}</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.periods.period1.player_data.away.map(player => (
+                                        <tr>
+                                            <th>{player.player}</th>
+                                            <th>{player.periods_played}</th>
+                                            <th>{player.goals}</th>
+                                            <th>{player.shots}</th>
+                                            <th>{player.assists}</th>
+                                            <th>{player.saves}</th>
+                                        </tr>
+                                    ))
+                                }
+                            </table>
+                            <table class="inline">
+                                <tr class="text-2xl">
+                                    <th colspan="6">Period 2</th>
+                                </tr>
+                                <tr class="text-xl">
+                                    <th colspan="4">{match.home_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{match_stats.periods.period2.home_score}</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.periods.period2.player_data.home.map(player => (
+                                        <tr>
+                                            <th>{player.player}</th>
+                                            <th>{player.periods_played}</th>
+                                            <th>{player.goals}</th>
+                                            <th>{player.shots}</th>
+                                            <th>{player.assists}</th>
+                                            <th>{player.saves}</th>
+                                        </tr>
+                                    ))
+                                }
+                                <tr class="text-xl">
+                                    <th colspan="4">{match.away_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{match_stats.periods.period2.away_score}</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.periods.period2.player_data.away.map(player => (
+                                        <tr>
+                                            <th>{player.player}</th>
+                                            <th>{player.periods_played}</th>
+                                            <th>{player.goals}</th>
+                                            <th>{player.shots}</th>
+                                            <th>{player.assists}</th>
+                                            <th>{player.saves}</th>
+                                        </tr>
+                                    ))
+                                }
+                            </table>
+                            <table class="inline">
+                                <tr class="text-2xl">
+                                    <th colspan="6">Period 3</th>
+                                </tr>
+                                <tr class="text-xl">
+                                    <th colspan="4">{match.home_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{match_stats.periods.period3.home_score}</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.periods.period3.player_data.home.map(player => (
+                                        <tr>
+                                            <th>{player.player}</th>
+                                            <th>{player.periods_played}</th>
+                                            <th>{player.goals}</th>
+                                            <th>{player.shots}</th>
+                                            <th>{player.assists}</th>
+                                            <th>{player.saves}</th>
+                                        </tr>
+                                    ))
+                                }
+                                <tr class="text-xl">
+                                    <th colspan="4">{match.away_team.name}</th>
+                                    <th>Score:</th>
+                                    <th>{match_stats.periods.period3.away_score}</th>
+                                </tr>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Periods</th>
+                                    <th>Goals</th>
+                                    <th>Shots</th>
+                                    <th>Assists</th>
+                                    <th>Saves</th>
+                                </tr>
+                                {
+                                    match_stats.periods.period3.player_data.away.map(player => (
+                                        <tr>
+                                            <th>{player.player}</th>
+                                            <th>{player.periods_played}</th>
+                                            <th>{player.goals}</th>
+                                            <th>{player.shots}</th>
+                                            <th>{player.assists}</th>
+                                            <th>{player.saves}</th>
+                                        </tr>
+                                    ))
+                                }
+                            </table>
                         </div>
                     }
                     {(!match.results && match.current_lobby) &&

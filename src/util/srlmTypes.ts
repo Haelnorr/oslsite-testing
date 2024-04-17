@@ -61,6 +61,7 @@ export type League = {
 
 type DivisionLink = {
     name: string;
+    acronym: string;
     _link: string;
 }
 
@@ -242,7 +243,8 @@ type PlayerData = {
     post_hits: number,
     faceoffs_won: number,
     faceoffs_lost: number,
-    score: number
+    score: number,
+    periods_played: number
 }
 
 type Period = {
@@ -263,7 +265,10 @@ type Period = {
     custom_mercy_rule: string,
     end_reason: string,
     source: string,
-    player_data: Array<PlayerData>
+    player_data: {
+        home: Array<PlayerData>,
+        away: Array<PlayerData>
+    }
 }
 
 export type MatchStats = {
@@ -278,5 +283,13 @@ export type MatchStats = {
         final: boolean,
         scheduled_time: string
     },
-    periods: Array<Period>
+    periods: {
+        period1: Period,
+        period2: Period,
+        period3: Period
+    },
+    stat_totals: {
+        home: Array<PlayerData>,
+        away: Array<PlayerData>
+    }
 }

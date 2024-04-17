@@ -104,7 +104,7 @@ function update_query(link) {
                         <td>{season.match_type}</td>
                         <td>{
                             season.divisions.map(division => (
-                                <a href={"../league" + convert_link(division._link)}>{division.name}</a><br>
+                                <a href={`/league/seasons/${season.acronym}/${division.acronym}`}>{division.name}</a><br>
                             ))
                         }</td>
                     </tr>

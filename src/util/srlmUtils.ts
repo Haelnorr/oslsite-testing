@@ -90,6 +90,26 @@ export async function srlm_delete(endpoint: string, user_token:string='') {
     }).then((response) => response.data).catch((err) => handle_err(err));
 }
 
+/** 
+ * Makes a PUT request to the SRLM api.
+ * Uses axios and environment variables to make a PUT request to the SRLM api. If request fails, returns null and logs the API's error message and the request headers to console.
+ * 
+ * @param {string} endpoint       endpoint for the request - appends to env var SRLM_API_URI
+ * @param {string} [user_token]   user auth toke   n - appends to SRLM_API_APP_KEY
+ * 
+ * @returns response.data
+ */
+export async function srlm_put(endpoint: string, user_token:string='', input: {}) {
+    const request_url = api['uri'] + endpoint;
+    const api_token = api['key'] + user_token;
+
+    return await axios.put(request_url, input, {
+        headers: {
+            Authorization: `Bearer ${api_token}`
+        }
+    }).then((response) => response.data).catch((err) => handle_err(err));
+}
+
 
 /** 
  * Makes a Basic Auth POST request to the SRLM api.

@@ -2,8 +2,8 @@
 import type { Props } from 'astro/components/ViewTransitions.astro';
 import Layout from '../../layouts/Layout.astro';
 import SeasonCard from '../../components/SeasonCard.astro';
-import { convert_link, srlm_get, type League } from '../../util/srlmUtils';
-import type { SeasonCollection } from '../../util/srlmUtils';
+import { convert_link, srlm_get } from '../../util/srlmUtils';
+import type { League, SeasonCollection } from '../../util/srlmTypes';
 
 const league_data: League = await srlm_get('/leagues/osl');
 

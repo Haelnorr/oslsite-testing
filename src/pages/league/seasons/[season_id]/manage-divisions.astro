@@ -1,0 +1,82 @@
+---
+import { prefetch } from "astro:prefetch";
+import Layout from "../../../../layouts/Layout.astro";
+import { perms_has_one_of, verify_user } from "../../../../util/authUtils";
+import type { Season } from "../../../../util/srlmTypes";
+import { srlm_get, srlm_post } from "../../../../util/srlmUtils";
+
+const user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    return Astro.redirect('/403');
+}
+const required_perms = ['admin', 'leag_coord', 'leag_comm'];
+const user_validate = await verify_user(user_token, required_perms);
+const user_authorized = perms_has_one_of(user_validate, required_perms);
+
+if (!user_authorized) {
+    return Astro.redirect('/403');
+}
+
+const { season_id } = Astro.params;
+
+const season: Season = await srlm_get(`/seasons/${season_id}?league=osl&cached=False`);
+if (!season) {
+    return Astro.redirect('/league/seasons');
+}
+
+if (Astro.request.method === "POST") {
+    const form_data = await Astro.request.formData();
+
+    async function create_sd(div) {
+        if (form_data.get(div) === 'on') {
+            const input = {
+                season_id: season.id,
+                division_acronym: div,
+                league: 'osl'
+            }
+            await srlm_post('/season_division', '', input);
+            console.log('posting:')
+            console.log(input)
+        }
+    }
+
+    const keys = Array.from(form_data.keys())
+    keys.forEach(div => {
+        create_sd(div)
+    })
+    return Astro.redirect(`/league/seasons/${season.acronym}`)
+} else {
+    var divisions_form_data = [];
+    const divisions = await srlm_get('/leagues/osl/divisions');
+
+    divisions.divisions.items.forEach(division => {
+        var data = division;
+        season.divisions.forEach(div_link => {
+            if (div_link.acronym === division.acronym) {
+                data.in_season = true;
+            }
+        })
+        divisions_form_data.push(data);
+    })
+}
+---
+<Layout title="manage-divisions">
+    <main class="py-10 sm:container mx-auto text-white">
+        <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
+            <h2 class="text-2xl">Manage divisions: {season.name}</h2>
+            <form class="mt-5" method="post">
+                {
+                    divisions_form_data.map(division => (
+                        <p class="py-1 max-w-80 mx-auto h-8">
+                            <label class="pl-14">{division.name}</label>
+                            <input class="float-right mr-16 mt-1" name={division.acronym} type="checkbox" checked={division.in_season} disabled={division.in_season}/>
+                        </p>
+                    ))
+                }
+                <button class="mt-5 bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-52">
+                    Update
+                </button>
+            </form>
+        </div>
+    </main>
+</Layout>

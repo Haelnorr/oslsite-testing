@@ -5,7 +5,7 @@ import { getUser, refreshToken } from '../../util/discordUtils';
 import { Image } from 'astro:assets';
 import type { Discord, Player, PlayerTeams, Twitch, User } from '../../util/srlmTypes';
 import { srlm_get, srlm_post } from '../../util/srlmUtils';
-import { verify_user } from '../../util/authUtils';
+import { perms_has_one_of, verify_user } from '../../util/authUtils';
 import { steam } from '../../util/steamUtils';
 import steamLoginImg from '../../assets/steam.png';
 
@@ -104,7 +104,11 @@ const steam_redirect = await steam.getRedirectUrl()
         <h2 class="text-white text-center underline"><a href="/logout">(Not you?)</a></h2>
         <section class="flex flex-wrap justify-between pt-10">           
             {player &&
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-72">
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
+                    <h3 class="text-white text-lg font-bold pb-2">Career Stats</h3>
+                    <hr>
+                </div>
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-72 h-fit">
                     <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
                     <hr>
                     {team &&
@@ -135,7 +139,7 @@ const steam_redirect = await steam.getRedirectUrl()
                 </div>
             }
             {!player &&
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56">
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
                     <h3 class="text-white text-lg font-bold pb-2">Link Player</h3>
                     <hr>
                     <p class="text-white w-44">To register for league matches, join a team, or view your stats - link your Steam account!</p>
@@ -146,7 +150,7 @@ const steam_redirect = await steam.getRedirectUrl()
                 </div>
             }
             {discord &&
-                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56" style="background-color: #5865f2">
+                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit" style="background-color: #5865f2">
                     <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
                     <hr>
                     <p class="text-white py-2 font-bold">Your Discord account is linked!</p>
@@ -156,7 +160,7 @@ const steam_redirect = await steam.getRedirectUrl()
                 </div>
             }
             {!discord &&
-                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56" style="background-color: #5865f2">
+                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit" style="background-color: #5865f2">
                     <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
                     <hr>
                     <p class="text-white py-2 font-bold">Your discord account is not linked.</p>
@@ -164,7 +168,7 @@ const steam_redirect = await steam.getRedirectUrl()
                 </div>
             }
             {twitch &&
-                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black h-fit">
                     <h3 class="text-white text-lg font-bold pb-2">Streamer Overview</h3>
                     <hr>
                     <p class="text-white py-2 font-bold">Availability</p>
@@ -181,17 +185,32 @@ const steam_redirect = await steam.getRedirectUrl()
                 </div>
             }
             {!twitch &&
-                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black h-fit">
                     <h3 class="text-white text-lg font-bold pb-2">Twitch</h3>
                     <hr>
                     <p class="text-white py-2 font-bold w-48">To access streamer functions, link your twitch account</p>
                 </div>
             }
-            <div class="bg-green-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
-                <h3 class="text-white text-lg font-bold pb-2">Moderator Overview</h3>
-                <hr>
-                
-            </div>
+            {perms_has_one_of(user_verify, ['admin', 'leag_coord', 'leag_comm']) &&
+                <div class="bg-green-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                    <h3 class="text-white text-lg font-bold pb-2">Moderator Overview</h3>
+                    <hr>
+                    <p class="text-white py-2 font-bold">Admin Tools:</p>
+                    <ul>
+                        <li class="text-white py-2">- <a class="underline">Manage Users</a></li>
+                        <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
+                    </ul>
+                    <p class="text-white py-2 font-bold">League Tools:</p>
+                    <ul>
+                        <li class="text-white py-2">- <a class="underline">Manage Players</a></li>
+                        <li class="text-white py-2">- <a class="underline">Manage Teams</a></li>
+                        <li class="text-white py-2">- <a class="underline">Registrations</a></li>
+                        <li class="text-white py-2">- <a class="underline">New Season</a></li>
+                        <li class="text-white py-2">- <a class="underline">Match Reviews</a></li>
+                    </ul>
+                    <hr>
+                </div>
+            }
         </section>
 	</main>
 </Layout>

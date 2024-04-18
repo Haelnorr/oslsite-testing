@@ -165,6 +165,8 @@ export type PlayerTeams = {
         name: string,
         acronym: string,
         color: string,
+        owner: string,
+        managers: Array<string>,
         dates: {
             start:Date,
             end:Date
@@ -184,7 +186,11 @@ type Team = {
     id: number,
     name: string,
     acronym: string,
-    color: string
+    color: string,
+    dates: {
+        start:Date,
+        end:Date
+    }
 }
 
 

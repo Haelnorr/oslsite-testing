@@ -5,44 +5,9 @@ import { getUser, refreshToken } from '../../util/discordUtils';
 import { Image } from 'astro:assets';
 import type { Discord, Player, PlayerTeams, Twitch, User } from '../../util/srlmTypes';
 import { srlm_get, srlm_post } from '../../util/srlmUtils';
-import { perms_has_one_of, verify_user } from '../../util/authUtils';
+import { verify_user } from '../../util/authUtils';
 import { steam } from '../../util/steamUtils';
 import steamLoginImg from '../../assets/steam.png';
-
-type AwardType = {
-    season:number,
-    type:string,
-    format:string
-};
-
-type UserType = {
-    username:string,
-    email:string|null,
-    passwordHash:string|null,
-    currentSeasonActive:boolean,
-    slapId:number,
-    discordId:number,
-    team: {
-        id:string,
-        name:string,
-        seasonFormed:number,
-    }|null,
-    awards:AwardType[]
-};
-
-type DiscordUserType = {
-    id:number,
-    username:string,
-    avatar:string,
-    currentSeasonActive:boolean,
-    slapId:number,
-    team: {
-        id:string,
-        name:string,
-        seasonFormed:number,
-    }|null,
-    awards:AwardType[]
-}
 
 const randomGreeting = Greetings[Math.floor((Math.random() * Greetings.length))];
 
@@ -51,11 +16,13 @@ if (!user_token) {
     return Astro.redirect('/login');
 }
 
-const user_verify = await verify_user(user_token);
+const optional_perms = ['leag_coord', 'leag_comm', 'admin', 'team_manager']
+const user_verify = await verify_user(user_token, optional_perms);
 
 if (!user_verify) {
     return Astro.redirect('/login?error=sessionexpire');
 }
+
 const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
 const discord: Discord = await srlm_get(`/users/${user.id}/discord`, user_token);
 const player: Player = await srlm_get(`/players/${user.player}`);
@@ -65,7 +32,7 @@ var discord_profile;
 
 if (discord) {
     discord_profile = await getUser(discord.access_token);
-    
+
     if (discord_profile.status_code) {
         if (!discord.refresh_token) {
             return Astro.redirect('/login?error=sessionexpire');
@@ -97,44 +64,16 @@ if (discord) {
         })
 
         return Astro.redirect('/profile');
+    }
 }
-}
-/** 
-const team = {
-    id: "SIL",
-    name: "Such Is Life",
-    captain: "Spar",
-    matches: [
-        {
-            id: "S19PG1",
-            opponent: "FFB",
-            schedule: "2024-05-15",
-            overtime: false,
-            score: "4-2",
-            won: true
-        },
-        {
-            id: "S19PG1",
-            opponent: "FFB",
-            schedule: "2024-05-15"
-        },
-        {
-            id: "S19PG1",
-            opponent: "FFB",
-            schedule: "2024-05-15"
-        },
-        {
-            id: "S19PG1",
-            opponent: "FFB",
-            schedule: "2024-05-15"
-        }
-    ]
-}*/
+
 
 type Team = {
     name: string,
     acronym: string,
     color: string,
+    owner: string,
+    managers: Array<string>,
     dates: {
         start:Date,
         end:Date
@@ -165,18 +104,19 @@ const steam_redirect = await steam.getRedirectUrl()
         <h2 class="text-white text-center underline"><a href="/logout">(Not you?)</a></h2>
         <section class="flex flex-wrap justify-between pt-10">           
             {player &&
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-72">
                     <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
                     <hr>
                     {team &&
                         <ul class="text-white py-2">
                             <li class="py-1"><b>Team ID:</b> {team.acronym}</li>
                             <li class="py-1"><b>Team Name:</b> {team.name}</li>
-                            <li class="py-1"><b>Manager(s):</b> </li>
+                            <li class="py-1"><b>Owner:</b> {team.owner}</li>
+                            <li class="py-1"><b>Manager(s):</b> {(team.managers.length > 0) &&
+                                team.managers.join(', ')
+                            }</li>
                         </ul>
                         <hr>
-                        
-                        
                     }
                     <!--<h4 class="text-white font-bold py-2">Matches</h4>
                         <div class="flex flex-wrap gap-2">
@@ -195,7 +135,7 @@ const steam_redirect = await steam.getRedirectUrl()
                 </div>
             }
             {!player &&
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56">
                     <h3 class="text-white text-lg font-bold pb-2">Link Player</h3>
                     <hr>
                     <p class="text-white w-44">To register for league matches, join a team, or view your stats - link your Steam account!</p>
@@ -203,6 +143,24 @@ const steam_redirect = await steam.getRedirectUrl()
                     class="w-24 h-16 mt-5 m-auto" 
                     src={steamLoginImg}
                     alt="Login with Steam" height={200} width={200} /></a>
+                </div>
+            }
+            {discord &&
+                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56" style="background-color: #5865f2">
+                    <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
+                    <hr>
+                    <p class="text-white py-2 font-bold">Your Discord account is linked!</p>
+                    <p class="text-white py-2 font-bold">Username: {discord.user}</p>
+                    <p class="text-white py-2 font-bold">ID: {discord.discord_id}</p>
+                    <p class="text-white py-2 font-bold"><a href="/auth/discord/unlink">Unlink account</a></p>
+                </div>
+            }
+            {!discord &&
+                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56" style="background-color: #5865f2">
+                    <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
+                    <hr>
+                    <p class="text-white py-2 font-bold">Your discord account is not linked.</p>
+                    <p class="text-white py-2 font-bold"><a href={import.meta.env.PUBLIC_DISCORD_AUTH_URI}>Click here to link it!</a></p>
                 </div>
             }
             {twitch &&

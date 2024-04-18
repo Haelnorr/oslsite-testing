@@ -1,0 +1,26 @@
+---
+import { verify_user } from "../../../util/authUtils";
+import type { Discord, User } from "../../../util/srlmTypes";
+import { srlm_delete, srlm_get } from "../../../util/srlmUtils";
+
+const user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    return Astro.redirect('/login');
+}
+
+const user_verify = await verify_user(user_token);
+
+if (!user_verify) {
+    return Astro.redirect('/login?error=sessionexpire');
+}
+
+const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
+const discord: Discord = await srlm_get(`/users/${user.id}/discord`, user_token);
+
+if (!discord) {
+    return Astro.redirect('/profile')
+}
+
+const test = await srlm_delete(`/users/${user.id}/discord`, user_token);
+return Astro.redirect('/profile')
+---

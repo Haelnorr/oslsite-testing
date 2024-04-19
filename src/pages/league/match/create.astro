@@ -18,7 +18,6 @@ if (!user_authorized) {
 
 const season_division_id = Astro.url.searchParams.get('season_division');
 
-
 if (Astro.request.method === "POST") {
     try {
         const form_data = await Astro.request.formData();
@@ -75,12 +74,13 @@ if (teams_resp) {
     teams = teams_resp['teams']
 }
 
-
-
 ---
 <Layout title="create-match">
     <main class="py-10">
         <div class="flex justify-evenly">
+            {!valid_form &&
+                <p class="text-white font-bold">Invalid/missing SeasonDivision ID</p>
+            }
             {valid_form &&
                 <form class="flex gap-5 flex-col w-2/3 lg:w-1/3 text-white" method="post">
                     <h2 class="text-4xl">Create Match</h2>
@@ -148,10 +148,6 @@ if (teams_resp) {
                     
                 </form>
             }
-            {!valid_form &&
-                <p class="text-white font-bold">Invalid/missing SeasonDivision ID</p>
-            }
-            
         </div>
     </main>
 </Layout>

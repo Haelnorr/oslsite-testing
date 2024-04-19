@@ -20,7 +20,13 @@ function handle_err(err) {
             // console.log(err.data)
         }
         console.log('Method ' + err.request.method + ' at path ' + err.request.path);
-        return null;
+        if (err.response.status === 409) {
+            // this will check if status code is 409 (only used for input errors on post/put requests)
+            // and returns the response which contains error messages that can be displayed on the form
+            return err.response;
+        } else {
+            return null;
+        }
     }
 }
 

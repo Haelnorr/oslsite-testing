@@ -1,8 +1,7 @@
 ---
-import Layout from "../../../../layouts/Layout.astro";
-import { perms_has_one_of, verify_user } from "../../../../util/authUtils";
-import type { Season } from "../../../../util/srlmTypes";
-import { srlm_get, srlm_put } from "../../../../util/srlmUtils";
+import Layout from "../../../layouts/Layout.astro";
+import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import { srlm_get, srlm_post } from "../../../util/srlmUtils";
 
 const user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
@@ -16,12 +15,7 @@ if (!user_authorized) {
     return Astro.redirect('/403');
 }
 
-const { season_id } = Astro.params;
-
-const season: Season = await srlm_get(`/seasons/${season_id}?league=osl&cached=False`);
-if (!season) {
-    return Astro.redirect('/league/seasons');
-}
+const matchtypes = await srlm_get('/match/type');
 
 var errors = null;
 
@@ -30,12 +24,14 @@ if (Astro.request.method === "POST") {
     const inputs = {
         name: form_data.get('name')?.toString(),
         acronym: form_data.get('acronym')?.toString(),
-        start_date: form_data.get('start-date')?.toString(),
-        end_date: form_data.get('end-date')?.toString(),
-        finals_start: form_data.get('finals-start-date')?.toString(),
-        finals_end: form_data.get('finals-end-date')?.toString()
+        league: 'osl',
+        start_date: form_data.get('start-date')! || null,
+        end_date: form_data.get('end-date')! || null,
+        finals_start: form_data.get('finals-start-date')! || null,
+        finals_end: form_data.get('finals-end-date')! || null,
+        match_type: form_data.get('match-type')! || null
     }
-    const post_data = await srlm_put(`/seasons/${season.id}`, '', inputs);
+    const post_data = await srlm_post('/seasons', '', inputs);
     if (post_data) {
         if (post_data.status && post_data.status === 409) {
             errors = {};
@@ -48,11 +44,15 @@ if (Astro.request.method === "POST") {
     }
 }
 
+if (errors) {
+    console.log(errors)
+}
+
+
 ---
-<Layout title="edit-season">
+<Layout title="create-season">
     <main class="py-10 sm:container mx-auto text-white">
         <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
-            <h2 class="text-2xl">Editing: {season.name}</h2>
             <form class="mt-5" method="post">
                 <script type="text/javascript">
                     function minDate(child, parent) {
@@ -61,13 +61,14 @@ if (Astro.request.method === "POST") {
                         document.getElementById(child).setAttribute("min", minDate);
                     }
                 </script>
+                <h2 class="text-4xl">Create Season</h2>
                 <table class="w-full border-spacing-y-1.5 border-separate px-10">
                     <tr>
                         <td class="align-text-top text-left">
                             Name:
                         </td>
                         <td>
-                            <input type="text" name="name" id="name" value={season.name} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
+                            <input type="text" name="name" id="name" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
                             {(errors && errors['name']) && (
                                 <br/>
                                 <span class="text-red-600 font-bold">
@@ -81,7 +82,7 @@ if (Astro.request.method === "POST") {
                             Acronym:
                         </td>
                         <td>
-                            <input type="text" name="acronym" id="acronym" value={season.acronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
+                            <input type="text" name="acronym" id="acronym" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
                             {(errors && errors['acronym']) && (
                                 <br/>
                                 <span class="text-red-600 font-bold">
@@ -95,8 +96,7 @@ if (Astro.request.method === "POST") {
                             Start date:
                         </td>
                         <td>
-                            {/**@ts-ignore*/}
-                            <input type="date" name="start-date" id="start-date" value={season.start_date} onblur="minDate('end-date', 'start-date')" class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                            <input type="date" name="start-date" id="start-date" onblur="minDate('end-date', 'start-date')" class="text-black rounded-sm outline outline-2 outline-gray-400" />
                         </td>
                     </tr>
                     <tr>
@@ -104,8 +104,7 @@ if (Astro.request.method === "POST") {
                             End date:
                         </td>
                         <td>
-                            {/**@ts-ignore*/}
-                            <input type="date" name="end-date" id="end-date" value={season.end_date} onblur="minDate('finals-start-date', 'end-date')" class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                            <input type="date" name="end-date" id="end-date" onblur="minDate('finals-start-date', 'end-date')" class="text-black rounded-sm outline outline-2 outline-gray-400" />
                         </td>
                     </tr>
                     <tr>
@@ -113,8 +112,7 @@ if (Astro.request.method === "POST") {
                             Finals start date:
                         </td>
                         <td>
-                            {/**@ts-ignore*/}
-                            <input type="date" name="finals-start-date" id="finals-start-date" value={season.finals_start} onblur="minDate('finals-end-date', 'finals-start-date')" class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                            <input type="date" name="finals-start-date" id="finals-start-date" onblur="minDate('finals-end-date', 'finals-start-date')" class="text-black rounded-sm outline outline-2 outline-gray-400" />
                         </td>
                     </tr>
                     <tr>
@@ -122,14 +120,27 @@ if (Astro.request.method === "POST") {
                             Finals end date:
                         </td>
                         <td>
-                            {/**@ts-ignore*/}
-                            <input type="date" name="finals-end-date" id="finals-end-date" value={season.finals_end} class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                            <input type="date" name="finals-end-date" id="finals-end-date" class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="align-text-top text-left">
+                            Match type:
+                        </td>
+                        <td>
+                            <select name="match-type" id="match-type" class="text-black rounded-sm outline outline-2 outline-gray-400" required>
+                                {
+                                    matchtypes.matchtypes.map(type => (
+                                        <option title={type.description} value={type.name}>{type.name}</option>
+                                    ))
+                                }
+                            </select>
                         </td>
                     </tr>
                     <tr class="py-5">
                         <td colspan="2">
                             <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-[80%]">
-                                Update
+                                Create Season
                             </button>
                         </td>
                     </tr>

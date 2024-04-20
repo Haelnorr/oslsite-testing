@@ -1,0 +1,229 @@
+---
+import { formToJSON } from "axios";
+import Layout from "../../../layouts/Layout.astro";
+import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import type { User } from "../../../util/srlmTypes";
+import { srlm_get, srlm_put } from "../../../util/srlmUtils";
+
+
+const user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    return Astro.redirect('/403');
+}
+const required_perms = ['admin', 'leag_comm', 'leag_coord'];
+const user_validate = await verify_user(user_token, required_perms);
+const user_authorized = perms_has_one_of(user_validate, required_perms);
+const user_is_admin = perms_has_one_of(user_validate, ['admin']);
+const user_is_comm = perms_has_one_of(user_validate, ['admin']);
+
+const { user_id } = Astro.params;
+
+if (!user_id) {
+    return Astro.redirect('/manage/users');
+}
+
+const user = await srlm_get(`/users/${user_id}`);
+
+if (!user) {
+    return Astro.redirect('/manage/users');
+}
+
+const user_perms_resp = await srlm_get(`/users/${user_id}/permissions`);
+var user_perms = {}
+user_perms_resp.permissions.map(perm => {
+    if (perm.mods === 'True') {
+        user_perms[perm.key] = true;
+    } else {
+        if (perm.key === 'team_owner') {
+            user_perms[perm.key] = perm.mods.split(',')
+        } else {
+            user_perms[perm.key] = +perm.mods
+        }
+    }
+})
+
+const user_editing_self = user_validate.user == user.id;
+
+if (!(user_authorized || user_editing_self)) {
+    return Astro.redirect('/403');
+}
+
+var errors = null;
+var post_success = true;
+
+if (Astro.request.method === "POST") {
+    const form_data = await Astro.request.formData();
+    if (user_editing_self) {
+        const user_inputs = {
+            username: form_data.get('username')?.toString(),
+            email: form_data.get('email')?.toString()
+        }
+        const user_update = await srlm_put(`/users/${user.id}`, user_token, user_inputs);
+        if (user_update) {
+            if (user_update.status && user_update.status === 409) {
+                if (!errors) {
+                    errors = {};
+                }
+                user_update.data.fields.map(err => {
+                    errors[err.field] = err.error;                
+                })
+            } else {
+                post_success = false;
+            }
+        }
+    } else if (user_authorized) {
+        function checkbox_to_bool(field) {
+            if (form_data.get(field) == 'on') {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        const perm_inputs = {
+            admin: checkbox_to_bool('admin'),
+            leag_comm: checkbox_to_bool('leag-comm'),
+            leag_coord: checkbox_to_bool('leag-coord'),
+            team_owner: (form_data.getAll('team-owner-mods').length > 0) && form_data.getAll('team-owner-mods'),
+            team_manager: checkbox_to_bool('team-manager') && form_data.getAll('team-manager-mod')
+        }
+        const perms_update = await srlm_put(`/users/${user.id}/permissions`, '', perm_inputs)
+        console.log(perms_update)
+        return Astro.redirect(`/manage/users/${user.id}`)
+    }
+}
+
+type Team = {
+    id: number,
+    acronym: string,
+    name: string
+}
+
+const teams: Team[] = await srlm_get('/teams/list').then(resp => resp.teams);
+
+---
+<Layout title="Edit User">
+    <main class="py-10 sm:container mx-auto text-white">
+        <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
+            <h2 class="text-4xl">Editing User: {user.username}</h2>
+            <form class="mt-5" method="post">
+                <table class="w-full border-spacing-y-1.5 border-separate px-10">
+                    {user_editing_self && 
+                        <tr>
+                            <td colspan="2" class="align-text-top text-left">
+                                Name:
+                            </td>
+                            <td>
+                                <input type="text" name="username" id="username" value={user.username} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
+                                {(errors && errors['username']) && (
+                                    <br/>
+                                    <span class="text-red-600 font-bold">
+                                        {errors['username']}
+                                    </span>  
+                                )}
+                            </td>
+                        </tr>
+                    }
+                    {user_editing_self && 
+                        <tr>
+                            <td colspan="2" class="align-text-top text-left">
+                                Email:
+                            </td>
+                        <td>
+                            <input type="text" name="email" id="email" value={user.email} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                            {(errors && errors['email']) && (
+                                <br/>
+                                <span class="text-red-600 font-bold">
+                                    {errors['email']}
+                                </span>  
+                            )}
+                        </td>
+                    </tr>
+                    }
+                    {user_authorized && 
+                        <div>
+                            <tr>
+                                <td colspan="3" class="text-2xl">Permissions:</td>
+                            </tr>
+                            {(user_is_admin || user_is_comm) &&
+                                <tr>
+                                    <td colspan="3" class="font-bold">Management:</td>
+                                </tr>
+                            }
+                            {(user_is_admin && !user_editing_self) && 
+                                <tr>
+                                    <td colspan="2" class="w-[70%] text-right">Admin:</td>
+                                    <td class="w-[20%] text-left pl-5">
+                                        <input type="checkbox" name="admin" checked={user.permissions.includes('admin')} />
+                                    </td>
+                                </tr>
+                            }
+                            {(user_is_admin || user_is_comm) &&
+                                <tr>
+                                    <td colspan="2" class="text-right">League Commissioner:</td>
+                                    <td class="text-left pl-5">
+                                        <input type="checkbox" name="leag-comm" checked={user.permissions.includes('leag_comm')} />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" class="text-right">League Coordinator:</td>
+                                    <td class="text-left pl-5">
+                                        <input type="checkbox" name="leag-coord" checked={user.permissions.includes('leag_coord')} />
+                                    </td>
+                                </tr>
+                            }
+                            <tr>
+                                <td colspan="3" class="font-bold">Team Management:</td>
+                            </tr>
+                            <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+                            <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+                            <tr>
+                                <td class="text-right">Team Owner:</td>
+                                </td>
+                                <td colspan="2" class="text-left pl-5 text-black">
+                                    <select multiple="multiple" class="w-48 text-black indent-2 rounded-sm outline outline-2 outline-gray-400 team-list-select" name="team-owner-mods" id="team-owner-list">
+                                        {
+                                            teams.map(team => (
+                                                <option value={team.id} selected={(user_perms['team_owner'] && (user_perms['team_owner'].includes(team.id.toString())))}>{team.name}</option>
+                                            ))
+                                        }
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-right">Team Manager:</td>
+                                <td class="text-left pl-5">
+                                    <input type="checkbox" name="team-manager" checked={user_perms['team_manager']}/>
+                                </td>
+                                <td class="text-left">
+                                    <select class="w-40 text-black indent-2 rounded-sm outline outline-2 outline-gray-400 team-list-select" name="team-manager-mod" id="team-manager-list">
+                                        <option value="" disabled selected={!user_perms['team_manager']}>Select team</option>
+                                        {
+                                            teams.map(team => (
+                                                <option value={team.id} selected={(user_perms['team_manager'] && (team.id === user_perms['team_manager']))}>{team.name}</option>
+                                            ))
+                                        }
+                                    </select>
+                                </td>
+                            </tr>
+                        </div>
+                        
+                        <script>
+                            {/**@ts-ignore */}
+                            $(document).ready(function() {
+                                //@ts-ignore
+                                $('.team-list-select').select2();
+                            });
+                        </script>
+                    }
+                    <tr class="py-5">
+                        <td colspan="3">
+                            <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-[80%]">
+                                Update
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </main>
+</Layout>

@@ -1,0 +1,65 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import type { User } from "../../../util/srlmTypes";
+import { srlm_get } from "../../../util/srlmUtils";
+
+
+const user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    return Astro.redirect('/403');
+}
+const required_perms = ['admin', 'leag_coord', 'leag_comm'];
+const user_validate = await verify_user(user_token, required_perms);
+const user_authorized = perms_has_one_of(user_validate, required_perms);
+
+if (!user_authorized) {
+    return Astro.redirect('/403');
+}
+
+var page: string = Astro.url.searchParams.get('page')! || '1';
+var per_page: string = Astro.url.searchParams.get('per_page')! || '30';
+if (isNaN(+page)) {page='1'}
+if (isNaN(+per_page)) {per_page='30'}
+
+var users: User[] = null;
+const users_query = await srlm_get(`/users?page=${page}&per_page=${per_page}`);
+if (users_query) {
+    users = users_query.items;
+}
+
+---
+<Layout title="Manage Users">
+    <main class="py-10 sm:container mx-auto text-white">
+        <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
+            <h2 class="text-4xl">Manage Users</h2>
+            <table>
+                <tr>
+                    <th>User</th>
+                    <th>Player</th>
+                    <th>Permissions</th>
+                    <th colspan="2">Manage</th>
+                </tr>
+                {
+                    users.map(user => (
+                    <tr>
+                        <td>{user.username}</td>
+                        <td>{user.player}</td>
+                        <td>{user.permissions.join(', ')}</td>
+                        <td><a href={`/manage/users/${user.id}`}>Edit</a></td>
+                        <td><a href={`/auth/reset_pass?user=${user.id}`}>Reset Pass</a></td>
+                    </tr>
+                    ))
+                }
+            </table>
+            <p>
+                {users_query._links.prev &&
+                    <a href={`/manage/users?page=${(+page - 1)}&per_page=${per_page}`}>Prev</a>
+                }
+                {users_query._links.next &&
+                    <a href={`/manage/users?page=${(+page + 1)}&per_page=${per_page}`}>Next</a>
+                }
+            </p>
+        </div>
+    </main>
+</Layout>

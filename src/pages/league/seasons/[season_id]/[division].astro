@@ -56,7 +56,7 @@ const teams: Teams = await srlm_get(`/season_division/${season_division.id}/team
 
 
 ---
-<Layout title="SeasonDivision">
+<Layout title={`${season_division.season.name}: ${season_division.division.acronym}`}>
     <main class="py-10 sm:container mx-auto text-white">
         <h2>{season_division.season.name}: {season_division.division.name}</h2>
         {user_authorized &&

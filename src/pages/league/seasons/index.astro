@@ -110,8 +110,7 @@ function update_query(link) {
                 ))
             }
         </table>
-        {
-            <p>
+        <p>
             {seasons._links.prev &&
                 <a href={"../league/seasons" + update_query(seasons._links.prev)}>Prev</a>
             }
@@ -119,8 +118,5 @@ function update_query(link) {
                 <a href={"../league/seasons" + update_query(seasons._links.next)}>Next</a>
             }
         </p>
-        }
-        
-
     </main>   
 </Layout>

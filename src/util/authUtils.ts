@@ -47,8 +47,8 @@ export function is_team_manager(user, teams: Array<number>) {
 }
 
 export function set_cookies(Astro, user_token) {
-
-
+    Astro.cookies.delete('user_token');
+    Astro.cookies.delete('token_expiry');
     Astro.cookies.set('user_token', user_token.token, { 
         maxAge: 60480000,
         httpOnly: true,
@@ -59,6 +59,4 @@ export function set_cookies(Astro, user_token) {
         httpOnly: true,
         path: '/'
     })
-
-    return Astro.redirect('/profile');
 }

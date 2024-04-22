@@ -34,7 +34,8 @@ if (Astro.request.method === "POST") {
         if (!user_auth) {
             return Astro.redirect('/login?error=loginfailed')
         } else {
-            return set_cookies(Astro, user_auth);
+            set_cookies(Astro, user_auth);
+            return Astro.redirect('/profile');
         }
 
     } catch (error) {

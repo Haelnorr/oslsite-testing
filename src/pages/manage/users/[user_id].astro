@@ -1,9 +1,8 @@
 ---
-import { formToJSON } from "axios";
 import Layout from "../../../layouts/Layout.astro";
-import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import { perms_has_one_of, set_cookies, verify_user } from "../../../util/authUtils";
 import type { User } from "../../../util/srlmTypes";
-import { srlm_get, srlm_put } from "../../../util/srlmUtils";
+import { srlm_get, srlm_post, srlm_put } from "../../../util/srlmUtils";
 
 
 const user_token = Astro.cookies.get('user_token')?.value;
@@ -12,6 +11,11 @@ if (!user_token) {
 }
 const required_perms = ['admin', 'leag_comm', 'leag_coord'];
 const user_validate = await verify_user(user_token, required_perms);
+
+if (!user_validate) {
+    return Astro.redirect('/403')
+}
+
 const user_authorized = perms_has_one_of(user_validate, required_perms);
 const user_is_admin = perms_has_one_of(user_validate, ['admin']);
 const user_is_comm = perms_has_one_of(user_validate, ['admin']);
@@ -22,7 +26,7 @@ if (!user_id) {
     return Astro.redirect('/manage/users');
 }
 
-const user = await srlm_get(`/users/${user_id}`);
+const user: User = await srlm_get(`/users/${user_id}`);
 
 if (!user) {
     return Astro.redirect('/manage/users');
@@ -71,6 +75,22 @@ if (Astro.request.method === "POST") {
                 post_success = false;
             }
         }
+        const password = form_data.get('password')?.toString();
+        const confirm_password = form_data.get('confirm-password')?.toString();
+        if (password) {
+            if (password === confirm_password) {
+                const pass_update = await srlm_post(`/users/${user.id}/new_password`, user_token, {password:password});
+                if (pass_update && pass_update['token']) {
+                    set_cookies(Astro, pass_update);
+                }
+            } else {
+                if (!errors) {
+                    errors = {};
+                }
+                errors['password'] = 'Passwords do not match';
+            }
+            
+        }
     } else if (user_authorized) {
         function checkbox_to_bool(field) {
             if (form_data.get(field) == 'on') {
@@ -107,37 +127,62 @@ const teams: Team[] = await srlm_get('/teams/list').then(resp => resp.teams);
             <h2 class="text-4xl">Editing User: {user.username}</h2>
             <form class="mt-5" method="post">
                 <table class="w-full border-spacing-y-1.5 border-separate px-10">
-                    {user_editing_self && 
-                        <tr>
-                            <td colspan="2" class="align-text-top text-left">
-                                Name:
-                            </td>
-                            <td>
-                                <input type="text" name="username" id="username" value={user.username} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
-                                {(errors && errors['username']) && (
-                                    <br/>
-                                    <span class="text-red-600 font-bold">
-                                        {errors['username']}
-                                    </span>  
-                                )}
-                            </td>
-                        </tr>
-                    }
-                    {user_editing_self && 
-                        <tr>
-                            <td colspan="2" class="align-text-top text-left">
-                                Email:
-                            </td>
-                        <td>
-                            <input type="text" name="email" id="email" value={user.email} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
-                            {(errors && errors['email']) && (
-                                <br/>
-                                <span class="text-red-600 font-bold">
-                                    {errors['email']}
-                                </span>  
-                            )}
-                        </td>
-                    </tr>
+                    {user_editing_self &&
+                        <div>
+                            <tr>
+                                <td colspan="2" class="align-text-top text-left">
+                                    Name:
+                                </td>
+                                <td>
+                                    <input type="text" name="username" id="username" value={user.username} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
+                                    {(errors && errors['username']) && (
+                                        <br/>
+                                        <span class="text-red-600 font-bold">
+                                            {errors['username']}
+                                        </span>  
+                                    )}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="align-text-top text-left">
+                                    Email:
+                                </td>
+                                <td>
+                                    <input type="email" name="email" id="email" value={user.email} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                    {(errors && errors['email']) && (
+                                        <br/>
+                                        <span class="text-red-600 font-bold">
+                                            {errors['email']}
+                                        </span>  
+                                    )}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="font-bold">Change Password:</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="align-text-top text-left">
+                                    Password:
+                                </td>
+                                <td>
+                                    <input type="password" name="password" id="password" minlength="6" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="align-text-top text-left">
+                                    Confirm:
+                                </td>
+                                <td>
+                                    <input type="password" name="confirm-password" id="confirm-password" minlength="6" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                    {(errors && errors['password']) && (
+                                        <br/>
+                                        <span class="text-red-600 font-bold">
+                                            {errors['password']}
+                                        </span>  
+                                    )}
+                                </td>
+                            </tr>
+                        </div>
                     }
                     {user_authorized && 
                         <div>
@@ -174,7 +219,6 @@ const teams: Team[] = await srlm_get('/teams/list').then(resp => resp.teams);
                             <tr>
                                 <td colspan="3" class="font-bold">Team Management:</td>
                             </tr>
-                            <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
                             <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
                             <tr>
                                 <td class="text-right">Team Owner:</td>

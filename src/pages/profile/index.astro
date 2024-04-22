@@ -198,14 +198,18 @@ const steam_redirect = await steam.getRedirectUrl()
                     <p class="text-white py-2 font-bold">Admin Tools:</p>
                     <ul>
                         <li class="text-white py-2">- <a href="/manage/users" class="underline">Manage Users</a></li>
-                        <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
+                        {perms_has_one_of(user_verify, ['admin']) &&
+                            <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
+                        }
                     </ul>
                     <p class="text-white py-2 font-bold">League Tools:</p>
                     <ul>
                         <li class="text-white py-2">- <a class="underline">Manage Players</a></li>
                         <li class="text-white py-2">- <a class="underline">Manage Teams</a></li>
                         <li class="text-white py-2">- <a class="underline">Registrations</a></li>
-                        <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>
+                        {perms_has_one_of(user_verify, ['admin', 'leag_comm']) &&
+                            <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>
+                        }
                         <li class="text-white py-2">- <a class="underline">Match Reviews</a></li>
                     </ul>
                     <hr>

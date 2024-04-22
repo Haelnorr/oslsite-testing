@@ -1,6 +1,6 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
-import { verify_user } from '../../../../util/authUtils';
+import { set_cookies, verify_user } from '../../../../util/authUtils';
 import { getTokens, getUser } from '../../../../util/discordUtils';
 import type { User } from '../../../../util/srlmTypes';
 import { srlm_basic_auth, srlm_get, srlm_post } from '../../../../util/srlmUtils';
@@ -18,53 +18,45 @@ const discord_login = {
     expires_in: data.expires_in
 }
 
-const user_token = Astro.cookies.get('user_token')?.value;
+var user_token = Astro.cookies.get('user_token')?.value;
 
 if (user_token) {
     
     const user_verify = await verify_user(user_token);
 
-    if (!user_verify) {
-        return Astro.redirect('/login?error=sessionexpire');
+    console.log(user_verify)
+
+    if (user_verify) {
+        const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
+
+        const discord_user = await getUser(data.access_token);
+
+        const discord_link = {
+            discord_id: discord_user.id,
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            expires_in: data.expires_in
+        }
+
+        await srlm_post(`/users/${user.id}/discord`, user_token, discord_link);
+        return Astro.redirect('/profile')
     }
+}
 
-    const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
+user_token = await srlm_post('/auth/discord', '', discord_login);
 
-    const discord_user = await getUser(data.access_token);
+set_cookies(Astro, user_token);
 
-    const discord_link = {
-        discord_id: discord_user.id,
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_in: data.expires_in
-    }
+const userResponse = await getUser(data.access_token);
 
-    await srlm_post(`/users/${user.id}/discord`, user_token, discord_link);
-    return Astro.redirect('/profile')
-
-} else {
-
-    const user_token = await srlm_post('/auth/discord', '', discord_login);
-
-    Astro.cookies.set('user_token', user_token.token, { 
-        maxAge: 60480000,
-        httpOnly: true,
-        path: '/'
-    })
-    Astro.cookies.set('token_expiry', user_token.expires, { 
-        maxAge: 604800,
-        httpOnly: true,
-        path: '/'
-    })
-
-    const userResponse = await getUser(data.access_token);
-
-    if (!userResponse) {
-        return Astro.redirect('/login?error=discordauth');
-    }
+if (!userResponse) {
+    return Astro.redirect('/login?error=discordauth');
+}
 
 return Astro.redirect('/profile');
-}
+
+return Astro.redirect('/login?error=sessionexpire');
+
 ---
 
 <Layout title='Validating credentials...'>

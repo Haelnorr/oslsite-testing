@@ -1,4 +1,5 @@
 ---
+import ViewTransitions from "astro/components/ViewTransitions.astro";
 import Header from "../components/Header.tsx"
 
 interface Props {
@@ -15,11 +16,13 @@ const { title } = Astro.props;
 		<meta name="description" content="The Home of Slapshot: Rebounds Oceanic League" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/logo.svg?v=1" />
+		<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 		<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 		<meta name="generator" content={Astro.generator} />
 		<title>OSL | {title}</title>
 	</head>
 	<body class="bg-neutral-800 bg-no-repeat bg-center bg-fixed">
+		<!--<ViewTransitions />-->
 		<Header client:load />
 		<slot />
 	</body>

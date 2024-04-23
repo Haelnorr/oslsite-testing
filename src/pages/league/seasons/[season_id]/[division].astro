@@ -1,7 +1,7 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
 import { perms_has_one_of, verify_user } from "../../../../util/authUtils";
-import type { SeasonDivisionLeaderboard } from "../../../../util/srlmTypes";
+import type { SeasonDivisionLeaderboard, Team } from "../../../../util/srlmTypes";
 import { convert_link, srlm_get } from "../../../../util/srlmUtils";
 
 var {season_id, division} = Astro.params;
@@ -20,40 +20,23 @@ if (!results) {
     return Astro.redirect(`/league/seasons/${season}`)
 }
 
-type Teams = {
-    id: number;
-    season: string;
-    division: string;
-    league: string;
-    _links: {
-        self: string;
-        season_division: string;
-        league: string;
-    },
-    teams: Array<{
-        id: number;
-        name: string;
-        acronym: string;
-        color: string;
-        players: Array<{
-                id: number;
-                name: string;
-                dates: Array<{
-                    start: Date;
-                    end: Date;
-                }>
-                _links: {
-                    self: string;
-                }
-        }>
-        _links: {
-            self: string;
-        }
-    }>;
+type Match = {
+    id: number,
+    home_team: Team,
+    away_team: Team,
+    round: number,
+    match_week: number,
+    final: boolean,
+    scheduled_time: string,
+    current_lobby: {
+        id: number,
+        password: string
+    }
+    result: string
 }
 
-// const teams: Teams = await srlm_get(`/season_division/${season_division.id}/teams`);
-
+const upcoming_matches: Match[] = await srlm_get(`/season_division/${results.id}/matches?unplayed=True`).then(resp => resp['matches']);
+const completed_matches: Match[] = await srlm_get(`/season_division/${results.id}/matches?unplayed=False`).then(resp => resp['matches']);
 
 ---
 <Layout title={`${results.season.name}: ${results.division.acronym}`}>
@@ -115,9 +98,9 @@ type Teams = {
                         <td>2</td>
                         <td>0</td>
                         <td>1</td>
-                        <td colspan="2">Points</td>
-                        <td colspan="2">Goal Diff</td>
-                        <td colspan="2">Goals For</td>
+                        <td colspan="2">1. Points &uarr;</td>
+                        <td colspan="2">2. Goal Diff &uarr;</td>
+                        <td colspan="2">3. Goals For &uarr;</td>
                     </tr>
 
                 </table>
@@ -193,6 +176,16 @@ type Teams = {
                             ))
                         }
                     </table>
+                    <table class="w-full text-center">
+                        <tr>
+                            <td colspan="3">Sorting Priority</td>
+                        </tr>
+                        <tr>
+                            <td class="w-[33.33%]">1. Goals &uarr;</td>
+                            <td>2. Periods &darr;</td>
+                            <td>3. Shots &darr;</td>
+                        </tr>
+                    </table>
                 </div>
                 <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
                     <h4 class="text-xl">Leading Playmaker:</h4>
@@ -218,6 +211,16 @@ type Teams = {
                             ))
                         }
                     </table>
+                    <table class="w-full text-center">
+                        <tr>
+                            <td colspan="3" class="pr-10">Sorting Priority</td>
+                        </tr>
+                        <tr>
+                            <td class="w-[33.33%]">1. Assists &uarr;</td>
+                            <td>2. Periods &darr;</td>
+                            <td>3. Primary Assists &uarr;</td>
+                        </tr>
+                    </table>
                 </div>
                 <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
                     <h4 class="text-xl">Leading Goaltender:</h4>
@@ -239,6 +242,70 @@ type Teams = {
                                     <td>{player.saves}</td>
                                     <td>{player.periods}</td>
                                     <td>{player.blocks}</td>
+                                </tr>
+                            ))
+                        }
+                    </table>
+                    <table class="w-full text-center">
+                        <tr>
+                            <td colspan="3">Sorting Priority</td>
+                        </tr>
+                        <tr>
+                            <td class="w-[33.33%]">1. Saves &uarr;</td>
+                            <td>2. Periods &darr;</td>
+                            <td>3. Blocks &uarr;</td>
+                        </tr>
+                    </table>
+                </div>
+            </section>
+        </div>
+        <div>
+            <section class="flex flex-wrap justify-between pt-5">
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                    <h4>Upcoming matches</h4>
+                    <table>
+                        <tr>
+                            <th>ID</th>
+                            <th>Home</th>
+                            <th>Away</th>
+                            <th>Round</th>
+                            <th>Match Week</th>
+                            <th>Final</th>
+                            <th>Scheduled</th>
+                        </tr>
+                        {
+                            upcoming_matches.map(match => (
+                                <tr>
+                                    <td><a href={`/league/match/${match.id}`}>{match.id}</a></td>
+                                    <td>{match.home_team.name}</td>
+                                    <td>{match.away_team.name}</td>
+                                    <td>{match.round}</td>
+                                    <td>{match.match_week}</td>
+                                    <td>{(match.final && 'Yes') || 'No'}</td>
+                                    <td>{match.scheduled_time || '-'}</td>
+                                </tr>
+                            ))
+                        }
+                    </table>
+                </div>
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                    <h4>Completed matches</h4>
+                    <table>
+                        <tr>
+                            <th>ID</th>
+                            <th>Result</th>
+                            <th>Round</th>
+                            <th>Match Week</th>
+                            <th>Final</th>
+                        </tr>
+                        {
+                            completed_matches.map(match => (
+                                <tr>
+                                    <td><a href={`/league/match/${match.id}`}>{match.id}</a></td>
+                                    <td>{match.result}</td>
+                                    <td>{match.round}</td>
+                                    <td>{match.match_week}</td>
+                                    <td>{(match.final && 'Yes') || 'No'}</td>
                                 </tr>
                             ))
                         }

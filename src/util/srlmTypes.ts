@@ -242,7 +242,7 @@ export type Twitch = {
     token_expiration: string,
 }
 
-type Team = {
+export type Team = {
     id: number,
     name: string,
     acronym: string,

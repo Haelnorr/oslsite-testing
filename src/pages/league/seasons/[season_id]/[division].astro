@@ -1,7 +1,7 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
 import { perms_has_one_of, verify_user } from "../../../../util/authUtils";
-import type { SeasonDivision } from "../../../../util/srlmTypes";
+import type { SeasonDivisionLeaderboard } from "../../../../util/srlmTypes";
 import { convert_link, srlm_get } from "../../../../util/srlmUtils";
 
 var {season_id, division} = Astro.params;
@@ -14,9 +14,9 @@ const required_perms = ['admin', 'leag_coord', 'leag_comm'];
 const user_validate = await verify_user(user_token, required_perms);
 const user_authorized = perms_has_one_of(user_validate, required_perms);
 
-const season_division: SeasonDivision = await srlm_get(`/season_division?league=osl&season=${season_id}&division=${division}`);
+const results: SeasonDivisionLeaderboard = await srlm_get(`/season_division/leaderboard?league=osl&season=${season_id}&division=${division}`);
 
-if (!season_division) {
+if (!results) {
     return Astro.redirect(`/league/seasons/${season}`)
 }
 
@@ -52,57 +52,199 @@ type Teams = {
     }>;
 }
 
-const teams: Teams = await srlm_get(`/season_division/${season_division.id}/teams`);
+// const teams: Teams = await srlm_get(`/season_division/${season_division.id}/teams`);
 
 
 ---
-<Layout title={`${season_division.season.name}: ${season_division.division.acronym}`}>
-    <main class="py-10 sm:container mx-auto text-white">
-        <h2>{season_division.season.name}: {season_division.division.name}</h2>
+<Layout title={`${results.season.name}: ${results.division.acronym}`}>
+    <main class="py-10 sm:container mx-auto text-white text-center">
+        <h2 class="text-4xl">{results.season.name}: {results.division.name}</h2>
         {user_authorized &&
-            <a href={`/league/match/create?season_division=${season_division.id}`}>Create Match</a>
+            <a href={`/league/match/create?season_division=${results.id}`}>Create Match</a>
         }
-        
+        <section class="flex flex-wrap justify-between pt-5">
+            <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                <h3 class="text-2xl">Ladder:</h3>
+                <table>
+                    <tr>
+                        <th>Position</th>
+                        <th>Team</th>
+                        <th>Matches</th>
+                        <th>Wins</th>
+                        <th>OT Wins</th>
+                        <th>Losses</th>
+                        <th>OT Losses</th>
+                        <th>Points</th>
+                        <th>Goal Diff</th>
+                        <th>Goals For</th>
+                        <th>Goals Against</th>
+                        <th>Goals/Game</th>
+                        <th>Win %</th>
+                    </tr>
+                    {
+                        results.teams.map((team, index) => (
+                            <tr>
+                                <td>{index+1}</td>
+                                <td><a href={`/team/${team.id}`}>{team.name}</a></td>
+                                <td>{team.matches}</td>
+                                <td>{team.wins}</td>
+                                <td>{team.ot_wins}</td>
+                                <td>{team.losses}</td>
+                                <td>{team.ot_losses}</td>
+                                <td>{team.points}</td>
+                                <td>{team.goals_for - team.goals_against}</td>
+                                <td>{team.goals_for}</td>
+                                <td>{team.goals_against}</td>
+                                <td>{(team.goals_for / team.matches) || '-'}</td>
+                                <td>{(team.wins / team.matches * 100) || '-'}</td>
+                            </tr>
+                        ))
+                    }
+                    <tr>
+                        <td rowspan="2" colspan="2">Points Guide</td>
+                        <td>Forfeit</td>
+                        <td>Win</td>
+                        <td>OT Win</td>
+                        <td>Loss</td>
+                        <td>OT Loss</td>
+                        <td colspan="6">Ladder Sorting Priority</td>
+                    </tr>
+                    <tr>
+                        <td>0 - 0 W/L</td>
+                        <td>3</td>
+                        <td>2</td>
+                        <td>0</td>
+                        <td>1</td>
+                        <td colspan="2">Points</td>
+                        <td colspan="2">Goal Diff</td>
+                        <td colspan="2">Goals For</td>
+                    </tr>
+
+                </table>
+            </div>
+        </section>
         <div>
-            <h3>Teams:</h3>
-            <p>
-                {teams && (teams.teams.length > 0) &&
-                    <ul>
+            {results.teams.length > 0 &&
+               <div>
+                    <h3 class="text-2xl">Teams:</h3>
+                    <section class="flex flex-wrap justify-between pt-5">
                         {
-                            teams.teams.map(team => (
-                                <li>
+                            results.teams.map(team => (
+                                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
                                     <table>
-                                        <tr><a href={convert_link(team._links.self)}>{team.name} ({team.acronym})</a></tr>
                                         <tr>
-                                            <td>Player</td>
-                                            <td>Periods</td>
-                                            <td>Goals</td>
-                                            <td>Shots</td>
-                                            <td>Assists</td>
-                                            <td>Saves</td>
+                                            <td colspan="6" class="rounded-md font-bold" style={`background-color: #${team.color}`}>
+                                                <a href={`/team/${team.id}`}>{team.name} ({team.acronym})</a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="px-2">Player</td>
+                                            <th class="px-2">Periods</th>
+                                            <th class="px-2">Goals</tdh>
+                                            <th class="px-2">Shots</th>
+                                            <th class="px-2">Assists</th>
+                                            <th class="px-2">Saves</th>
                                         </tr>
                                         {
                                             team.players.map(player => (
                                                 <tr>
-                                                    <td><a href={`//${Astro.url.host}/league/players/${player.id}`}>{player.name}</a></td>
-                                                    <td>stats</td>
-                                                    <td>will</td>
-                                                    <td>go</td>
-                                                    <td>in</td>
-                                                    <td>here</td>
+                                                    <td class="px-2"><a href={`/players/${player.id}`}>{player.name}</a></td>
+                                                    <td class="px-2">{player.periods}</td>
+                                                    <td class="px-2">{player.goals}</td>
+                                                    <td class="px-2">{player.shots}</td>
+                                                    <td class="px-2">{player.assists}</td>
+                                                    <td class="px-2">{player.saves}</td>
                                                 </tr>
                                             ))
                                         }
                                         
                                     </table>
-                                </li>
+                                </div>
                             ))
                         }
-                    </ul>
-                }
-                This page will show the teams, the standings, scores, leaderboards etc.
-                All the main details people want to see
-            </p>
+                    </section>
+                </div>
+            }
+        </div>
+        <div>
+            <h3 class="text-2xl">Trophy Leaders:</h3>
+            <section class="flex flex-wrap justify-between pt-5">
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                    <h4 class="text-xl">Leading Goalscorer:</h4>
+                    <table>
+                        <tr>
+                            <th>Position</th>
+                            <th>Player</th>
+                            <th>Team</th>
+                            <th>Goals</th>
+                            <th>Periods</th>
+                            <th>Shots</th>
+                        </tr>
+                        {
+                            results.most_goals.map((player, index) => (
+                                <tr>
+                                    <td>{index + 1}</td>
+                                    <td><a href={`/players/${player.id}`}>{player.name}</a></td>
+                                    <td>{(player.team_id && <a href={`/team/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                    <td>{player.goals}</td>
+                                    <td>{player.periods}</td>
+                                    <td>{player.shots}</td>
+                                </tr>
+                            ))
+                        }
+                    </table>
+                </div>
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                    <h4 class="text-xl">Leading Playmaker:</h4>
+                    <table>
+                        <tr>
+                            <th>Position</th>
+                            <th>Player</th>
+                            <th>Team</th>
+                            <th>Assists</th>
+                            <th>Periods</th>
+                            <th>Primary Assists</th>
+                        </tr>
+                        {
+                            results.most_assists.map((player, index) => (
+                                <tr>
+                                    <td>{index + 1}</td>
+                                    <td><a href={`/players/${player.id}`}>{player.name}</a></td>
+                                    <td>{(player.team_id && <a href={`/team/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                    <td>{player.assists}</td>
+                                    <td>{player.periods}</td>
+                                    <td>{player.primary_assists}</td>
+                                </tr>
+                            ))
+                        }
+                    </table>
+                </div>
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                    <h4 class="text-xl">Leading Goaltender:</h4>
+                    <table>
+                        <tr>
+                            <th>Position</th>
+                            <th>Player</th>
+                            <th>Team</th>
+                            <th>Saves</th>
+                            <th>Periods</th>
+                            <td>Blocks</td>
+                        </tr>
+                        {
+                            results.most_saves.map((player, index) => (
+                                <tr>
+                                    <td>{index + 1}</td>
+                                    <td><a href={`/players/${player.id}`}>{player.name}</a></td>
+                                    <td>{(player.team_id && <a href={`/team/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                    <td>{player.saves}</td>
+                                    <td>{player.periods}</td>
+                                    <td>{player.blocks}</td>
+                                </tr>
+                            ))
+                        }
+                    </table>
+                </div>
+            </section>
         </div>
     </main>
 </Layout>

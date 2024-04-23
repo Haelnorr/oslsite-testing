@@ -115,26 +115,86 @@ export type Division = {
 }
 
 export type SeasonDivision = {
-    id: number;
-    season: Season;
-    division: Division;
-    league: string;
-    teams_count: number;
-    free_agents_count: number;
-    rookies_count: number;
-    matches_count: number;
-    finals_count: number;
+    id: number,
+    season: Season,
+    division: Division,
+    league: string,
+    teams_count: number,
+    free_agents_count: number,
+    rookies_count: number,
+    matches_count: number,
+    finals_count: number,
     _links: {
-        self: string;
-        league: string;
-        season: string;
-        division: string;
-        teams: string;
-        free_agents: string;
-        rookies: string;
-        matches: string;
-        finals: string;
+        self: string,
+        league: string,
+        season: string,
+        division: string,
+        teams: string,
+        free_agents: string,
+        rookies: string,
+        matches: string,
+        finals: string,
     }
+}
+
+
+export type TeamStats = {
+    id: number,
+    name: string,
+    acronym: string,
+    color: string,
+    matches: number,
+    wins: number,
+    ot_wins: number,
+    losses: number,
+    ot_losses: number,
+    points: number,
+    goals_for: number,
+    goals_against: number,
+    players: Array<{
+        id: number,
+        name: string,
+        periods: number,
+        goals: number,
+        shots: number,
+        assists: number,
+        saves: number
+    }>
+}
+
+
+export type SeasonDivisionLeaderboard = {
+    id: number,
+    season: Season,
+    division: Division,
+    teams: Array<TeamStats>,
+    most_goals: Array<{
+        id: number,
+        name: string,
+        team_id: number,
+        team: string,
+        periods: number,
+        goals: number,
+        shots: number
+    }>,
+    most_assists: Array<{
+        id: number,
+        name: string,
+        team_id: number,
+        team: string,
+        periods: number,
+        assists: number,
+        primary_assists: number
+    }>,
+    most_saves: Array<{
+        id: number,
+        name: string,
+        team_id: number,
+        team: string,
+        periods: number,
+        saves: number,
+        blocks: number
+    }>
 }
 
 

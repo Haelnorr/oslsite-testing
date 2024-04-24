@@ -18,11 +18,13 @@ const user_is_manager = perms_has_one_of(user_validate, ['team_manager']);
 
 const team: TeamStats = await srlm_get(`/teams/${team_id}/stats`);
 
+console.log(team)
+
 if (!team) {
     return Astro.redirect('/404')
 }
 
-const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?current=True&cached=False`);
+const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?current=True`);
 
 ---
 <Layout title={`Team: ${team.name}`}>
@@ -82,7 +84,7 @@ const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?curre
                                 <tr>
                                     <th class="px-2">Player</td>
                                     <th class="px-2">Periods</th>
-                                    <th class="px-2">Goals</tdh>
+                                    <th class="px-2">Goals</th>
                                     <th class="px-2">Shots</th>
                                     <th class="px-2">Assists</th>
                                     <th class="px-2">Saves</th>
@@ -108,7 +110,7 @@ const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?curre
                             <tr>
                                 <th class="px-2">Player</td>
                                 <th class="px-2">Periods</th>
-                                <th class="px-2">Goals</tdh>
+                                <th class="px-2">Goals</th>
                                 <th class="px-2">Shots</th>
                                 <th class="px-2">Assists</th>
                                 <th class="px-2">Saves</th>
@@ -129,9 +131,78 @@ const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?curre
                     </div>
                 </div>
                 <div>
-                    <h3 class="text-3xl pb-5">Upcoming Matches:</h3>
+                    <h3 class="text-3xl pb-5">Matches:</h3>
                     <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-
+                        <h4 class="text-xl">Upcoming:</h4>
+                        {team.upcoming_matches.length > 0 &&
+                            <table>
+                                <tr>
+                                    <th class="px-2">ID</td>
+                                    <th class="px-2">Versus</th>
+                                    <th class="px-2">Scheduled</th>
+                                </tr>
+                                {
+                                    team.upcoming_matches.map(match => (
+                                        <tr>
+                                            <td class="px-2">
+                                                <a href={`/league/match/${match.id}`}>
+                                                    {match.id}
+                                                </a>
+                                            </td>
+                                            <td class="px-2">
+                                                <a href={`/league/teams/` + (((match.home_team.id === team.id) && match.away_team.id) || match.home_team.id)}>
+                                                    {((match.home_team.id === team.id) && match.away_team.name) || match.home_team.name}
+                                                </a>
+                                            </td>
+                                            <td class="px-2">{match.scheduled_time || '-'}</td>
+                                        </tr>
+                                    ))
+                                }
+                            </table>
+                        || 'No upcoming matches'
+                        }
+                    </div>
+                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                        <h4 class="text-xl">Completed:</h4>
+                        <table>
+                            <tr>
+                                <th class="px-2">ID</td>
+                                <th class="px-2">Versus</th>
+                                <th class="px-2">Result</th>
+                                <th class="px-2">Score</th>
+                            </tr>
+                            {
+                                team.completed_matches.map(match => (
+                                    <tr>
+                                        <td class="px-2">
+                                            <a href={`/league/match/${match.id}`}>
+                                                {match.id}
+                                            </a>
+                                        </td>
+                                        <td class="px-2">
+                                            <a href={`/league/teams/` + (((match.home_team.id === team.id) && match.away_team.id) || match.home_team.id)}>
+                                                {((match.home_team.id === team.id) && match.away_team.name) || match.home_team.name}
+                                            </a>
+                                        </td>
+                                        <td class="px-2">
+                                            {(match.results.winner === team.name) &&
+                                                'Won'
+                                            }
+                                            {(match.results.draw) &&
+                                                'Draw'
+                                            }
+                                            {(match.results.loser === team.name) &&
+                                                'Lost'
+                                            }
+                                            {(match.results.forfeit) &&
+                                                'Forfeit'
+                                            }
+                                        </td>
+                                        <td class="px-2">{match.results.score_winner}-{match.results.score_loser}</td>
+                                    </tr>
+                                ))
+                            }
+                        </table>
                     </div>
                 </div>
             </section>

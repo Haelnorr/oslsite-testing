@@ -162,7 +162,9 @@ export type TeamStats = {
         shots: number,
         assists: number,
         saves: number
-    }>
+    }>,
+    upcoming_matches: Array<Match>,
+    completed_matches: Array<Match>
 }
 
 

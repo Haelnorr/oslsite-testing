@@ -1,0 +1,140 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import type { TeamStats } from "../../../util/srlmTypes";
+import { color_calc, srlm_get } from "../../../util/srlmUtils";
+
+var { team_id } = Astro.params;
+
+var user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    user_token = '';
+}
+const required_perms = ['team_owner', 'team_manager'];
+const user_validate = await verify_user(user_token, required_perms);
+const user_authorized = perms_has_one_of(user_validate, required_perms);
+const user_is_owner = perms_has_one_of(user_validate, ['team_owner']);
+const user_is_manager = perms_has_one_of(user_validate, ['team_manager']);
+
+const team: TeamStats = await srlm_get(`/teams/${team_id}/stats`);
+
+if (!team) {
+    return Astro.redirect('/404')
+}
+
+const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?current=True&cached=False`);
+
+---
+<Layout title={`Team: ${team.name}`}>
+    <main class="py-10 sm:container mx-auto text-white text-center">
+        <div class="justify-center w-fit min-w-80 rounded-md shadow-md shadow-black mx-auto bg-gray-700">
+            <div style={color_calc(team.color)} class="py-5 rounded-md">
+                {team.logo &&
+                    <img 
+                        class="rounded-full h-40 w-40 text-center text-white" 
+                        src={`../../../assets/team-logos/${team.logo}`} 
+                        alt={`${team.name} logo`} />
+                }
+                <h2 class="font-bold text-2xl">{team.name}  ({team.acronym})</h2>
+                {user_authorized &&
+                    <span><a href={`/manage/teams/${team.id}`}>(Manage)</a></span>
+                }
+            </div>
+            <div>
+                <table>
+                    <tr class="bg-gray-800">
+                        <th class="px-2">Matches</th>
+                        <th class="px-2">Wins</th>
+                        <th class="px-2">OT Wins</th>
+                        <th class="px-2">Losses</th>
+                        <th class="px-2">OT Losses</th>
+                        <th class="px-2">Points</th>
+                        <th class="px-2">Goal Diff</th>
+                        <th class="px-2">Goals For</th>
+                        <th class="px-2">Goals Against</th>
+                        <th class="px-2">Goals/Game</th>
+                        <th class="px-2">Win %</th>
+                    </tr>
+                    <tr>
+                        <td>{team.matches}</td>
+                        <td>{team.wins}</td>
+                        <td>{team.ot_wins}</td>
+                        <td>{team.losses}</td>
+                        <td>{team.ot_losses}</td>
+                        <td>{team.points}</td>
+                        <td>{team.goals_for - team.goals_against}</td>
+                        <td>{team.goals_for}</td>
+                        <td>{team.goals_against}</td>
+                        <td>{(team.goals_for / team.matches) || '-'}</td>
+                        <td>{(team.wins / team.matches * 100) || '-'}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="pt-10">
+            <section class="flex flex-wrap justify-between pt-5">
+                <div>
+                    <h3 class="text-3xl pb-5">Players:</h3>
+                    {current_players.players.length > 0 &&
+                        <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                            <h4 class="text-xl">Current:</h4>
+                            <table>
+                                <tr>
+                                    <th class="px-2">Player</td>
+                                    <th class="px-2">Periods</th>
+                                    <th class="px-2">Goals</tdh>
+                                    <th class="px-2">Shots</th>
+                                    <th class="px-2">Assists</th>
+                                    <th class="px-2">Saves</th>
+                                </tr>
+                                {
+                                    current_players.players.map(player => (
+                                        <tr>
+                                            <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                            <td class="px-2">{player.periods}</td>
+                                            <td class="px-2">{player.goals}</td>
+                                            <td class="px-2">{player.shots}</td>
+                                            <td class="px-2">{player.assists}</td>
+                                            <td class="px-2">{player.saves}</td>
+                                        </tr>
+                                    ))
+                                }
+                            </table>
+                        </div>
+                    }
+                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                        <h4 class="text-xl">All:</h4>
+                        <table>
+                            <tr>
+                                <th class="px-2">Player</td>
+                                <th class="px-2">Periods</th>
+                                <th class="px-2">Goals</tdh>
+                                <th class="px-2">Shots</th>
+                                <th class="px-2">Assists</th>
+                                <th class="px-2">Saves</th>
+                            </tr>
+                            {
+                                team.players.map(player => (
+                                    <tr>
+                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                        <td class="px-2">{player.periods}</td>
+                                        <td class="px-2">{player.goals}</td>
+                                        <td class="px-2">{player.shots}</td>
+                                        <td class="px-2">{player.assists}</td>
+                                        <td class="px-2">{player.saves}</td>
+                                    </tr>
+                                ))
+                            }
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-3xl pb-5">Upcoming Matches:</h3>
+                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</Layout>

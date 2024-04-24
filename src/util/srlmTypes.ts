@@ -143,6 +143,7 @@ export type TeamStats = {
     name: string,
     acronym: string,
     color: string,
+    logo: string,
     matches: number,
     wins: number,
     ot_wins: number,
@@ -154,6 +155,8 @@ export type TeamStats = {
     players: Array<{
         id: number,
         name: string,
+        start_date: Date,
+        end_date: Date,
         periods: number,
         goals: number,
         shots: number,

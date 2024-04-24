@@ -2,7 +2,7 @@
 import Layout from "../../../../layouts/Layout.astro";
 import { perms_has_one_of, verify_user } from "../../../../util/authUtils";
 import type { SeasonDivisionLeaderboard, Team } from "../../../../util/srlmTypes";
-import { convert_link, srlm_get } from "../../../../util/srlmUtils";
+import { color_calc, srlm_get } from "../../../../util/srlmUtils";
 
 var {season_id, division} = Astro.params;
 
@@ -38,6 +38,8 @@ type Match = {
 const upcoming_matches: Match[] = await srlm_get(`/season_division/${results.id}/matches?unplayed=True`).then(resp => resp['matches']);
 const completed_matches: Match[] = await srlm_get(`/season_division/${results.id}/matches?unplayed=False`).then(resp => resp['matches']);
 
+console.log(color_calc(results.teams[0].color))
+
 ---
 <Layout title={`${results.season.name}: ${results.division.acronym}`}>
     <main class="py-10 sm:container mx-auto text-white text-center">
@@ -68,7 +70,7 @@ const completed_matches: Match[] = await srlm_get(`/season_division/${results.id
                         results.teams.map((team, index) => (
                             <tr>
                                 <td>{index+1}</td>
-                                <td><a href={`/team/${team.id}`}>{team.name}</a></td>
+                                <td><a href={`/league/teams/${team.id}`}>{team.name}</a></td>
                                 <td>{team.matches}</td>
                                 <td>{team.wins}</td>
                                 <td>{team.ot_wins}</td>
@@ -116,8 +118,8 @@ const completed_matches: Match[] = await srlm_get(`/season_division/${results.id
                                 <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
                                     <table>
                                         <tr>
-                                            <td colspan="6" class="rounded-md font-bold" style={`background-color: #${team.color}`}>
-                                                <a href={`/team/${team.id}`}>{team.name} ({team.acronym})</a>
+                                            <td colspan="6" class="rounded-md font-bold" style={color_calc(team.color)}>
+                                                <a href={`/league/teams/${team.id}`}>{team.name} ({team.acronym})</a>
                                             </td>
                                         </tr>
                                         <tr>
@@ -131,7 +133,7 @@ const completed_matches: Match[] = await srlm_get(`/season_division/${results.id
                                         {
                                             team.players.map(player => (
                                                 <tr>
-                                                    <td class="px-2"><a href={`/players/${player.id}`}>{player.name}</a></td>
+                                                    <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
                                                     <td class="px-2">{player.periods}</td>
                                                     <td class="px-2">{player.goals}</td>
                                                     <td class="px-2">{player.shots}</td>
@@ -167,8 +169,8 @@ const completed_matches: Match[] = await srlm_get(`/season_division/${results.id
                             results.most_goals.map((player, index) => (
                                 <tr>
                                     <td>{index + 1}</td>
-                                    <td><a href={`/players/${player.id}`}>{player.name}</a></td>
-                                    <td>{(player.team_id && <a href={`/team/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                    <td><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                    <td>{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
                                     <td>{player.goals}</td>
                                     <td>{player.periods}</td>
                                     <td>{player.shots}</td>
@@ -202,8 +204,8 @@ const completed_matches: Match[] = await srlm_get(`/season_division/${results.id
                             results.most_assists.map((player, index) => (
                                 <tr>
                                     <td>{index + 1}</td>
-                                    <td><a href={`/players/${player.id}`}>{player.name}</a></td>
-                                    <td>{(player.team_id && <a href={`/team/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                    <td><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                    <td>{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
                                     <td>{player.assists}</td>
                                     <td>{player.periods}</td>
                                     <td>{player.primary_assists}</td>
@@ -237,8 +239,8 @@ const completed_matches: Match[] = await srlm_get(`/season_division/${results.id
                             results.most_saves.map((player, index) => (
                                 <tr>
                                     <td>{index + 1}</td>
-                                    <td><a href={`/players/${player.id}`}>{player.name}</a></td>
-                                    <td>{(player.team_id && <a href={`/team/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                    <td><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                    <td>{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
                                     <td>{player.saves}</td>
                                     <td>{player.periods}</td>
                                     <td>{player.blocks}</td>

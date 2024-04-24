@@ -150,3 +150,34 @@ export function date_is_none(date_field: any) {
         return '';
     }
 }
+
+
+function hexToRgb(hex: string) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+}
+
+function rgbLuminance(rgb: {b:number, g:number, r:number}) {
+    return (rgb.r*0.2126 + rgb.g*0.7152 + rgb.b*0.0722);
+}
+  
+export function color_calc(color: string) {
+    const rgb = hexToRgb(`#${color}`);
+    const bg_luminance = rgbLuminance(rgb);
+    const fg_light = '#f0f0f0';
+    const fg_dark = '#101010';
+    const fg_light_luminance = rgbLuminance(hexToRgb(fg_light));
+    const fg_dark_luminance = rgbLuminance(hexToRgb(fg_dark));
+    const contrast_ratio_light = ((fg_light_luminance + 0.05)/(bg_luminance + 0.05));
+    const contrast_ratio_dark = ((bg_luminance + 0.05)/(fg_dark_luminance + 0.05));
+
+    if (contrast_ratio_dark > contrast_ratio_light) {
+        return `background-color: #${color}; color: ${fg_dark}`;
+    } else {
+        return `background-color: #${color}; font-color: ${fg_light}`;
+    }
+}

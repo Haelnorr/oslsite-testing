@@ -99,7 +99,7 @@ const steam_redirect = await steam.getRedirectUrl()
                     src={`https://cdn.discordapp.com/avatars/${discord_profile.id}/${discord_profile.avatar}.jpg?size=4096`} 
                     alt={`${discord_profile.username} Profile Picture`} height={500} width={500} />
             }
-            </div>
+        </div>
         <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
         <h2 class="text-white text-center"><a href={`/manage/users/${user.id}`}>(Edit details)</a> | <a href="/logout">(Not you?)</a></h2>
         <section class="flex flex-wrap justify-between pt-10">           

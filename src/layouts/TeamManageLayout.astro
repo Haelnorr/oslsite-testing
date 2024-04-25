@@ -1,0 +1,99 @@
+---
+import ViewTransitions from "astro/components/ViewTransitions.astro";
+import Layout from "./Layout.astro";
+import type { TeamStats } from "../util/srlmTypes";
+import { color_calc } from "../util/srlmUtils";
+
+interface Props {
+	title: string,
+    team: TeamStats,
+    page: string,
+    user_elevated: boolean,
+    user_owner: boolean,
+    user_manager: boolean,
+    user_player: boolean
+}
+
+const { title, team, page, user_elevated, user_owner, user_manager, user_player } = Astro.props;
+
+function getPageTitle(page: string) {
+    switch(page) {
+        case 'details':
+            return 'Team Details';
+        case 'roster':
+            return 'Current Roster';
+        case 'invite':
+            return 'Invite Players';
+        case 'apply':
+            return 'Apply to Season';
+        case 'owned':
+            return 'Owned Teams';
+        case 'list':
+            return 'List Teams';
+        default:
+            return
+    }
+}
+
+---
+<Layout title={title}>
+    <ViewTransitions />
+    <main class="py-10 sm:container mx-auto text-white text-center">
+        <div class="rounded-md shadow-md shadow-black mx-auto bg-gray-800 relative min-h-96">
+            <div class="w-52 bg-gray-700 absolute h-full min-h-40 rounded-l-md shadow-[rgba(0,0,15,0.5)_10px_5px_4px_0px]">
+                {team &&
+                    <div style="margin-bottom: -8px;">
+                        <h4 class="font-bold py-3 rounded-tl-md text-xl" style={color_calc(team.color)}>
+                            {team.name}
+                        </h4>
+                        <hr>
+                        {user_manager &&
+                            <a href={`/manage/teams/${team.id}/`} class={`${(page === 'details') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                                Details
+                            </a>
+                            <a href={`/manage/teams/${team.id}/roster`} class={`${(page === 'roster') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                                Current Roster
+                            </a>
+                            <a href={`/manage/teams/${team.id}/invite`} class={`${(page === 'invite') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                                Invite Players
+                            </a>
+                            <a href={`/manage/teams/${team.id}/apply`} class={`${(page === 'apply') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                                Apply to Season
+                            </a>
+                        }
+                        {user_player &&
+                            <span class="block py-2 font-bold mb-2">
+                                <a class="bg-red-500 bg-opacity-70 px-5 py-1 hover:bg-red-700 hover:cursor-pointer rounded-md">
+                                    Leave Team
+                                </a>
+                            </span>
+                        }
+                        <hr><hr><hr>
+                    </div>
+                }
+                {user_elevated &&
+                    <div style="margin-bottom: -8px;">
+                        <a href={`/manage/teams/list`} class={`${(page === 'list') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
+                            List
+                        </a>
+                        <hr><hr><hr>
+                    </div>
+                }
+                <div>
+                    <a href={`/manage/teams/owned`} class={`${(page === 'owned') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
+                        Owned Teams
+                    </a>
+                </div>
+                
+            </div>
+            <div class="pl-52 divide-y-2 divide-gray-600">
+                <h2 class="text-3xl py-5">
+                    {getPageTitle(page)}
+                </h2>
+                <div class="p-5">
+                    <slot />
+                </div>
+            </div>
+        </div>
+    </main>
+</Layout>

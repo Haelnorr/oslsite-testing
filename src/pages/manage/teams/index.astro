@@ -1,0 +1,27 @@
+---
+import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import type { PlayerTeams, Team, User } from "../../../util/srlmTypes";
+import { srlm_get } from "../../../util/srlmUtils";
+
+var user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    user_token = '';
+}
+const elevated_perms = ['admin', 'leag_coord', 'leag_comm'];
+const user_validate = await verify_user(user_token, elevated_perms);
+const user_elevated = perms_has_one_of(user_validate, elevated_perms);
+const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
+var player_team: Team = null;
+if (user.player) {
+    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true`);
+    if (resp) {player_team = resp.current_team};
+}
+
+if (player_team) {
+    return Astro.redirect(`/manage/teams/${player_team.id}`)
+} else if (user_elevated) {
+    return Astro.redirect('/manage/teams/list')
+} else {
+    return Astro.redirect('/manage/teams/owned')
+}
+---

@@ -227,6 +227,7 @@ export type PlayerTeams = {
         }
     }>,
     current_team: {
+        id: number,
         name: string,
         acronym: string,
         color: string,
@@ -363,4 +364,33 @@ export type MatchStats = {
         home: Array<PlayerData>,
         away: Array<PlayerData>
     }
+}
+
+export type TeamManage = {
+    id: number,
+    name: string,
+    acronym: string,
+    color: string,
+    logo: string,
+    matches: number,
+    wins: number,
+    ot_wins: number,
+    losses: number,
+    ot_losses: number,
+    points: number,
+    goals_for: number,
+    goals_against: number,
+    players: Array<{
+        id: number,
+        name: string,
+        start_date: Date,
+        end_date: Date,
+        periods: number,
+        goals: number,
+        shots: number,
+        assists: number,
+        saves: number
+    }>,
+    upcoming_matches: Array<Match>,
+    completed_matches: Array<Match>
 }

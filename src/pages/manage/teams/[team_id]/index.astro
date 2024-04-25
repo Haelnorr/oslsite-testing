@@ -1,0 +1,84 @@
+---
+import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
+import { is_team_manager, perms_has_one_of, verify_user } from "../../../../util/authUtils";
+import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
+import { srlm_get } from "../../../../util/srlmUtils";
+
+var { team_id } = Astro.params;
+
+var user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    user_token = '';
+}
+const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
+const user_validate = await verify_user(user_token, perms);
+const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
+const user_is_owner = perms_has_one_of(user_validate, ['team_owner']);
+const user_is_manager = is_team_manager(user_validate, [+team_id]);
+
+const team: TeamManage = await srlm_get(`/teams/${team_id}/stats?current=True`);
+
+const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
+var player_team: Team;
+if (user.player) {
+    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true`);
+    if (resp) {player_team = resp.current_team};
+}
+
+const user_is_player = (player_team.id === team.id);
+
+if (!user_is_player) {
+    return Astro.redirect(`/league/teams/${team.id}`);
+}
+---
+<TeamManageLayout 
+    title={`Manage Team: ${team.name}`}
+    team={team}
+    page="details"
+    user_elevated={user_is_elevated}
+    user_owner={user_is_owner}
+    user_manager={user_is_manager}
+    user_player={user_is_player}>
+    Content
+</TeamManageLayout>
+
+
+<!--<Layout title={`Manage Team: ${team.name}`}>
+    
+     <main class="py-10 sm:container mx-auto text-white text-center">
+        
+        <div class="pt-10">
+            <section class="flex flex-wrap justify-between pt-5">
+                <div>
+                    <h3 class="text-3xl pb-5">Players:</h3>
+                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                        <table>
+                            <tr>
+                                <th class="px-2">Player</th>
+                                <th class="px-2">Role</th>
+                                <th class="px-2" colspan="2">Actions</th>
+                            </tr>
+                            {
+                                team.players.map(player => (
+                                    <tr>
+                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                        <td class="px-2"></td>
+                                        <td class="px-2"><a>Promote</a></td>
+                                        <td class="px-2"><a>Kick</a></td>
+                                    </tr>
+                                ))
+                            }
+                        </table>
+                        <p><a href={`/manage/teams/${team.id}/invite`}>Invite Players</a></p>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-3xl pb-5">Manage:</h3>
+                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                        <p><a href={`/manage/teams/${team.id}/apply`}>Apply to Season</a></p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</Layout>-->

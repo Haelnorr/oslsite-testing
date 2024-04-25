@@ -1,7 +1,8 @@
 ---
 
 Astro.cookies.delete('user_token')
+Astro.cookies.delete('token_expiry')
 
 
-return Astro.redirect('/')
+return Astro.redirect('/login')
 ---

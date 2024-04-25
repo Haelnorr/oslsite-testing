@@ -2,7 +2,7 @@
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
 import { is_team_manager, perms_has_one_of, verify_user } from "../../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
-import { srlm_get } from "../../../../util/srlmUtils";
+import { leave_team, srlm_delete, srlm_get } from "../../../../util/srlmUtils";
 
 var { team_id } = Astro.params;
 
@@ -16,25 +16,41 @@ const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord',
 const user_is_owner = perms_has_one_of(user_validate, ['team_owner']);
 const user_is_manager = is_team_manager(user_validate, [+team_id]);
 
-const team: TeamManage = await srlm_get(`/teams/${team_id}/stats?current=True`);
+const team: TeamManage = await srlm_get(`/teams/${team_id}/manage`);
 
 const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
 var player_team: Team;
 if (user.player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true`);
+    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=False`);
     if (resp) {player_team = resp.current_team};
 }
 
-const user_is_player = (player_team.id === team.id);
+var user_is_player = false;
+if (player_team) {
+    user_is_player = (player_team.id === team.id);
+}
 
-if (!user_is_player) {
+if (!user_is_player && !user_is_elevated) {
     return Astro.redirect(`/league/teams/${team.id}`);
+}
+
+if (Astro.request.method === "POST") {
+    const form_data = await Astro.request.formData();
+    const action = form_data.get('action')?.toString();
+
+    switch (action) {
+        case 'leave-team':
+            await leave_team(user.player);
+            break;
+    }
+
+    return Astro.redirect(`/manage/teams/${team.id}/apply`);
 }
 ---
 <TeamManageLayout 
     title={`Manage Team: ${team.name}`}
     team={team}
-    page="list"
+    page="apply"
     user_elevated={user_is_elevated}
     user_owner={user_is_owner}
     user_manager={user_is_manager}

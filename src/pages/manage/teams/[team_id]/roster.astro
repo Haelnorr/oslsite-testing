@@ -2,7 +2,7 @@
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
 import { is_team_manager, perms_has_one_of, verify_user } from "../../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
-import { srlm_get } from "../../../../util/srlmUtils";
+import { srlm_delete, srlm_get, leave_team, srlm_post } from "../../../../util/srlmUtils";
 
 var { team_id } = Astro.params;
 
@@ -16,19 +16,50 @@ const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord',
 const user_is_owner = perms_has_one_of(user_validate, ['team_owner']);
 const user_is_manager = is_team_manager(user_validate, [+team_id]);
 
-const team: TeamManage = await srlm_get(`/teams/${team_id}/stats?current=True`);
+const team: TeamManage = await srlm_get(`/teams/${team_id}/manage`);
 
 const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
-var player_team: Team;
+var player_team: Team = null;
 if (user.player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true`);
+    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=False`);
     if (resp) {player_team = resp.current_team};
 }
 
-const user_is_player = (player_team.id === team.id);
+var user_is_player = false;
+if (player_team) {
+    user_is_player = (player_team.id === team.id);
+}
 
-if (!user_is_player) {
+if (!user_is_player && !user_is_elevated) {
     return Astro.redirect(`/league/teams/${team.id}`);
+}
+
+if (Astro.request.method === "POST") {
+    const form_data = await Astro.request.formData();
+    const action = form_data.get('action')?.toString();
+    const value = form_data.get('value')?.toString();
+
+    switch (action) {
+        case 'leave-team':
+            await leave_team(user.player);
+            break;
+        case 'kick':
+            await leave_team(+value);
+            break;
+        case 'promote':
+            await srlm_post(`/users/${value}/permissions`, '', {
+                key: 'team_manager',
+                modifiers: [team.id.toString()]
+            });
+            break;
+        case 'demote':
+            await srlm_post(`/users/${value}/permissions/revoke`, '', {
+                key: 'team_manager',
+            });
+            break;
+    }
+
+    return Astro.redirect(`/manage/teams/${team.id}/roster`);
 }
 ---
 <TeamManageLayout 
@@ -39,5 +70,90 @@ if (!user_is_player) {
     user_owner={user_is_owner}
     user_manager={user_is_manager}
     user_player={user_is_player}>
-    Content
+        <h3 class="text-3xl pb-5">Players:</h3>
+        <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 h-fit mb-10 w-fit mx-auto">
+            <table class="divide-y-2 divide-gray-500">
+                <thead>
+                    <tr>
+                        <th class="px-2">Player</th>
+                        <th class="px-2">Role</th>
+                        <th class="px-2" colspan="2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {
+                    team.players.map((player, index) => (
+                        <tr >
+                            <td class="px-2 py-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                            <td class="px-2">
+                                {(player.manager && player.name !== team.owner) &&
+                                    'Manager'
+                                }
+                                {(player.name === team.owner) &&
+                                    'Owner'
+                                }
+                                {(!player.manager && player.name !== team.owner) &&
+                                    'Player'
+                                }
+                                </td>
+                            <td class="px-2">
+                                {(!player.manager && player.user_id) &&
+                                    <form method="post">
+                                        <input type="text" name="action" value="promote" hidden/>
+                                        <input type="text" name="value" value={player.user_id.toString()} hidden/>
+                                        <button formaction={`/manage/teams/${team.id}/roster`} class="promote bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                            Promote
+                                        </button>
+                                    </form>
+                                }
+                                {(player.manager && user_is_owner && player.user_id !== user.id) &&
+                                    <form method="post">
+                                        <input type="text" name="action" value="demote" hidden/>
+                                        <input type="text" name="value" value={player.user_id.toString()} hidden/>
+                                        <button formaction={`/manage/teams/${team.id}/roster`} class="demote bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                            Demote
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                            <td class="px-2">
+                                {((!player.manager || user_is_owner ) && player.user_id !== user.id) &&
+                                    <form method="post">
+                                        <input type="text" name="action" value="kick" hidden/>
+                                        <input type="text" name="value" value={player.id.toString()} hidden/>
+                                        <button formaction={`/manage/teams/${team.id}/roster`} class="kick bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                            Kick
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    ))
+                }
+                </tbody>
+            </table>
+            <script>
+                var kick_buttons = [].slice.call(document.getElementsByClassName('kick'));
+                kick_buttons.forEach(element => {
+                    element.onclick = function confirmKick(e) {
+                        if (!confirm('Are you sure you wish to kick this user?')) 
+                            e.preventDefault();
+                    }
+                });
+                var promote_buttons = [].slice.call(document.getElementsByClassName('promote'));
+                promote_buttons.forEach(element => {
+                    element.onclick = function confirmPromote(e) {
+                        if (!confirm('Are you sure you wish to promote this user to manager?')) 
+                            e.preventDefault();
+                    }
+                });
+                var demote_buttons = [].slice.call(document.getElementsByClassName('demote'));
+                demote_buttons.forEach(element => {
+                    element.onclick = function confirmDemote(e) {
+                        if (!confirm('Are you sure you wish to demote this user to player?')) 
+                            e.preventDefault();
+                    }
+                });
+            </script>
+        </div>
 </TeamManageLayout>

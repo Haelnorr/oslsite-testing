@@ -181,3 +181,7 @@ export function color_calc(color: string) {
         return `background-color: #${color}; font-color: ${fg_light}`;
     }
 }
+
+export async function leave_team(player_id: number) {
+    await srlm_delete(`/players/${player_id}/teams`);
+}

@@ -366,31 +366,40 @@ export type MatchStats = {
     }
 }
 
+export type SeasonApplication = {
+    id: number,
+    team: Team,
+    player: Player,
+    season: Season,
+    division: Division,
+    status: string,
+    type: string
+}
+
+export type TeamInvite = {
+    id: number,
+    team: Team,
+    invited_player: Player,
+    inviting_player: Player,
+    status: string
+}
+
 export type TeamManage = {
     id: number,
     name: string,
     acronym: string,
     color: string,
     logo: string,
-    matches: number,
-    wins: number,
-    ot_wins: number,
-    losses: number,
-    ot_losses: number,
-    points: number,
-    goals_for: number,
-    goals_against: number,
+    owner: string,
     players: Array<{
         id: number,
+        user_id: number,
         name: string,
-        start_date: Date,
-        end_date: Date,
-        periods: number,
-        goals: number,
-        shots: number,
-        assists: number,
-        saves: number
+        manager: boolean
     }>,
     upcoming_matches: Array<Match>,
-    completed_matches: Array<Match>
+    completed_matches: Array<Match>,
+    applications: Array<SeasonApplication>,
+    invites: Array<TeamInvite>,
+    open_seasons: Array<Season>
 }

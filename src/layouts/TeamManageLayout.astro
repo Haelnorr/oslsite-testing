@@ -1,12 +1,12 @@
 ---
 import ViewTransitions from "astro/components/ViewTransitions.astro";
 import Layout from "./Layout.astro";
-import type { TeamStats } from "../util/srlmTypes";
+import type { TeamManage } from "../util/srlmTypes";
 import { color_calc } from "../util/srlmUtils";
 
 interface Props {
 	title: string,
-    team: TeamStats,
+    team: TeamManage,
     page: string,
     user_elevated: boolean,
     user_owner: boolean,
@@ -14,7 +14,7 @@ interface Props {
     user_player: boolean
 }
 
-const { title, team, page, user_elevated, user_owner, user_manager, user_player } = Astro.props;
+const { title, team, page, user_elevated, user_manager, user_player } = Astro.props;
 
 function getPageTitle(page: string) {
     switch(page) {
@@ -37,7 +37,6 @@ function getPageTitle(page: string) {
 
 ---
 <Layout title={title}>
-    <ViewTransitions />
     <main class="py-10 sm:container mx-auto text-white text-center">
         <div class="rounded-md shadow-md shadow-black mx-auto bg-gray-800 relative min-h-96">
             <div class="w-52 bg-gray-700 absolute h-full min-h-40 rounded-l-md shadow-[rgba(0,0,15,0.5)_10px_5px_4px_0px]">
@@ -47,7 +46,7 @@ function getPageTitle(page: string) {
                             {team.name}
                         </h4>
                         <hr>
-                        {user_manager &&
+                        {(user_manager || user_elevated) &&
                             <a href={`/manage/teams/${team.id}/`} class={`${(page === 'details') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
                                 Details
                             </a>
@@ -63,9 +62,18 @@ function getPageTitle(page: string) {
                         }
                         {user_player &&
                             <span class="block py-2 font-bold mb-2">
-                                <a class="bg-red-500 bg-opacity-70 px-5 py-1 hover:bg-red-700 hover:cursor-pointer rounded-md">
-                                    Leave Team
-                                </a>
+                                <form method="post">
+                                    <input type="text" name="action" value="leave-team" hidden/>
+                                    <button id="leave" formaction={`/manage/teams/${team.id}/roster`} class="bg-red-500 bg-opacity-70 px-5 py-1 hover:bg-red-700 hover:cursor-pointer rounded-md">
+                                        Leave Team
+                                    </button>
+                                </form>
+                                <script>
+                                    document.getElementById('leave').onclick = function confirmLeave(e) {
+                                        if (!confirm('Are you sure you wish to leave your current team?')) 
+                                            e.preventDefault();
+                                    };
+                                </script>
                             </span>
                         }
                         <hr><hr><hr>

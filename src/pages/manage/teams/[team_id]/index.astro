@@ -38,7 +38,7 @@ if (!user_is_player && !user_is_elevated) {
     return Astro.redirect(`/league/teams/${team.id}`);
 }
 
-
+var errors = null;
 
 if (Astro.request.method === "POST") {
     const form_data = await Astro.request.formData();
@@ -61,13 +61,37 @@ if (Astro.request.method === "POST") {
         case 'remove':
             team_update_data['logo'] = null;
             break;
+        case 'update':
+            var name = form_data.get('name').toString();
+            var acronym = form_data.get('acronym').toString();
+            var color = form_data.get('color').toString();
+            var founded = form_data.get('founded')?.toString();
+
+            team_update_data['name'] = name;
+            team_update_data['acronym'] = acronym;
+            team_update_data['color'] = color.replace('#', '');
+            if (founded !== '') {
+                var date = new Date(founded);
+                team_update_data['founded_date'] = date;
+            }
+            break;
     }
 
     if (Object.keys(team_update_data).length > 0) {
-        await srlm_put(`/teams/${team.id}`, '', team_update_data);
+        const update = await srlm_put(`/teams/${team.id}`, '', team_update_data);
+        if (update) {
+            if (update.status && update.status === 409) {
+                errors = {};
+                update.data.fields.map(err => {
+                    errors[err.field] = err.error;                
+                })
+            } else {
+                return Astro.redirect(`/manage/teams/${team.id}`);
+            }
+        }
+    } else {
+        return Astro.redirect(`/manage/teams/${team.id}`);
     }
-
-    return Astro.redirect(`/manage/teams/${team.id}`);
 }
 
 var team_logo = null;
@@ -128,29 +152,23 @@ if (team.logo) {
                 </div>
         </div>
             <script>
-                console.log('1');
                 var placeholder = document.getElementById('upload-preview').getAttribute('src');
-                console.log('2');
                 try {
                     document.getElementById('remove').onclick = function confirmLeave(e) {
                         if (!confirm('Are you sure you wish to remove the current logo?'))
                             e.preventDefault();
                     };
                 } catch (err) {};
-                console.log('3');
                 document.getElementById('show-upload').onclick = function showUpload() {
                     document.getElementById('upload-popup').style.display = 'block';
                 }
-                console.log('4');
                 document.getElementById('hide-upload').onclick = function hideUpload() {
                     document.getElementById('upload-popup').style.display = 'none';
                     //@ts-ignore
                     document.getElementById('file-upload').value = '';
                     document.getElementById('upload-preview').setAttribute('src', placeholder)
                 }
-                console.log('5');
                 const fileInput = document.getElementById('file-upload');
-                console.log('6');
                 const previewLogo = () => {
                     //@ts-ignore
                     const file = fileInput.files;
@@ -165,13 +183,82 @@ if (team.logo) {
                         fileReader.readAsDataURL(file[0]);
                     }
                 }
-                console.log('7');
                 fileInput.addEventListener('change', previewLogo);
-                console.log('8');
             </script>
         </div>
-        <div>
-
+        <div class="text-center w-[70%]">
+            <form method="post" class="w-fit mx-auto">
+                <input type="text" name="action" value="update" hidden/>
+                <table>
+                    <input id="user-elevated" style="display:none" value={user_is_elevated}></input>
+                    <tr>
+                        <td class="p-2">Name:</td>
+                        <td class="p-2">
+                            
+                            <input type="text" name="name" id="name" value={team.name} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                            {(errors && errors['name']) && (
+                                <br/>
+                                <span class="text-red-600 font-bold">
+                                    {errors['name']}
+                                </span>  
+                            )}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="p-2">Acronym:</td>
+                        <td class="p-2">
+                            <input type="text" name="acronym" id="acronym" value={team.acronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                            {(errors && errors['acronym']) && (
+                                <br/>
+                                <span class="text-red-600 font-bold">
+                                    {errors['acronym']}
+                                </span>  
+                            )}
+                        </td>
+                    </tr>
+                    <script>
+                        //@ts-ignore
+                        const userElevated = document.getElementById('user-elevated').value;
+                        if (!userElevated) {
+                            //@ts-ignore
+                            document.getElementById('name').disabled = true;
+                            //@ts-ignore
+                            document.getElementById('acronym').disabled = true;
+                        }
+                    </script>
+                    <tr>
+                        <td class="p-2">Founded:</td>
+                        <td class="p-2">
+                            {/**@ts-ignore*/}
+                            <input type="date" name="founded" id="founded" 
+                                value={team.founded}
+                                class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                            <script>
+                                const dateInput = document.getElementById('founded');
+                                //@ts-ignore
+                                if (dateInput.value) {
+                                    //@ts-ignore
+                                    dateInput.disabled = true;
+                                }
+                            </script>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="p-2">Colour:</td>
+                        <td class="p-2">
+                            <input type="color" name="color" id="color" value={`#${team.color.toUpperCase()}`} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="py-4">
+                            <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                Update
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+                
+            </form>
         </div>
     </div>
 </TeamManageLayout>

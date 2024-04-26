@@ -391,6 +391,7 @@ export type TeamManage = {
     color: string,
     logo: string,
     owner: string,
+    founded: Date,
     players: Array<{
         id: number,
         user_id: number,

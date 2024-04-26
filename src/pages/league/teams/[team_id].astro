@@ -3,6 +3,7 @@ import Layout from "../../../layouts/Layout.astro";
 import { perms_has_one_of, verify_user } from "../../../util/authUtils";
 import type { TeamStats } from "../../../util/srlmTypes";
 import { color_calc, srlm_get } from "../../../util/srlmUtils";
+import { Image } from 'astro:assets';
 
 var { team_id } = Astro.params;
 
@@ -24,16 +25,24 @@ if (!team) {
 
 const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?current=True`);
 
+var team_logo = null;
+if (team.logo) {
+    const images = import.meta.glob<{default: ImageMetadata}>('/public/upload/team-logos/*.{jpeg,jpg,png,gif}')
+    team_logo = images[`/public/upload/team-logos/${team.logo}`]()
+}
+
 ---
 <Layout title={`Team: ${team.name}`}>
     <main class="py-10 sm:container mx-auto text-white text-center">
         <div class="justify-center w-fit min-w-80 rounded-md shadow-md shadow-black mx-auto bg-gray-700">
             <div style={color_calc(team.color)} class="py-5 rounded-md">
                 {team.logo &&
-                    <img 
-                        class="rounded-full h-40 w-40 text-center text-white" 
-                        src={`../../../assets/team-logos/${team.logo}`} 
-                        alt={`${team.name} logo`} />
+                    <Image 
+                        class="rounded-full h-40 w-40 text-center text-white mx-auto" 
+                        alt={`${team.name} logo`}
+                        height={500}
+                        width={500}
+                        src={team_logo} />
                 }
                 <h2 class="font-bold text-2xl">{team.name}  ({team.acronym})</h2>
                 {user_authorized &&

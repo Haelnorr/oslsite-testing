@@ -2,7 +2,11 @@
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
 import { is_team_manager, perms_has_one_of, verify_user } from "../../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
-import { leave_team, srlm_delete, srlm_get } from "../../../../util/srlmUtils";
+import { leave_team, srlm_get, srlm_put } from "../../../../util/srlmUtils";
+import placeholderImg from "../../../../assets/placeholder.png";
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from "astro";
+import { getTimeStr, writeFile } from "../../../../util/fileUtils";
 
 var { team_id } = Astro.params;
 
@@ -34,18 +38,44 @@ if (!user_is_player && !user_is_elevated) {
     return Astro.redirect(`/league/teams/${team.id}`);
 }
 
+
+
 if (Astro.request.method === "POST") {
     const form_data = await Astro.request.formData();
     const action = form_data.get('action')?.toString();
 
+    var team_update_data = {}
+                                  
     switch (action) {
         case 'leave-team':
             await leave_team(user.player);
             break;
+        case 'upload':
+            const file = form_data.get('file') as File;
+            const fileType = file.type.replace('image/', '.');
+            const dbFilepath = `${getTimeStr()}${team.id}${fileType}`;
+            const destFilepath = `/public/upload/team-logos/${dbFilepath}`;
+            await writeFile(destFilepath, file);
+            team_update_data['logo'] = dbFilepath;
+            break;
+        case 'remove':
+            team_update_data['logo'] = null;
+            break;
+    }
+
+    if (Object.keys(team_update_data).length > 0) {
+        await srlm_put(`/teams/${team.id}`, '', team_update_data);
     }
 
     return Astro.redirect(`/manage/teams/${team.id}`);
 }
+
+var team_logo = null;
+if (team.logo) {
+    const images = import.meta.glob<{default: ImageMetadata}>('/public/upload/team-logos/*.{jpeg,jpg,png,gif}')
+    team_logo = images[`/public/upload/team-logos/${team.logo}`]()
+}
+
 ---
 <TeamManageLayout 
     title={`Manage Team: ${team.name}`}
@@ -55,5 +85,93 @@ if (Astro.request.method === "POST") {
     user_owner={user_is_owner}
     user_manager={user_is_manager}
     user_player={user_is_player}>
-    Content
+    <div class="flex divide-x-2 divide-gray-500 justify-center">
+        <div class="mx-10 w-52">
+            <Image 
+                class="rounded-full h-40 w-40 text-center text-white mx-auto" 
+                alt={`${team.name} logo`}
+                height={500}
+                width={500}
+                src={team_logo || placeholderImg} />
+
+            <div class="mt-5 mx-auto flex justify-center">
+                <button id="show-upload" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                    Upload
+                </button>
+                {team_logo &&
+                    <form method="post">
+                        <input type="text" name="action" value="remove" hidden/>
+                        <button id="remove" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                            Remove
+                        </button>
+                    </form>
+                }
+                <div id="upload-popup" style="display:none;" class="fixed flex w-screen h-screen z-50 bg-gray-900 bg-opacity-80 top-0 left-0 right-0 bottom-0">
+                    <div class="mx-auto my-20 bg-gray-700 w-fit h-fit p-10 rounded-md shadow-lg shadow-black">
+                        <Image
+                            src={placeholderImg}
+                            alt=""
+                            class="rounded-full h-60 w-60 text-center text-white mx-auto mb-10"
+                            id="upload-preview"
+                        />
+                        <form method="post" enctype="multipart/form-data">
+                            <input type="text" name="action" value="upload" hidden/>
+                            <input type="file" id="file-upload" name="file" accept=".jpg, .jpeg, .png, .gif" required/><br>
+                            <button id="upload" class="mt-5 bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                Upload
+                            </button>
+                            <a id="hide-upload" class="bg-gray-400 text-black font-bold px-2 pb-[2px] pt-[1px] rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2 hover:cursor-pointer">
+                                Cancel
+                            </a>
+                        </form>
+                    </div>
+                </div>
+        </div>
+            <script>
+                console.log('1');
+                var placeholder = document.getElementById('upload-preview').getAttribute('src');
+                console.log('2');
+                try {
+                    document.getElementById('remove').onclick = function confirmLeave(e) {
+                        if (!confirm('Are you sure you wish to remove the current logo?'))
+                            e.preventDefault();
+                    };
+                } catch (err) {};
+                console.log('3');
+                document.getElementById('show-upload').onclick = function showUpload() {
+                    document.getElementById('upload-popup').style.display = 'block';
+                }
+                console.log('4');
+                document.getElementById('hide-upload').onclick = function hideUpload() {
+                    document.getElementById('upload-popup').style.display = 'none';
+                    //@ts-ignore
+                    document.getElementById('file-upload').value = '';
+                    document.getElementById('upload-preview').setAttribute('src', placeholder)
+                }
+                console.log('5');
+                const fileInput = document.getElementById('file-upload');
+                console.log('6');
+                const previewLogo = () => {
+                    //@ts-ignore
+                    const file = fileInput.files;
+                    if (file) {
+                        const fileReader = new FileReader();
+                        const preview = document.getElementById('upload-preview');
+
+                        fileReader.onload = event => {
+                            //@ts-ignore
+                            preview.setAttribute('src', event.target.result);
+                        }
+                        fileReader.readAsDataURL(file[0]);
+                    }
+                }
+                console.log('7');
+                fileInput.addEventListener('change', previewLogo);
+                console.log('8');
+            </script>
+        </div>
+        <div>
+
+        </div>
+    </div>
 </TeamManageLayout>

@@ -97,7 +97,9 @@ if (Astro.request.method === "POST") {
 var team_logo = null;
 if (team.logo) {
     const images = import.meta.glob<{default: ImageMetadata}>('/public/upload/team-logos/*.{jpeg,jpg,png,gif}')
-    team_logo = images[`/public/upload/team-logos/${team.logo}`]()
+    try {
+        team_logo = images[`/public/upload/team-logos/${team.logo}`]()
+    } catch (err) {};
 }
 
 ---

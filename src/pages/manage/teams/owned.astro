@@ -19,31 +19,21 @@ var user_is_manager = false;
 const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
 var player_team: Team = null;
 if (user.player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true`);
+    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=false`);
     if (resp) {player_team = resp.current_team};
 }
 
 var team: TeamManage = null;
 var user_is_player = false;
+var user_has_team = false;
 
 if (player_team) {
     team = await srlm_get(`/teams/${player_team.id}/manage`);
-    user_is_player = true;
+    user_is_player = (player_team.id === team.id);
+    user_has_team = true;
     user_is_manager = is_team_manager(user_validate, [team.id]);
 }
 
-if (Astro.request.method === "POST") {
-    const form_data = await Astro.request.formData();
-    const action = form_data.get('action')?.toString();
-
-    switch (action) {
-        case 'leave-team':
-            await leave_team(user.player);
-            break;
-    }
-
-    return Astro.redirect(`/manage/teams/owned`);
-}
 const page = Astro.url.searchParams.get('page')!;
 const per_page = Astro.url.searchParams.get('per_page')!;
 const order = Astro.url.searchParams.get('order')!;
@@ -56,7 +46,8 @@ const order_by = Astro.url.searchParams.get('order_by')!;
     user_elevated={user_is_elevated}
     user_owner={user_is_owner}
     user_manager={user_is_manager}
-    user_player={user_is_player}>
+    user_player={user_is_player}
+    user_has_team={user_has_team}>
     <TeamList page={page} per_page={per_page} owner={user.id.toString()} order_by={order_by} order={order} manage={true}>
 
     </TeamList>

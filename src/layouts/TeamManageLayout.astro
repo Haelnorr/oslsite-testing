@@ -12,9 +12,10 @@ interface Props {
     user_owner: boolean,
     user_manager: boolean,
     user_player: boolean
+    user_has_team: boolean,
 }
 
-const { title, team, page, user_elevated, user_manager, user_player } = Astro.props;
+const { title, team, page, user_elevated, user_owner, user_manager, user_player, user_has_team } = Astro.props;
 
 function getPageTitle(page: string) {
     switch(page) {
@@ -74,6 +75,16 @@ function getPageTitle(page: string) {
                                             e.preventDefault();
                                     };
                                 </script>
+                            </span>
+                        }
+                        {(!user_player && user_owner && !user_has_team) &&
+                            <span class="block py-2 font-bold mb-2">
+                                <form method="post">
+                                    <input type="text" name="action" value="rejoin-team" hidden/>
+                                    <button id="leave" formaction={`/manage/teams/${team.id}/roster`} class="bg-green-500 bg-opacity-70 px-5 py-1 hover:bg-green-700 hover:cursor-pointer rounded-md">
+                                        Rejoin Team
+                                    </button>
+                                </form>
                             </span>
                         }
                         <hr><hr><hr>

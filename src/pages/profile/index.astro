@@ -122,7 +122,7 @@ const steam_redirect = await steam.getRedirectUrl()
                             }</li>
                         </ul>
                         <hr>
-                        <span><a href={`/league/teams/${team.id}`}>View Team</a> | <a href={`/manage/teams/${team.id}`}>Manage Team</a></span>
+                        <p class="text-white text-center pt-2 font-bold"><a href={`/league/teams/${team.id}`} class="hover:underline">View Team</a> | <a href={`/manage/teams/${team.id}`} class="hover:underline">Manage Team</a></p>
                     }
                     <!--<h4 class="text-white font-bold py-2">Matches</h4>
                         <div class="flex flex-wrap gap-2">
@@ -207,7 +207,7 @@ const steam_redirect = await steam.getRedirectUrl()
                     <p class="text-white py-2 font-bold">League Tools:</p>
                     <ul>
                         <li class="text-white py-2">- <a class="underline">Manage Players</a></li>
-                        <li class="text-white py-2">- <a class="underline">Manage Teams</a></li>
+                        <li class="text-white py-2">- <a class="underline" href="/manage/teams/list">Manage Teams</a></li>
                         <li class="text-white py-2">- <a class="underline">Registrations</a></li>
                         {perms_has_one_of(user_verify, ['admin', 'leag_comm']) &&
                             <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>

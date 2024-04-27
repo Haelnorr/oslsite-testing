@@ -26,8 +26,10 @@ if (user.player) {
 }
 
 var user_is_player = false;
+var user_has_team = false;
 if (player_team) {
     user_is_player = (player_team.id === team.id);
+    user_has_team = true;
 }
 
 if (!user_is_player && !user_is_elevated) {
@@ -39,9 +41,7 @@ if (Astro.request.method === "POST") {
     const action = form_data.get('action')?.toString();
 
     switch (action) {
-        case 'leave-team':
-            await leave_team(user.player);
-            break;
+        
     }
 
     return Astro.redirect(`/manage/teams/${team.id}/invite`);
@@ -54,6 +54,7 @@ if (Astro.request.method === "POST") {
     user_elevated={user_is_elevated}
     user_owner={user_is_owner}
     user_manager={user_is_manager}
-    user_player={user_is_player}>
+    user_player={user_is_player}
+    user_has_team={user_has_team}>
     Content
 </TeamManageLayout>

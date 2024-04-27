@@ -2,7 +2,7 @@
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
 import { is_team_manager, perms_has_one_of, verify_user } from "../../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
-import { srlm_delete, srlm_get, leave_team, srlm_post } from "../../../../util/srlmUtils";
+import { srlm_delete, srlm_get, leave_team, srlm_post, join_team } from "../../../../util/srlmUtils";
 
 var { team_id } = Astro.params;
 
@@ -26,8 +26,10 @@ if (user.player) {
 }
 
 var user_is_player = false;
+var user_has_team = false;
 if (player_team) {
     user_is_player = (player_team.id === team.id);
+    user_has_team = true;
 }
 
 if (!user_is_player && !user_is_elevated) {
@@ -42,6 +44,9 @@ if (Astro.request.method === "POST") {
     switch (action) {
         case 'leave-team':
             await leave_team(user.player);
+            break;
+        case 'rejoin-team':
+            console.log(await join_team(user.player, team.id.toString()));
             break;
         case 'kick':
             await leave_team(+value);
@@ -69,7 +74,8 @@ if (Astro.request.method === "POST") {
     user_elevated={user_is_elevated}
     user_owner={user_is_owner}
     user_manager={user_is_manager}
-    user_player={user_is_player}>
+    user_player={user_is_player}
+    user_has_team={user_has_team}>
         <h3 class="text-3xl pb-5">Players:</h3>
         <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 h-fit mb-10 w-fit mx-auto">
             <table class="divide-y-2 divide-gray-500">
@@ -89,7 +95,10 @@ if (Astro.request.method === "POST") {
                                 {(player.manager && player.name !== team.owner) &&
                                     'Manager'
                                 }
-                                {(player.name === team.owner) &&
+                                {(player.manager && player.name === team.owner) &&
+                                    'Owner/Manager'
+                                }
+                                {(!player.manager && player.name === team.owner) &&
                                     'Owner'
                                 }
                                 {(!player.manager && player.name !== team.owner) &&
@@ -106,7 +115,7 @@ if (Astro.request.method === "POST") {
                                         </button>
                                     </form>
                                 }
-                                {(player.manager && user_is_owner && player.user_id !== user.id) &&
+                                {(player.manager && user_is_owner) &&
                                     <form method="post">
                                         <input type="text" name="action" value="demote" hidden/>
                                         <input type="text" name="value" value={player.user_id.toString()} hidden/>

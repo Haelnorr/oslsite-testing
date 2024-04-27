@@ -1,0 +1,220 @@
+---
+import { ViewTransitions } from 'astro:transitions';
+import type { TeamCollection } from '../util/srlmTypes';
+import { srlm_get } from '../util/srlmUtils';
+
+
+interface Props {
+    page: string,
+    per_page: string,
+    owner?: string,
+    order: string,
+    order_by: string,
+    manage: boolean
+}
+
+var { page, per_page, owner, order, order_by, manage } = Astro.props;
+
+if (isNaN(+page) || !page) {page='1'}
+if (isNaN(+per_page) || !per_page) {per_page='20'}
+if (isNaN(+owner)) {owner=null}
+if (order != 'desc' && order != 'asc') {order = 'asc'}
+if (order_by != 'id' &&
+    order_by != 'name' &&
+    order_by != 'acronym' &&
+    order_by != 'founded_date' &&
+    order_by != 'color' &&
+    order_by != 'logo' &&
+    order_by != 'active_players' &&
+    order_by != 'seasons_played' &&
+    order_by != 'awards') {order_by = 'id'}
+
+var query = `page=${page}&per_page=${per_page}&order=${order}&order_by=${order_by}&cached=false`;
+if (owner) {
+    query = `owner=${owner}&cached=false`;
+}
+const teams: TeamCollection = await srlm_get(`/teams?${query}`);
+
+function query_to_dict(query) {
+    var params_list = query.replace('?', '').split('&');
+
+    var params = {};
+
+    params_list.forEach(split_param);
+
+    function split_param(param: string) {
+        const keypair = param.split('=');
+        params[keypair[0]] = keypair[1];
+    }
+
+
+    return params;
+}
+
+
+function update_query(link) {
+    var old_query = query_to_dict(Astro.url.search);
+    if (!Astro.url.search) {
+        old_query = {}
+    }
+    
+    var new_query = query_to_dict(link.replace('/api/teams', ''));
+
+    if (Object.keys(new_query).includes('order_by')) {
+        if (new_query['order_by'] === old_query['order_by'] || new_query['order_by'] === order_by){
+            switch (order) {
+                case 'asc':
+                    new_query['order'] = 'desc';
+                    break;
+                case 'desc':
+                    new_query['order'] = 'asc';
+                    break;
+            }
+        } else {
+            new_query['order'] = 'asc';
+        }
+    }
+
+    const updated_params = {
+        ...old_query, 
+        ...new_query
+    }
+
+    var updated_query = '?';
+
+    for (let key in updated_params) {
+        if (updated_query != '?') {updated_query = updated_query + '&'}
+        updated_query = updated_query + `${key}=${updated_params[key]}`
+    }
+    return Astro.url.pathname + updated_query;
+    
+}
+var page_nums = Array.from({length: teams._meta.total_pages}, (_, i) => i + 1);
+
+---
+<ViewTransitions></ViewTransitions>
+<div class="mx-auto w-fit max-w-full overflow-x-auto">
+    <table class="rounded-md">
+        <thead class="bg-gray-900">
+            <tr class="divide-x-2 divide-gray-400">
+                <th class="px-2 w-12">
+                    <a href={update_query('order_by=id')} class="hover:underline">
+                        ID
+                    </a>
+                </th>
+                <th class="w-[300px] px-2">
+                    <a href={update_query('order_by=name')} class="hover:underline">
+                        Name
+                    </a>
+                </th>
+                <th class="px-2">
+                    <a href={update_query('order_by=acronym')} class="hover:underline">
+                        Acronym
+                    </a>
+                </th>
+                <th class="px-2">
+                    <a href={update_query('order_by=founded_date')} class="hover:underline">
+                        Founded
+                    </a>
+                </th>
+                <th class="px-2 w-24">
+                    <a href={update_query('order_by=color')} class="hover:underline">
+                        Colour
+                    </a>
+                </th>
+                <th class="px-2">
+                    <a href={update_query('order_by=logo')} class="hover:underline">
+                        Logo
+                    </a>
+                </th>
+                <th class="px-2">
+                    <a href={update_query('order_by=active_players')} class="hover:underline">
+                        Active Players
+                    </a>
+                </th>
+                <th class="px-2">
+                    <a href={update_query('order_by=seasons_played')} class="hover:underline">
+                        Seasons Played
+                    </a>
+                </th>
+                <th class="px-2">
+                    <a href={update_query('order_by=awards')} class="hover:underline">
+                        Awards
+                    </a>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {
+                teams.items.map((team, index) => (
+                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                        <td class="px-2">
+                            <a href={`/${(manage && 'manage') || 'league'}/teams/${team.id}`} class="hover:underline">
+                                {team.id}
+                            </a>
+                        </td>
+                        <td class="px-2">
+                            <a href={`/${(manage && 'manage') || 'league'}/teams/${team.id}`} class="hover:underline">
+                                {team.name}
+                            </a>
+                        </td>
+                        <td class="px-2">
+                            {team.acronym}
+                        </td>
+                        <td class="px-2">
+                            {team.founded_date}
+                        </td>
+                        <td class="px-2 font-bold" style={`color: #${team.color}`}>
+                            #{team.color.toUpperCase()}
+                        </td>
+                        <td class="px-2">
+                            {team.logo == 'True' &&
+                                'Yes' || 'No'
+                            }
+                        </td>
+                        <td class="px-2">
+                            {team.active_players}
+                        </td>
+                        <td class="px-2">
+                            {team.seasons_played}
+                        </td>
+                        <td class="px-2">
+                            {team.awards}
+                        </td>
+                    </tr>
+                ))
+            }
+        </tbody>
+    </table>
+    <div class="mt-3 flex justify-center">
+        <div class="w-14 h-6">
+            {teams._links.prev &&
+                <a href={update_query(teams._links.prev)}
+                    class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                    Prev
+                </a>
+            }
+        </div>
+        <div class="mx-3 w-fit">
+            {
+                page_nums.map(page => (
+                    <span>
+                        {(page != teams._meta.page) &&
+                            <a href={update_query(`page=${page}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{page}</a>
+                            ||
+                            <a class="px-1">{page}</a>
+                        }
+                    </span>
+                ))
+            }
+        </div>
+        <div class="w-14 h-6">
+            {teams._links.next &&
+                <a href={update_query(teams._links.next)}
+                    class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                    Next
+                </a>
+            }
+        </div>
+    </div>
+</div>

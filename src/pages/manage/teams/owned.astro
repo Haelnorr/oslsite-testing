@@ -1,4 +1,5 @@
 ---
+import TeamList from "../../../components/TeamList.astro";
 import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
 import { is_team_manager, perms_has_one_of, verify_user } from "../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../util/srlmTypes";
@@ -43,7 +44,10 @@ if (Astro.request.method === "POST") {
 
     return Astro.redirect(`/manage/teams/owned`);
 }
-
+const page = Astro.url.searchParams.get('page')!;
+const per_page = Astro.url.searchParams.get('per_page')!;
+const order = Astro.url.searchParams.get('order')!;
+const order_by = Astro.url.searchParams.get('order_by')!;
 ---
 <TeamManageLayout 
     title={`Manage Teams`}
@@ -53,5 +57,7 @@ if (Astro.request.method === "POST") {
     user_owner={user_is_owner}
     user_manager={user_is_manager}
     user_player={user_is_player}>
-    Content
+    <TeamList page={page} per_page={per_page} owner={user.id.toString()} order_by={order_by} order={order} manage={true}>
+
+    </TeamList>
 </TeamManageLayout>

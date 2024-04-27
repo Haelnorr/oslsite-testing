@@ -15,12 +15,12 @@ const user_authorized = perms_has_one_of(user_validate, required_perms);
 
 const { match_id } = Astro.params;
 
-const match: Match = await srlm_get(`/match/${match_id}`);
+const match: Match = await srlm_get(`/match/${match_id}?cached=false`);
 
-const match_stats: MatchStats = await srlm_get(`/match/${match_id}/stats`);
+const match_stats: MatchStats = await srlm_get(`/match/${match_id}/stats?cached=false`);
 
 ---
-<Layout title="match">
+<Layout title="Match">
     <main class="py-10">
         <div class="flex justify-evenly text-white">
             {!match &&

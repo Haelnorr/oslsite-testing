@@ -1,4 +1,4 @@
-import type { number } from "astro/zod";
+import { number, string } from "astro/zod";
 
 export type Token = {
     token: string;
@@ -256,6 +256,31 @@ export type Team = {
     dates: {
         start:Date,
         end:Date
+    }
+}
+
+export type TeamCollection = {
+    items: Array<{
+        id: number,
+        name: string,
+        acronym: string,
+        founded_date: Date,
+        color: string,
+        logo: string,
+        active_players: number,
+        seasons_played: number,
+        awards: number
+    }>,
+    _links: {
+        self: string,
+        next: string,
+        prev: string
+    },
+    _meta: {
+        page: number,
+        per_page: number,
+        total_pages: number,
+        total_items: number
     }
 }
 

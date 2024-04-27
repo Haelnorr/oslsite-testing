@@ -173,6 +173,17 @@ export type SeasonDivisionLeaderboard = {
     season: Season,
     division: Division,
     teams: Array<TeamStats>,
+    free_agents: Array<{
+        id: number,
+        name: string,
+        start_date: Date,
+        end_date: Date,
+        periods: number,
+        goals: number,
+        shots: number,
+        assists: number,
+        saves: number
+    }>,
     most_goals: Array<{
         id: number,
         name: string,
@@ -213,6 +224,13 @@ export type Player = {
     teams:number,
     free_agent_seasons:number,
     awards:number,
+    stats: {
+        periods: number,
+        goals: number,
+        shots: number,
+        assists: number,
+        saves: number
+    }
 }
 
 export type PlayerTeams = {

@@ -108,6 +108,28 @@ const steam_redirect = await steam.getRedirectUrl()
                 <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
                     <h3 class="text-white text-lg font-bold pb-2">Career Stats</h3>
                     <hr>
+                    <table class="text-white">
+                        <tr>
+                            <td class="px-3 font-bold">Periods:</td>
+                            <td>{player.stats.periods}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 font-bold">Goals:</td>
+                            <td>{player.stats.goals}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 font-bold">Shots:</td>
+                            <td>{player.stats.shots}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 font-bold">Assists:</td>
+                            <td>{player.stats.assists}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 font-bold">Saves:</td>
+                            <td>{player.stats.saves}</td>
+                        </tr>
+                    </table>
                 </div>
                 <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-72 h-fit">
                     <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
@@ -211,6 +233,7 @@ const steam_redirect = await steam.getRedirectUrl()
                         <li class="text-white py-2">- <a class="underline">Registrations</a></li>
                         {perms_has_one_of(user_verify, ['admin', 'leag_comm']) &&
                             <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>
+                            <li class="text-white py-2">- <a class="underline" href="/manage/seasons/">Manage Seasons</a></li>
                         }
                         <li class="text-white py-2">- <a class="underline">Match Reviews</a></li>
                     </ul>

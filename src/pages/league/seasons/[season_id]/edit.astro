@@ -2,7 +2,7 @@
 import Layout from "../../../../layouts/Layout.astro";
 import { perms_has_one_of, verify_user } from "../../../../util/authUtils";
 import type { Season } from "../../../../util/srlmTypes";
-import { srlm_get, srlm_put } from "../../../../util/srlmUtils";
+import { checkbox_to_bool, srlm_get, srlm_put } from "../../../../util/srlmUtils";
 
 const user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
@@ -27,14 +27,24 @@ var errors = null;
 
 if (Astro.request.method === "POST") {
     const form_data = await Astro.request.formData();
+    function parse_date(date_field:string) {
+        var date = form_data.get(date_field)!
+        if (date) {
+            return date.toString();
+        } else {
+            return null
+        }
+    }
     const inputs = {
         name: form_data.get('name')?.toString(),
         acronym: form_data.get('acronym')?.toString(),
-        start_date: form_data.get('start-date')?.toString(),
-        end_date: form_data.get('end-date')?.toString(),
-        finals_start: form_data.get('finals-start-date')?.toString(),
-        finals_end: form_data.get('finals-end-date')?.toString()
+        start_date: parse_date('start-date'),
+        end_date: parse_date('end-date'),
+        finals_start: parse_date('finals-start-date'),
+        finals_end: parse_date('finals-end-date'),
+        can_register: checkbox_to_bool(form_data, 'can-register')
     }
+    console.log(inputs)
     const post_data = await srlm_put(`/seasons/${season.id}`, '', inputs);
     if (post_data) {
         if (post_data.status && post_data.status === 409) {
@@ -124,6 +134,15 @@ if (Astro.request.method === "POST") {
                         <td>
                             {/**@ts-ignore*/}
                             <input type="date" name="finals-end-date" id="finals-end-date" value={season.finals_end} class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="py-2">
+                            <span class="px-3">
+                                Registration open:
+                            </span>
+                            {/**@ts-ignore*/}
+                            <input type="checkbox" name="can-register" id="can-register" checked={season.can_register} class="text-black rounded-sm " />
                         </td>
                     </tr>
                     <tr class="py-5">

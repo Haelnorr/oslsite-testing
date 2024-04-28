@@ -22,6 +22,7 @@ function convert_sd_link(season_division) {
 <div class="pt-3 pb-10">
     <h1 class="text-4xl pb-3"><a href={`//${base_url}/league/seasons/${season.acronym}`}>{season.name}</a></h1>
     <hr>
+    <h4 class="text-xl">Registration: {season.can_register && 'Open' || 'Closed'}</h4>
     <h3 class="text-2xl pt-5">Timeline:</h3>
     <div class="flex flex-wrap justify-between max-w-96">
         <div class="pb-3">

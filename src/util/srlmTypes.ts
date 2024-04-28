@@ -1,82 +1,83 @@
 import { number, string } from "astro/zod";
 
 export type Token = {
-    token: string;
-    expires: Date;
+    token: string,
+    expires: Date
 }
 
 export type User = {
-    id: number;
-    username: string;
-    email: string;
-    player: number;
-    discord: number;
-    permissions: Array<string>;
-    matches_streamed: number;
-    reset_pass: boolean;
+    id: number,
+    username: string,
+    email: string,
+    player: number,
+    discord: number,
+    permissions: Array<string>,
+    matches_streamed: number,
+    reset_pass: boolean,
     _links: {
-        self: string;
-        player: string;
-        discord: string;
-        permissions: string;
-        matches_streamed: string;
+        self: string,
+        player: string,
+        discord: string,
+        permissions: string,
+        matches_streamed: string
     }
 }
 
 export type Permission = {
-    id: number;
-    key: string;
-    description: string;
-    users_count: number;
+    id: number,
+    key: string,
+    description: string,
+    users_count: number,
     _links: {
-        self: string;
+        self: string
     }
 }
 
 export type Discord = {
-    user: string;
-    discord_id: string;
-    access_token: string;
-    refresh_token: string;
-    token_expiration: Date;
+    user: string,
+    discord_id: string,
+    access_token: string,
+    refresh_token: string,
+    token_expiration: Date,
     _links: {
-        self: string;
-        user: string;
+        self: string,
+        user: string
     }
 }
 
 
 export type League = {
-    id: number;
-    name: string;
-    acronym: string;
-    seasons_count: number;
-    divisions_count: number;
+    id: number,
+    name: string,
+    acronym: string,
+    seasons_count: number,
+    divisions_count: number,
     _links: {
-        self: string;
-        seasons: string;
-        divisions: string;
+        self: string,
+        seasons: string,
+        divisions: string
     };
 }
 
 type DivisionLink = {
-    name: string;
-    acronym: string;
-    _link: string;
+    name: string,
+    acronym: string,
+    _link: string
 }
 
 
 export type Season = {
-    id: number;
-    name: string;
-    acronym: string;
-    league: string;
-    start_date: Date;
-    end_date: Date;
-    finals_start: Date;
-    finals_end: Date;
-    match_type: string;
-    divisions: Array<DivisionLink>
+    id: number,
+    name: string,
+    acronym: string,
+    league: string,
+    start_date: Date,
+    end_date: Date,
+    finals_start: Date,
+    finals_end: Date,
+    match_type: string,
+    can_register: boolean,
+    divisions: Array<DivisionLink>,
     _links: {
         self: string;
         league: string;
@@ -86,31 +87,31 @@ export type Season = {
 }
 
 export type SeasonCollection = {
-    items: Array<Season>;
+    items: Array<Season>,
     _links: {
-        self: string;
-        next: string;
+        self: string,
+        next: string,
         prev: string
-    };
+    },
     _meta: {
-        page: number;
-        per_page: number;
-        total_pages: number;
-        total_items: number;
+        page: number,
+        per_page: number,
+        total_pages: number,
+        total_items: number
     };
 }
 
 export type Division = {
-    id: number;
-    name: string;
-    acronym: string;
-    league: string;
-    description: string;
-    seasons_count: number;
+    id: number,
+    name: string,
+    acronym: string,
+    league: string,
+    description: string,
+    seasons_count: number,
     _links: {
-        self: string;
-        league: string;
-        seasons: string;
+        self: string,
+        league: string,
+        seasons: string
     }
 }
 

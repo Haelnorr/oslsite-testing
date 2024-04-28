@@ -147,6 +147,36 @@ console.log(color_calc(results.teams[0].color))
                                 </div>
                             ))
                         }
+                        <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                                    <table>
+                                        <tr>
+                                            <td colspan="6" class="rounded-md font-bold">
+                                                Free Agents
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="px-2">Player</td>
+                                            <th class="px-2">Periods</th>
+                                            <th class="px-2">Goals</tdh>
+                                            <th class="px-2">Shots</th>
+                                            <th class="px-2">Assists</th>
+                                            <th class="px-2">Saves</th>
+                                        </tr>
+                                        {
+                                            results.free_agents.map(player => (
+                                                <tr>
+                                                    <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                                    <td class="px-2">{player.periods}</td>
+                                                    <td class="px-2">{player.goals}</td>
+                                                    <td class="px-2">{player.shots}</td>
+                                                    <td class="px-2">{player.assists}</td>
+                                                    <td class="px-2">{player.saves}</td>
+                                                </tr>
+                                            ))
+                                        }
+                                        
+                                    </table>
+                                </div>
                     </section>
                 </div>
             }

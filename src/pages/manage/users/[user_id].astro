@@ -2,7 +2,7 @@
 import Layout from "../../../layouts/Layout.astro";
 import { perms_has_one_of, set_cookies, verify_user } from "../../../util/authUtils";
 import type { User } from "../../../util/srlmTypes";
-import { srlm_get, srlm_post, srlm_put } from "../../../util/srlmUtils";
+import { checkbox_to_bool, srlm_get, srlm_post, srlm_put } from "../../../util/srlmUtils";
 
 
 const user_token = Astro.cookies.get('user_token')?.value;
@@ -92,19 +92,12 @@ if (Astro.request.method === "POST") {
             
         }
     } else if (user_authorized) {
-        function checkbox_to_bool(field) {
-            if (form_data.get(field) == 'on') {
-                return true;
-            } else {
-                return false;
-            }
-        }
         const perm_inputs = {
-            admin: checkbox_to_bool('admin'),
-            leag_comm: checkbox_to_bool('leag-comm'),
-            leag_coord: checkbox_to_bool('leag-coord'),
+            admin: checkbox_to_bool(form_data, 'admin'),
+            leag_comm: checkbox_to_bool(form_data, 'leag-comm'),
+            leag_coord: checkbox_to_bool(form_data, 'leag-coord'),
             team_owner: (form_data.getAll('team-owner-mods').length > 0) && form_data.getAll('team-owner-mods'),
-            team_manager: checkbox_to_bool('team-manager') && form_data.getAll('team-manager-mod')
+            team_manager: checkbox_to_bool(form_data, 'team-manager') && form_data.getAll('team-manager-mod')
         }
         const perms_update = await srlm_put(`/users/${user.id}/permissions`, '', perm_inputs)
         console.log(perms_update)

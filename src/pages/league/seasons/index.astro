@@ -136,6 +136,11 @@ var page_nums = Array.from({length: seasons._meta.total_pages}, (_, i) => i + 1)
                         </th>
                         <th class="px-3">
                             <a>
+                                Registration
+                            </a>
+                        </th>
+                        <th class="px-3">
+                            <a>
                                 Match Type
                             </a>
                         </th>
@@ -165,6 +170,7 @@ var page_nums = Array.from({length: seasons._meta.total_pages}, (_, i) => i + 1)
                                 <td class="px-3">{season.end_date}</td>
                                 <td class="px-3">{season.finals_start}</td>
                                 <td class="px-3">{season.finals_end}</td>
+                                <td class="px-3">{season.can_register && 'Open' || 'Closed'}</td>
                                 <td class="px-3">{season.match_type}</td>
                                 <td class="px-3">
                                     {

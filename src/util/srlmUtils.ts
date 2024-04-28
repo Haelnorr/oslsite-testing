@@ -189,3 +189,11 @@ export async function leave_team(player_id: number) {
 export async function join_team(player_id: number, team_id:string) {
     return await srlm_post(`/players/${player_id}/teams`, '', {team:team_id});
 }
+
+export function checkbox_to_bool(form_data: FormData, field: string) {
+    if (form_data.get(field) == 'on') {
+        return true;
+    } else {
+        return false;
+    }
+}

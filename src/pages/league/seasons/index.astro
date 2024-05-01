@@ -37,6 +37,12 @@ if (order_by) {
 }
 const seasons: SeasonCollection = await srlm_get(`/seasons?${query}`);
 
+//@ts-ignore
+if (seasons === '503') {
+    return Astro.redirect('/503')
+}
+
+
 function query_to_dict(query) {
     var params_list = query.replace('?', '').split('&');
 

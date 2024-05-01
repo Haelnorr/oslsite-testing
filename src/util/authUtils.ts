@@ -4,6 +4,11 @@ export async function verify_user(token: string, perms:Array<string>=null) {
     if (perms) {
         var perms_resp = await srlm_post('/auth/user/validate', token, {perms:perms});
         if (perms_resp) {
+
+            if (perms_resp === '503') {
+                return perms_resp
+            }
+
             var perms_list = {};
             perms_resp.has_perms.map(perm => {
                 perms_list[perm[0]] = perm[1];

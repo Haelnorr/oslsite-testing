@@ -12,6 +12,11 @@ if (!user_token) {
 const required_perms = ['admin', 'leag_comm', 'leag_coord'];
 const user_validate = await verify_user(user_token, required_perms);
 
+if (user_validate === '503') {
+    return Astro.redirect('/503')
+}
+
+
 if (!user_validate) {
     return Astro.redirect('/403')
 }

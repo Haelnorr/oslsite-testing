@@ -1,7 +1,14 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { srlm_basic_auth } from '../../util/srlmUtils';
+import { srlm_basic_auth, srlm_get } from '../../util/srlmUtils';
 import { set_cookies } from '../../util/authUtils';
+
+const serverReady = await srlm_get('/ready');
+
+if (serverReady === '503') {
+    return Astro.redirect('/503')
+}
+
 
 
 const error = {

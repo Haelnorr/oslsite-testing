@@ -11,6 +11,11 @@ if (!user_token) {
 }
 const required_perms = ['admin', 'leag_coord', 'leag_comm'];
 const user_validate = await verify_user(user_token, required_perms);
+
+if (user_validate === '503') {
+    return Astro.redirect('/503')
+}
+
 const user_authorized = perms_has_one_of(user_validate, required_perms);
 
 if (!user_authorized) {

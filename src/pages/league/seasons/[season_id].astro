@@ -9,9 +9,14 @@ var can_edit = false;
 const user_token = Astro.cookies.get('user_token')?.value;
 if (user_token) {
     const perms_test = ['admin', 'leag_comm', 'leag_coord']
-    const user_verify = await verify_user(user_token, perms_test);
-    if (user_verify) {
-        if (perms_has_one_of(user_verify, perms_test)) {
+    const user_validate = await verify_user(user_token, perms_test);
+
+    if (user_validate === '503') {
+        return Astro.redirect('/503')
+    }
+
+    if (user_validate) {
+        if (perms_has_one_of(user_validate, perms_test)) {
             can_edit = true;
         }
     }
@@ -21,6 +26,12 @@ const { season_id } = Astro.params;
 
 const cached = Astro.url.searchParams.get('cached')! || true;
 const season: Season = await srlm_get(`/seasons/${season_id}?league=osl&cached=${cached}`);
+
+//@ts-ignore
+if (season === '503') {
+    return Astro.redirect('/503')
+}
+
 if (!season) {
     return Astro.redirect('/league/seasons')
 }

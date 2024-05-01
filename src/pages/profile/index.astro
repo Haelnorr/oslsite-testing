@@ -19,6 +19,11 @@ if (!user_token) {
 const optional_perms = ['leag_coord', 'leag_comm', 'admin', 'team_manager']
 const user_verify = await verify_user(user_token, optional_perms);
 
+if (user_verify === '503') {
+    return Astro.redirect('/503')
+}
+
+
 if (!user_verify) {
     return Astro.redirect('/login?error=sessionexpire');
 }

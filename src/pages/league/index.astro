@@ -7,6 +7,12 @@ import type { League, SeasonCollection } from '../../util/srlmTypes';
 
 const league_data: League = await srlm_get('/leagues/osl');
 
+//@ts-ignore
+if (league_data === '503') {
+    return Astro.redirect('/503')
+}
+
+
 function get_yesterday() {
     let date = new Date();
     let options = [

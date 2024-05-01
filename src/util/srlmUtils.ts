@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 const api = {
     uri: import.meta.env.SRLM_API_URI,
@@ -8,24 +8,27 @@ const api = {
 // handles response errors from the SRLM API
 // will log the error message from SRLM API to the console along with the headers of the failed request
 // returns null
-function handle_err(err) {
+function handle_err(err: AxiosError) {
     if (err) {
-        if (err.response) {
-            if (err.response.data['messages']) {
-                console.error(JSON.stringify(err.response.data));
+        //console.log(err)
+        console.log('Method ' + err.request._currentRequest.method + ' at path ' + err.request._currentRequest.path);
+        if (err.code === 'ECONNREFUSED') {
+            return '503'
+        } else if (err.response) {
+            console.log(err.response.status)
+            if (err.response.status === 409) {
+                // this will check if status code is 409 (only used for input errors on post/put requests)
+                // and returns the response which contains error messages that can be displayed on the form
+                return err.response;
             } else {
-                console.error(err.response.data);
+                if (err.response.data['messages']) {
+                    console.error(JSON.stringify(err.response.data));
+                } else {
+                    console.error(err.response.data);
+                }
+                return null
             }
-        } else {
-            // console.log(err.data)
-        }
-        console.log('Method ' + err.request.method + ' at path ' + err.request.path);
-        if (err.response.status === 409) {
-            // this will check if status code is 409 (only used for input errors on post/put requests)
-            // and returns the response which contains error messages that can be displayed on the form
-            return err.response;
-        } else {
-            return null;
+            
         }
     }
 }

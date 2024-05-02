@@ -217,6 +217,7 @@ export type SeasonDivisionLeaderboard = {
 
 export type Player = {
     id:number,
+    player_name:string,
     user:string,
     slap_id:number,
     rookie:boolean,
@@ -290,6 +291,21 @@ export type TeamCollection = {
         seasons_played: number,
         awards: number
     }>,
+    _links: {
+        self: string,
+        next: string,
+        prev: string
+    },
+    _meta: {
+        page: number,
+        per_page: number,
+        total_pages: number,
+        total_items: number
+    }
+}
+
+export type PlayerCollection = {
+    items: Array<Player>,
     _links: {
         self: string,
         next: string,

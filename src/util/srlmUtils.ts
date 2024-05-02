@@ -9,9 +9,7 @@ const api = {
 // will log the error message from SRLM API to the console along with the headers of the failed request
 // returns null
 function handle_err(err: AxiosError) {
-    if (err) {
-        //console.log(err)
-        console.log('Method ' + err.request._currentRequest.method + ' at path ' + err.request._currentRequest.path);
+    if (err) {       
         if (err.code === 'ECONNREFUSED') {
             return '503'
         } else if (err.response) {

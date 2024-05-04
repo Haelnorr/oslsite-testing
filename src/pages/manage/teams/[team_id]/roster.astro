@@ -1,6 +1,6 @@
 ---
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
-import { is_team_manager, perms_has_one_of, verify_user } from "../../../../util/authUtils";
+import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
 import { srlm_delete, srlm_get, leave_team, srlm_post, join_team } from "../../../../util/srlmUtils";
 
@@ -12,16 +12,17 @@ if (!user_token) {
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
 const user_validate = await verify_user(user_token, perms);
+console.log(user_validate)
 
 if (user_validate === '503') {
     return Astro.redirect('/503')
 }
 
 const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
-const user_is_owner = perms_has_one_of(user_validate, ['team_owner']);
 const user_is_manager = is_team_manager(user_validate, [+team_id]);
 
-const team: TeamManage = await srlm_get(`/teams/${team_id}/manage`);
+const team: TeamManage = await srlm_get(`/teams/${team_id}/manage?cached=false`);
+const user_is_owner = is_team_owner(user_validate, team.id);
 
 const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
 var player_team: Team = null;

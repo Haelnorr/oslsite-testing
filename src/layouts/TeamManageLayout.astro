@@ -31,6 +31,10 @@ function getPageTitle(page: string) {
             return 'Owned Teams';
         case 'list':
             return 'List Teams';
+        case 'create':
+            return 'Create Team';
+        case 'invites':
+            return 'Invites';
         default:
             return
     }
@@ -88,19 +92,28 @@ function getPageTitle(page: string) {
                             </span>
                         }
                         <hr><hr><hr>
+                    </div> ||
+                    <div style="margin-bottom: -8px;">
+                        <a href={`/manage/teams/create`} class={`${(page === 'create') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
+                            Create Team
+                        </a>
+                        <a href={`/manage/teams/invites`} class={`${(page === 'invites') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
+                            View Invites
+                        </a>
+                        <hr><hr><hr>
                     </div>
                 }
                 {user_elevated &&
                     <div style="margin-bottom: -8px;">
                         <a href={`/manage/teams/list`} class={`${(page === 'list') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
-                            List
+                            List All Teams
                         </a>
                         <hr><hr><hr>
                     </div>
                 }
                 <div>
                     <a href={`/manage/teams/owned`} class={`${(page === 'owned') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
-                        Owned Teams
+                        My Owned Teams
                     </a>
                 </div>
                 

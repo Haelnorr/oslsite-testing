@@ -1,0 +1,147 @@
+---
+import TeamList from "../../../components/TeamList.astro";
+import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
+import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
+import type { PlayerTeams, Team, TeamManage, User } from "../../../util/srlmTypes";
+import { srlm_get, srlm_post } from "../../../util/srlmUtils";
+
+var user_token = Astro.cookies.get('user_token')?.value;
+if (!user_token) {
+    user_token = '';
+}
+const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
+const user_validate = await verify_user(user_token, perms);
+
+if (user_validate === '503') {
+    return Astro.redirect('/503')
+}
+
+const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
+var user_is_owner = false;
+var user_is_manager = false;
+
+
+const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
+if (!user.player) {
+    return Astro.redirect('/profile')
+}
+var player_team: Team = null;
+const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=false`);
+if (resp) {player_team = resp.current_team};
+
+var team: TeamManage = null;
+var user_is_player = false;
+var user_has_team = false;
+
+if (player_team) {
+    team = await srlm_get(`/teams/${player_team.id}/manage`);
+    user_is_player = (player_team.id === team.id);
+    user_has_team = true;
+    user_is_manager = is_team_manager(user_validate, [team.id]);
+    user_is_owner = is_team_owner(user_validate, team.id);
+}
+
+if (!user_is_elevated) {
+    return Astro.redirect(`/league/teams/${team.id}`);
+}
+
+var errors = null;
+
+var team_name: string;
+var team_acronym: string;
+var team_color: string = '#1F2937';
+
+if (Astro.request.method === "POST") {
+    const form_data = await Astro.request.formData();
+
+    team_name = form_data.get('name').toString();
+    team_acronym = form_data.get('acronym').toString();
+    team_color = form_data.get('color').toString();
+    
+
+    const team_input = {
+        name: team_name,
+        acronym: team_acronym,
+        color: team_color.replace('#', ''),
+        founded_date: new Date()
+    }
+
+    const update = await srlm_post(`/teams`, user_token, team_input);
+    if (update) {
+        console.log(update)
+        if (update.status && update.status === 409) {
+            errors = {};
+            update.data.fields.map(err => {
+                errors[err.field] = err.error;                
+            })
+        } else {
+            return Astro.redirect(`/manage/teams/`);
+        }
+    } else {
+        return Astro.redirect(`/manage/teams/create`);
+    }
+}//75cf0e
+
+---
+<TeamManageLayout 
+    title={`Create Team`}
+    team={team}
+    page="create"
+    user_elevated={user_is_elevated}
+    user_owner={user_is_owner}
+    user_manager={user_is_manager}
+    user_player={user_is_player}
+    user_has_team={user_has_team}>
+    <div>
+        <form method="post" class="w-fit mx-auto">
+            <table>
+                <tr>
+                    <td class="p-2">Name:</td>
+                    <td class="p-2">
+                        
+                        <input type="text" name="name" id="name" value={team_name} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                        {(errors && errors['name']) && (
+                            <br/>
+                            <span class="text-red-600 font-bold">
+                                {errors['name']}
+                            </span>  
+                        )}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="p-2">Acronym:</td>
+                    <td class="p-2">
+                        <input type="text" name="acronym" id="acronym" value={team_acronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                        {(errors && errors['acronym']) && (
+                            <br/>
+                            <span class="text-red-600 font-bold">
+                                {errors['acronym']}
+                            </span>  
+                        )}
+                    </td>
+                </tr>
+                <tr>
+                    <td class="p-2">Colour:</td>
+                    <td class="p-2">
+                        <input type="color" name="color" id="color" value={team_color} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                    </td>
+                </tr>
+                {user_is_elevated &&
+                    <tr>
+
+                    </tr>
+                    <tr id="set-owner">
+
+                    </tr>
+                }
+                <tr>
+                    <td colspan="2" class="py-4">
+                        <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                            Create
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</TeamManageLayout>

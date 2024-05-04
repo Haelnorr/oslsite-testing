@@ -40,21 +40,20 @@ if (player_team) {
     user_is_owner = is_team_owner(user_validate, team.id);
 }
 
-const page = Astro.url.searchParams.get('page')!;
-const per_page = Astro.url.searchParams.get('per_page')!;
-const order = Astro.url.searchParams.get('order')!;
-const order_by = Astro.url.searchParams.get('order_by')!;
+if (!user_is_elevated) {
+    return Astro.redirect(`/league/teams/${team.id}`);
+}
+
+
 ---
 <TeamManageLayout 
-    title={`Manage Teams`}
+    title={`My Team Invites`}
     team={team}
-    page="owned"
+    page="invites"
     user_elevated={user_is_elevated}
     user_owner={user_is_owner}
     user_manager={user_is_manager}
     user_player={user_is_player}
     user_has_team={user_has_team}>
-    <TeamList page={page} per_page={per_page} owner={user.id.toString()} order_by={order_by} order={order} manage={true}>
-
-    </TeamList>
+    
 </TeamManageLayout>

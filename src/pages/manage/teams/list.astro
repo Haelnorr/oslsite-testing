@@ -1,9 +1,9 @@
 ---
 import TeamList from "../../../components/TeamList.astro";
 import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
-import { is_team_manager, perms_has_one_of, verify_user } from "../../../util/authUtils";
+import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../util/srlmTypes";
-import { leave_team, srlm_delete, srlm_get } from "../../../util/srlmUtils";
+import { srlm_get } from "../../../util/srlmUtils";
 
 var user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
@@ -17,7 +17,7 @@ if (user_validate === '503') {
 }
 
 const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
-const user_is_owner = perms_has_one_of(user_validate, ['team_owner']);
+var user_is_owner = false;
 var user_is_manager = false;
 
 
@@ -37,6 +37,7 @@ if (player_team) {
     user_is_player = (player_team.id === team.id);
     user_has_team = true;
     user_is_manager = is_team_manager(user_validate, [team.id]);
+    user_is_owner = is_team_owner(user_validate, team.id);
 }
 
 if (!user_is_elevated) {

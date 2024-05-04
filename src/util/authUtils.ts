@@ -51,6 +51,21 @@ export function is_team_manager(user, teams: Array<number>) {
     
 }
 
+export function is_team_owner(user, team_id: number) {
+    var is_owner = false;
+    if (user.has_perms['team_owner']) {
+        const teams = user.has_perms['team_owner'].split(',');
+
+        teams.forEach((team: string) => {
+            if (parseInt(team) === team_id) {
+                is_owner = true;
+            }
+        })
+    }
+    return is_owner;
+    
+}
+
 export function set_cookies(Astro, user_token) {
     Astro.cookies.delete('user_token');
     Astro.cookies.delete('token_expiry');

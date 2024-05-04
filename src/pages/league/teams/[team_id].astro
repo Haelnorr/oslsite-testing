@@ -1,6 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import { is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
 import type { TeamStats } from "../../../util/srlmTypes";
 import { color_calc, srlm_get } from "../../../util/srlmUtils";
 import { Image } from 'astro:assets';
@@ -19,7 +19,6 @@ if (user_validate === '503') {
 }
 
 const user_authorized = perms_has_one_of(user_validate, required_perms);
-const user_is_owner = perms_has_one_of(user_validate, ['team_owner']);
 const user_is_manager = perms_has_one_of(user_validate, ['team_manager']);
 
 const team: TeamStats = await srlm_get(`/teams/${team_id}/stats`);
@@ -27,6 +26,7 @@ const team: TeamStats = await srlm_get(`/teams/${team_id}/stats`);
 if (!team) {
     return Astro.redirect('/404')
 }
+const user_is_owner = is_team_owner(user_validate, team.id);
 
 const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?current=True`);
 

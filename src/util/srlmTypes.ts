@@ -2,7 +2,7 @@ import { number, string } from "astro/zod";
 
 export type Token = {
     token: string,
-    expires: Date
+    expires: string
 }
 
 export type User = {
@@ -38,7 +38,7 @@ export type Discord = {
     discord_id: string,
     access_token: string,
     refresh_token: string,
-    token_expiration: Date,
+    token_expiration: string,
     _links: {
         self: string,
         user: string
@@ -71,10 +71,10 @@ export type Season = {
     name: string,
     acronym: string,
     league: string,
-    start_date: Date,
-    end_date: Date,
-    finals_start: Date,
-    finals_end: Date,
+    start_date: string,
+    end_date: string,
+    finals_start: string,
+    finals_end: string,
     match_type: string,
     can_register: boolean,
     divisions: Array<DivisionLink>,
@@ -156,8 +156,8 @@ export type TeamStats = {
     players: Array<{
         id: number,
         name: string,
-        start_date: Date,
-        end_date: Date,
+        start_date: string,
+        end_date: string,
         periods: number,
         goals: number,
         shots: number,
@@ -177,8 +177,8 @@ export type SeasonDivisionLeaderboard = {
     free_agents: Array<{
         id: number,
         name: string,
-        start_date: Date,
-        end_date: Date,
+        start_date: string,
+        end_date: string,
         periods: number,
         goals: number,
         shots: number,
@@ -242,8 +242,8 @@ export type PlayerTeams = {
         acronym: string,
         color: string,
         dates: {
-            start:Date,
-            end:Date
+            start:string,
+            end:string
         }
     }>,
     current_team: {
@@ -254,8 +254,8 @@ export type PlayerTeams = {
         owner: string,
         managers: Array<string>,
         dates: {
-            start:Date,
-            end:Date
+            start:string,
+            end:string
         }
     }
 }
@@ -274,8 +274,8 @@ export type Team = {
     acronym: string,
     color: string,
     dates: {
-        start:Date,
-        end:Date
+        start:string,
+        end:string
     }
 }
 
@@ -284,7 +284,7 @@ export type TeamCollection = {
         id: number,
         name: string,
         acronym: string,
-        founded_date: Date,
+        founded_date: string,
         color: string,
         logo: string,
         active_players: number,
@@ -451,7 +451,7 @@ export type TeamManage = {
     color: string,
     logo: string,
     owner: string,
-    founded: Date,
+    founded: string,
     players: Array<{
         id: number,
         user_id: number,

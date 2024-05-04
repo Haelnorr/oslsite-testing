@@ -5,7 +5,7 @@ import { srlm_get } from "../../../util/srlmUtils";
 
 var user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
-    user_token = '';
+    return Astro.redirect('/login')
 }
 const elevated_perms = ['admin', 'leag_coord', 'leag_comm'];
 const user_validate = await verify_user(user_token, elevated_perms);

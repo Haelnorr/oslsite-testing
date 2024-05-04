@@ -12,7 +12,7 @@ var { team_id } = Astro.params;
 
 var user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
-    user_token = '';
+    return Astro.redirect('/login')
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
 const user_validate = await verify_user(user_token, perms);

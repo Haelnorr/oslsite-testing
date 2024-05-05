@@ -31,7 +31,7 @@ if (order_by != 'id' &&
 
 var query = `page=${page}&per_page=${per_page}&order=${order}&order_by=${order_by}&cached=false`;
 if (owner) {
-    query = `owner=${owner}&cached=false`;
+    query = `owner=${owner}&per_page=50&cached=false`;
 }
 const teams: TeamCollection = await srlm_get(`/teams?${query}`);
 
@@ -90,6 +90,14 @@ function update_query(link) {
     
 }
 var page_nums = Array.from({length: teams._meta.total_pages}, (_, i) => i + 1);
+
+function prettyDate(date: string) {
+    if (!date) {
+        return null;
+    }
+    const dateObj = new Date(date)
+    return dateObj.toDateString()
+}
 
 ---
 <ViewTransitions></ViewTransitions>
@@ -162,7 +170,7 @@ var page_nums = Array.from({length: teams._meta.total_pages}, (_, i) => i + 1);
                             {team.acronym}
                         </td>
                         <td class="px-2">
-                            {team.founded_date}
+                            {prettyDate(team.founded_date)}
                         </td>
                         <td class="px-2 font-bold" style={`color: #${team.color}`}>
                             #{team.color.toUpperCase()}
@@ -183,6 +191,9 @@ var page_nums = Array.from({length: teams._meta.total_pages}, (_, i) => i + 1);
                         </td>
                     </tr>
                 ))
+            }
+            {teams.items.length === 0 &&
+                <tr class="bg-gray-600"><td colspan="100%">No teams to display</td></tr>
             }
         </tbody>
     </table>

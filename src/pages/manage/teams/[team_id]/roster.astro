@@ -50,9 +50,9 @@ if (Astro.request.method === "POST") {
     switch (action) {
         case 'leave-team':
             await leave_team(user.player);
-            break;
+            return Astro.redirect('/manage/teams');
         case 'rejoin-team':
-            console.log(await join_team(user.player, team.id.toString()));
+            await join_team(user.player, team.id.toString());
             break;
         case 'kick':
             await leave_team(+value);
@@ -112,7 +112,7 @@ if (Astro.request.method === "POST") {
                                 }
                                 </td>
                             <td class="px-2">
-                                {(!player.manager && player.user_id) &&
+                                {(!player.manager && player.user_id && (user_is_elevated || user_is_manager || user_is_owner)) &&
                                     <form method="post">
                                         <input type="text" name="action" value="promote" hidden/>
                                         <input type="text" name="value" value={player.user_id.toString()} hidden/>
@@ -132,7 +132,7 @@ if (Astro.request.method === "POST") {
                                 }
                             </td>
                             <td class="px-2">
-                                {((!player.manager || user_is_owner ) && player.user_id !== user.id) &&
+                                {((!player.manager || user_is_owner ) && player.user_id !== user.id && (user_is_elevated || user_is_manager || user_is_owner)) &&
                                     <form method="post">
                                         <input type="text" name="action" value="kick" hidden/>
                                         <input type="text" name="value" value={player.id.toString()} hidden/>

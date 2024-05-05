@@ -81,8 +81,8 @@ type Team = {
     owner: string,
     managers: Array<string>,
     dates: {
-        start:Date,
-        end:Date
+        start:string,
+        end:string
     }
 }
 
@@ -163,7 +163,8 @@ const steam_redirect = await steam.getRedirectUrl()
                             ))}
                         </div> -->
                     {!team && 
-                        <p>No current team</p>
+                        <p class="text-white text-center pt-2 font-bold">No current team</p>
+                        <p class="text-white text-center pt-2 font-bold"><a href={`/manage/teams/create`} class="hover:underline">Create Team</a> | <a href={`/manage/teams/invites`} class="hover:underline">View Invites</a></p>
                     }
                 </div>
             }

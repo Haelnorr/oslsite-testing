@@ -1,8 +1,7 @@
 ---
-import TeamList from "../../../components/TeamList.astro";
 import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
 import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
-import type { PlayerTeams, Team, TeamManage, User } from "../../../util/srlmTypes";
+import type { PlayerTeams, Team, TeamInvite, TeamManage, User } from "../../../util/srlmTypes";
 import { srlm_get } from "../../../util/srlmUtils";
 
 var user_token = Astro.cookies.get('user_token')?.value;
@@ -17,8 +16,10 @@ if (user_validate === '503') {
 }
 
 const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
-var user_is_owner = false;
-var user_is_manager = false;
+const user_is_owner = false;
+const user_is_manager = false;
+const user_is_player = false;
+const user_has_team = false;
 
 
 const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
@@ -26,34 +27,91 @@ var player_team: Team = null;
 if (user.player) {
     const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=false`);
     if (resp) {player_team = resp.current_team};
+} else {
+    return Astro.redirect('/profile');
 }
-
-var team: TeamManage = null;
-var user_is_player = false;
-var user_has_team = false;
 
 if (player_team) {
-    team = await srlm_get(`/teams/${player_team.id}/manage`);
-    user_is_player = (player_team.id === team.id);
-    user_has_team = true;
-    user_is_manager = is_team_manager(user_validate, [team.id]);
-    user_is_owner = is_team_owner(user_validate, team.id);
+    return Astro.redirect('/manage/teams');
 }
 
-if (!user_is_elevated) {
-    return Astro.redirect(`/league/teams/${team.id}`);
-}
+const playerInvites: Array<TeamInvite> = await srlm_get(`/players/${user.player}/invites`).then(resp => resp['invites']);
 
+    if (Astro.request.method === "POST") {
+    const form_data = await Astro.request.formData();
+    const action = form_data.get('action')?.toString();
+    const value = form_data.get('value')?.toString();
+
+    switch (action) {
+        case 'accept':
+            // accept invite with id 'value'
+            return Astro.redirect(`/manage/teams`);
+        case 'reject':
+            // cancel invite with id 'value'
+            
+            return Astro.redirect(`/manage/teams/invites`);
+    }
+}
 
 ---
 <TeamManageLayout 
     title={`My Team Invites`}
-    team={team}
+    team={null}
     page="invites"
     user_elevated={user_is_elevated}
     user_owner={user_is_owner}
     user_manager={user_is_manager}
     user_player={user_is_player}
     user_has_team={user_has_team}>
-    
+    <div class="mx-auto w-fit divide-y-2 divide-gray-600">
+        <div class="mb-5">
+            <h3 class="text-xl">Team Invites</h3>
+            <table class="mt-5 mx-auto">
+                <thead class="bg-gray-900">
+                    <tr class="divide-x-2 divide-gray-400">
+                        <th class="px-2">Team</th>
+                        <th class="px-2">Invited by</th>
+                        <th class="px-2">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {playerInvites.length > 0 &&
+                        playerInvites.map((invite, index) => (
+                            <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                <td class="px-2">{invite.team.name}</td>
+                                <td class="px-2">{invite.inviting_player.player_name}</td>
+                                <td class="px-2 py-1 flex">
+                                    <form method="post" class="mr-2">
+                                        <input type="text" name="action" value="accept" hidden/>
+                                        <input type="text" name="value" value={invite.id.toString()} hidden/>
+                                        <button formaction={`/manage/teams/invites`} class="accept bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                            Accept
+                                        </button>
+                                    </form>
+                                    <form method="post">
+                                        <input type="text" name="action" value="reject" hidden/>
+                                        <input type="text" name="value" value={invite.id.toString()} hidden/>
+                                        <button formaction={`/manage/teams/invites`} class="reject bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                            Reject
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        )) ||
+                        <tr class="bg-gray-700"><td colspan="100%" class="p-1">No invites received</td></tr>
+                    }
+                </tbody>
+            </table>
+            <script>
+                var cancel_buttons = [].slice.call(document.getElementsByClassName('cancel'));
+                cancel_buttons.forEach(element => {
+                    element.onclick = function confirmCancel(e) {
+                        if (!confirm('Are you sure you wish to cancel this application?'))
+                            e.preventDefault();
+                    }
+                });
+            </script>
+        </div>
+        
+    </div>
 </TeamManageLayout>

@@ -55,7 +55,6 @@ if (Astro.request.method === "POST") {
         case 'cancel':
             // cancel invite with id 'value'
             const resp = await srlm_delete(`/teams/invite/${value}`);
-            console.log(resp)
             break;
     }
 

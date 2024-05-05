@@ -41,10 +41,6 @@ if (player_team) {
     user_is_owner = is_team_owner(user_validate, team.id);
 }
 
-if (!user_is_elevated) {
-    return Astro.redirect(`/league/teams/${team.id}`);
-}
-
 var errors = null;
 
 var team_name: string;

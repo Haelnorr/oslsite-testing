@@ -51,13 +51,14 @@ function getPageTitle(page: string) {
                             {team.name}
                         </h4>
                         <hr>
+                        <a href={`/manage/teams/${team.id}/`} class={`${(page === 'details') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                            Details
+                        </a>
+                        <a href={`/manage/teams/${team.id}/roster`} class={`${(page === 'roster') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                            Current Roster
+                        </a>
                         {(user_manager || user_elevated) &&
-                            <a href={`/manage/teams/${team.id}/`} class={`${(page === 'details') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
-                                Details
-                            </a>
-                            <a href={`/manage/teams/${team.id}/roster`} class={`${(page === 'roster') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
-                                Current Roster
-                            </a>
+                            
                             <a href={`/manage/teams/${team.id}/invite`} class={`${(page === 'invite') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
                                 Invite Players
                             </a>
@@ -97,11 +98,11 @@ function getPageTitle(page: string) {
                 }
                 {!user_has_team &&
                     <div style="margin-bottom: -8px;">
+                        <a href={`/manage/teams/invites`} class={`${(page === 'invites') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`} style="margin-bottom: -8px;">
+                            View Invites
+                        </a>
                         <a href={`/manage/teams/create`} class={`${(page === 'create') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
                             Create Team
-                        </a>
-                        <a href={`/manage/teams/invites`} class={`${(page === 'invites') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
-                            View Invites
                         </a>
                         <hr><hr><hr>
                     </div>

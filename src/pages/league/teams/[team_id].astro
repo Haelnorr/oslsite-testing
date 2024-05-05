@@ -1,7 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
-import type { TeamStats } from "../../../util/srlmTypes";
+import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
+import type { PlayerTeams, Team, TeamStats, User } from "../../../util/srlmTypes";
 import { color_calc, srlm_get } from "../../../util/srlmUtils";
 import { Image } from 'astro:assets';
 
@@ -11,7 +11,7 @@ var user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
     user_token = '';
 }
-const required_perms = ['team_owner', 'team_manager'];
+const required_perms = ['admin', 'leag_coord', 'leag_comm', 'team_owner', 'team_manager'];
 const user_validate = await verify_user(user_token, required_perms);
 
 if (user_validate === '503') {
@@ -19,16 +19,28 @@ if (user_validate === '503') {
 }
 
 const user_authorized = perms_has_one_of(user_validate, required_perms);
-const user_is_manager = perms_has_one_of(user_validate, ['team_manager']);
 
-const team: TeamStats = await srlm_get(`/teams/${team_id}/stats`);
+const team: TeamStats = await srlm_get(`/teams/${team_id}/stats?cached=false`);
+
+const user_is_owner = is_team_owner(user_validate, team.id);
+const user_is_manager = is_team_manager(user_validate, [team.id]);
+const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
+var user_is_player = false;
+if (user.player) {
+    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=false`);
+    if (resp) {
+        if (resp.current_team.id === team.id) {
+            user_is_player = true;
+        }
+    };
+}
 
 if (!team) {
     return Astro.redirect('/404')
 }
-const user_is_owner = is_team_owner(user_validate, team.id);
 
-const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?current=True`);
+
+const current_players: TeamStats = await srlm_get(`/teams/${team_id}/stats?current=True&cached=false`);
 
 var team_logo = null;
 if (team.logo) {
@@ -52,7 +64,7 @@ if (team.logo) {
                         src={team_logo} />
                 }
                 <h2 class="font-bold text-2xl">{team.name}  ({team.acronym})</h2>
-                {user_authorized &&
+                {(user_authorized || user_is_owner || user_is_manager || user_is_player) &&
                     <span><a href={`/manage/teams/${team.id}`}>(Manage)</a></span>
                 }
             </div>

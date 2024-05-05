@@ -1,8 +1,8 @@
 ---
 import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
-import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
-import type { PlayerTeams, Team, TeamInvite, TeamManage, User } from "../../../util/srlmTypes";
-import { srlm_get } from "../../../util/srlmUtils";
+import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import type { PlayerTeams, Team, TeamInvite, User } from "../../../util/srlmTypes";
+import { srlm_get, srlm_post } from "../../../util/srlmUtils";
 
 var user_token = Astro.cookies.get('user_token')?.value;
 if (!user_token) {
@@ -37,20 +37,19 @@ if (player_team) {
 
 const playerInvites: Array<TeamInvite> = await srlm_get(`/players/${user.player}/invites`).then(resp => resp['invites']);
 
-    if (Astro.request.method === "POST") {
+console.log(playerInvites)
+
+if (Astro.request.method === "POST") {
     const form_data = await Astro.request.formData();
     const action = form_data.get('action')?.toString();
     const value = form_data.get('value')?.toString();
-
-    switch (action) {
-        case 'accept':
-            // accept invite with id 'value'
-            return Astro.redirect(`/manage/teams`);
-        case 'reject':
-            // cancel invite with id 'value'
-            
-            return Astro.redirect(`/manage/teams/invites`);
-    }
+    
+    const resp = await srlm_post(`/players/${user.player}/invites`, '', {
+        invite_id: value,
+        action: action
+    })
+    console.log(resp)
+    return Astro.redirect('/manage/teams/invites')
 }
 
 ---

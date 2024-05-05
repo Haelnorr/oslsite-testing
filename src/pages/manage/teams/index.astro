@@ -18,7 +18,7 @@ const user_elevated = perms_has_one_of(user_validate, elevated_perms);
 const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
 var player_team: Team = null;
 if (user.player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true`);
+    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=false`);
     if (resp) {player_team = resp.current_team};
 }
 

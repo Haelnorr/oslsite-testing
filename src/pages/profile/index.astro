@@ -88,7 +88,7 @@ type Team = {
 
 var team: Team;
 if (player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${player.id}/teams?current=true`)
+    const resp: PlayerTeams = await srlm_get(`/players/${player.id}/teams?current=true&cached=false`)
     if (resp) {team = resp.current_team}
 }
 

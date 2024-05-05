@@ -47,10 +47,14 @@ if (Astro.request.method === "POST") {
     const action = form_data.get('action')?.toString();
     const value = form_data.get('value')?.toString();
 
+    var redirect: string = `/manage/teams/${team.id}/roster`;
+    console.log(action)
+
     switch (action) {
         case 'leave-team':
             await leave_team(user.player);
-            return Astro.redirect('/manage/teams');
+            redirect = '/manage/teams';
+            break;
         case 'rejoin-team':
             await join_team(user.player, team.id.toString());
             break;
@@ -70,7 +74,7 @@ if (Astro.request.method === "POST") {
             break;
     }
 
-    return Astro.redirect(`/manage/teams/${team.id}/roster`);
+    return Astro.redirect(redirect);
 }
 ---
 <TeamManageLayout 

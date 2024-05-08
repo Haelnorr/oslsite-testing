@@ -1,43 +1,43 @@
 ---
 import TeamList from "../../../components/TeamList.astro";
 import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
-import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../util/authUtils";
+import { isTeamManager, is_team_owner, permsHasOneOf, validateUser } from "../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../util/srlmTypes";
-import { srlm_get } from "../../../util/srlmUtils";
+import { srlmGet } from "../../../util/srlmUtils";
 
-var user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+var userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/login')
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
-const user_validate = await verify_user(user_token, perms);
+const userValidate = await validateUser(userToken, perms);
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
-const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
+const user_is_elevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
 var user_is_owner = false;
-var user_is_manager = false;
+var userIsManager = false;
 
 
-const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
+const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
 var player_team: Team = null;
 if (user.player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=false`);
+    const resp: PlayerTeams = await srlmGet(`/players/${user.player}/teams?current=true&cached=false`);
     if (resp) {player_team = resp.current_team};
 }
 
 var team: TeamManage = null;
-var user_is_player = false;
+var userIsPlayer = false;
 var user_has_team = false;
 
 if (player_team) {
-    team = await srlm_get(`/teams/${player_team.id}/manage`);
-    user_is_player = (player_team.id === team.id);
+    team = await srlmGet(`/teams/${player_team.id}/manage`);
+    userIsPlayer = (player_team.id === team.id);
     user_has_team = true;
-    user_is_manager = is_team_manager(user_validate, [team.id]);
-    user_is_owner = is_team_owner(user_validate, team.id);
+    userIsManager = isTeamManager(userValidate, [team.id]);
+    user_is_owner = is_team_owner(userValidate, team.id);
 }
 
 if (!user_is_elevated) {
@@ -54,10 +54,10 @@ const order_by = Astro.url.searchParams.get('order_by')!;
     title={`Manage Teams`}
     team={team}
     page="list"
-    user_elevated={user_is_elevated}
+    userElevated={user_is_elevated}
     user_owner={user_is_owner}
-    user_manager={user_is_manager}
-    user_player={user_is_player}
+    user_manager={userIsManager}
+    user_player={userIsPlayer}
     user_has_team={user_has_team}>
     <TeamList page={page} per_page={per_page} order_by={order_by} order={order} manage={true}>
 

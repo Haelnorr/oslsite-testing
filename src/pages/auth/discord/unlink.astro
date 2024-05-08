@@ -1,26 +1,26 @@
 ---
-import { verify_user } from "../../../util/authUtils";
+import { validateUser } from "../../../util/authUtils";
 import type { Discord, User } from "../../../util/srlmTypes";
-import { srlm_delete, srlm_get } from "../../../util/srlmUtils";
+import { srlmDelete, srlmGet } from "../../../util/srlmUtils";
 
-const user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+const userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/login');
 }
 
-const user_verify = await verify_user(user_token);
+const userValidate = await validateUser(userToken);
 
-if (!user_verify) {
+if (!userValidate) {
     return Astro.redirect('/login?error=sessionexpire');
 }
 
-const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
-const discord: Discord = await srlm_get(`/users/${user.id}/discord`, user_token);
+const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
+const discord: Discord = await srlmGet(`/users/${user.id}/discord`, userToken);
 
 if (!discord) {
     return Astro.redirect('/profile')
 }
 
-const test = await srlm_delete(`/users/${user.id}/discord`, user_token);
+const test = await srlmDelete(`/users/${user.id}/discord`, userToken);
 return Astro.redirect('/profile')
 ---

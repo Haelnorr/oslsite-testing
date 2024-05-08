@@ -1,302 +1,223 @@
 ---
+import MatchPeriodBreakdown from "../../../components/MatchPeriodBreakdown.astro";
+import MatchTeamStats from "../../../components/MatchTeamStats.astro";
 import Layout from "../../../layouts/Layout.astro";
-import { is_team_manager } from "../../../util/authUtils";
-import { perms_has_one_of, verify_user } from "../../../util/authUtils";
-import type { Match, MatchStats } from "../../../util/srlmTypes";
-import { srlm_get } from "../../../util/srlmUtils";
+import { isTeamManager } from "../../../util/authUtils";
+import { permsHasOneOf, validateUser } from "../../../util/authUtils";
+import type { Match, MatchStats, TeamPlayers } from "../../../util/srlmTypes";
+import { color_calc, srlmGet, srlmPost } from "../../../util/srlmUtils";
 
-var user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
-    user_token = '';
+var userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
+    userToken = '';
 }
-const required_perms = ['admin', 'leag_coord', 'leag_comm', 'team_manager'];
-const user_validate = await verify_user(user_token, required_perms);
+const requiredPerms = ['admin', 'leag_coord', 'leag_comm', 'team_manager'];
+const userValidate = await validateUser(userToken, requiredPerms);
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
-const user_authorized = perms_has_one_of(user_validate, required_perms);
+
 
 const { match_id } = Astro.params;
 
-const match: Match = await srlm_get(`/match/${match_id}?cached=false`);
+const match: Match = await srlmGet(`/match/${match_id}?cached=false`);
 
-const match_stats: MatchStats = await srlm_get(`/match/${match_id}/stats?cached=false`);
+if (!match) {
+    return Astro.redirect('/404')
+}
+
+const matchStats: MatchStats = await srlmGet(`/match/${match_id}/stats?cached=false`);
+
+const userElevated = permsHasOneOf(userValidate, requiredPerms);
+const userIsManager = isTeamManager(userValidate, [match.home_team.id, match.away_team.id])
+var userIsStreamer = false;
+var userIsPlayer = false;
+const homeTeamPlayers: TeamPlayers = await srlmGet(`/teams/${match.home_team.id}/players/season/${match.season_division.id}`);
+const awayTeamPlayers: TeamPlayers = await srlmGet(`/teams/${match.away_team.id}/players/season/${match.season_division.id}`);
+
+if (Astro.request.method === 'POST') {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+
+    switch (action) {
+        case 'create-lobby':
+            const lobby = await srlmPost('/lobby', '', {
+                match_id: match.id
+            })
+            if (lobby) {
+                if (lobby.result) {
+                    if (lobby.result === 'Created') {
+                        return Astro.redirect(`/league/match/${match_id}`);
+                    }
+                }
+            }
+            console.log(lobby)
+            break;
+    }
+
+}
 
 ---
 <Layout title="Match">
     <main class="py-10">
         <div class="flex justify-evenly text-white">
-            {!match &&
-                <p>No match found</p>
-            }
-            {match &&
+            <div class="flex justify-center">
+                
                 <div>
-                    <p>Season: {match.season_division}</p>
-                    <p>Round: {match.round}</p>
-                    <p>Match Week: {match.match_week}</p>
-                    <p>Home Team: {match.home_team.name}</p>
-                    <p>Away Team: {match.away_team.name}</p>
+                    <div class="mb-5">
+                        <a href={`/league/seasons/${match.season_division.season.acronym}/${match.season_division.division.acronym}`}
+                            class="hover:underline hover:bg-opacity-100 px-2 py-1 bg-gray-300 bg-opacity-85 text-black border-4 border-gray-600 rounded-md w-fit shadow-md shadow-black">
+                            Back to {match.season_division.season.name} {match.season_division.division.name}
+                        </a>
+                    </div>
                     {match.results &&
-                        <br><div>
-                            <h2 class="text-3xl">Results:</h2>
-                            <table class="inline">
-                                <tr class="text-2xl">
-                                    <th colspan="4">{match.home_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{
-                                        (match.home_team.name === match.results.winner) && 
-                                            match.results.score_winner
-                                    }{
-                                        (match.home_team.name === match.results.loser) &&
-                                            match.results.score_loser
-                                    }</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.stat_totals.home.map(player => (
-                                    <tr>
-                                        <th>{player.player}</th>
-                                        <th>{player.periods_played}</th>
-                                        <th>{player.goals}</th>
-                                        <th>{player.shots}</th>
-                                        <th>{player.assists}</th>
-                                        <th>{player.saves}</th>
-                                    </tr>
-                                    ))
-                                }
-                            </table>
-                            <table class="inline border-collapse">
-                                <tr class="text-2xl">
-                                    <th colspan="4">{match.away_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{
-                                        (match.away_team.name === match.results.winner) && 
-                                            match.results.score_winner
-                                    }{
-                                        (match.away_team.name === match.results.loser) &&
-                                            match.results.score_loser
-                                    }</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.stat_totals.away.map(player => (
-                                        <tr>
-                                            <th>{player.player}</th>
-                                            <th>{player.periods_played}</th>
-                                            <th>{player.goals}</th>
-                                            <th>{player.shots}</th>
-                                            <th>{player.assists}</th>
-                                            <th>{player.saves}</th>
-                                        </tr>
-                                    ))
-                                }
-                            </table>
+                        <div class="bg-gray-800 bg-opacity-50 shadow-md shadow-black rounded-md p-5 text-center h-fit">
+                            <div>
+                                <h2 class="text-3xl">Results:</h2>
+                                <div class="flex justify-center mt-5">
+                                    <MatchTeamStats team={match.home_team} playerData={matchStats.stat_totals.home} results={match.results}/>
+                                    <div class="w-14"></div>
+                                    <MatchTeamStats team={match.away_team} playerData={matchStats.stat_totals.away} results={match.results}/>
+                                </div>
+                            </div>
+                            <hr class="mt-10">
+                            <div class="mt-5">
+                                <h2 class="text-3xl">Period Breakdown:</h2>
+                                <div>
+                                    <MatchPeriodBreakdown home_team={match.home_team} away_team={match.away_team} period={matchStats.periods.period1}/>
+                                    <MatchPeriodBreakdown home_team={match.home_team} away_team={match.away_team} period={matchStats.periods.period2}/>
+                                    <MatchPeriodBreakdown home_team={match.home_team} away_team={match.away_team} period={matchStats.periods.period3}/>
+                                </div>
+                            </div>
                         </div>
-                        <br><div>
-                            <h2 class="text-3xl">Period Breakdown:</h2>
-                            <table class="inline">
-                                <tr class="text-2xl">
-                                    <th colspan="6">Period 1</th>
-                                </tr>
-                                <tr class="text-xl">
-                                    <th colspan="4">{match.home_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{match_stats.periods.period1.home_score}</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.periods.period1.player_data.home.map(player => (
-                                        <tr>
-                                            <th>{player.player}</th>
-                                            <th>{player.periods_played}</th>
-                                            <th>{player.goals}</th>
-                                            <th>{player.shots}</th>
-                                            <th>{player.assists}</th>
-                                            <th>{player.saves}</th>
-                                        </tr>
-                                    ))
-                                }
-                                <tr class="text-xl">
-                                    <th colspan="4">{match.away_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{match_stats.periods.period1.away_score}</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.periods.period1.player_data.away.map(player => (
-                                        <tr>
-                                            <th>{player.player}</th>
-                                            <th>{player.periods_played}</th>
-                                            <th>{player.goals}</th>
-                                            <th>{player.shots}</th>
-                                            <th>{player.assists}</th>
-                                            <th>{player.saves}</th>
-                                        </tr>
-                                    ))
-                                }
-                            </table>
-                            <table class="inline">
-                                <tr class="text-2xl">
-                                    <th colspan="6">Period 2</th>
-                                </tr>
-                                <tr class="text-xl">
-                                    <th colspan="4">{match.home_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{match_stats.periods.period2.home_score}</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.periods.period2.player_data.home.map(player => (
-                                        <tr>
-                                            <th>{player.player}</th>
-                                            <th>{player.periods_played}</th>
-                                            <th>{player.goals}</th>
-                                            <th>{player.shots}</th>
-                                            <th>{player.assists}</th>
-                                            <th>{player.saves}</th>
-                                        </tr>
-                                    ))
-                                }
-                                <tr class="text-xl">
-                                    <th colspan="4">{match.away_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{match_stats.periods.period2.away_score}</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.periods.period2.player_data.away.map(player => (
-                                        <tr>
-                                            <th>{player.player}</th>
-                                            <th>{player.periods_played}</th>
-                                            <th>{player.goals}</th>
-                                            <th>{player.shots}</th>
-                                            <th>{player.assists}</th>
-                                            <th>{player.saves}</th>
-                                        </tr>
-                                    ))
-                                }
-                            </table>
-                            <table class="inline">
-                                <tr class="text-2xl">
-                                    <th colspan="6">Period 3</th>
-                                </tr>
-                                <tr class="text-xl">
-                                    <th colspan="4">{match.home_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{match_stats.periods.period3.home_score}</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.periods.period3.player_data.home.map(player => (
-                                        <tr>
-                                            <th>{player.player}</th>
-                                            <th>{player.periods_played}</th>
-                                            <th>{player.goals}</th>
-                                            <th>{player.shots}</th>
-                                            <th>{player.assists}</th>
-                                            <th>{player.saves}</th>
-                                        </tr>
-                                    ))
-                                }
-                                <tr class="text-xl">
-                                    <th colspan="4">{match.away_team.name}</th>
-                                    <th>Score:</th>
-                                    <th>{match_stats.periods.period3.away_score}</th>
-                                </tr>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Periods</th>
-                                    <th>Goals</th>
-                                    <th>Shots</th>
-                                    <th>Assists</th>
-                                    <th>Saves</th>
-                                </tr>
-                                {
-                                    match_stats.periods.period3.player_data.away.map(player => (
-                                        <tr>
-                                            <th>{player.player}</th>
-                                            <th>{player.periods_played}</th>
-                                            <th>{player.goals}</th>
-                                            <th>{player.shots}</th>
-                                            <th>{player.assists}</th>
-                                            <th>{player.saves}</th>
-                                        </tr>
-                                    ))
-                                }
-                            </table>
-                        </div>
-                    }
-                    {(!match.results && match.current_lobby) &&
-                        <p>Lobby password: {match.current_lobby.password}</p>
-                        <form method="post"><button>Delete Lobby</button></form> <!-- This button is for testing purposes only -->
-                    }
-                    {(!match.results && !match.current_lobby) && 
-                        <div>
-                            {(is_team_manager(user_validate, [match.home_team.id, match.away_team.id]) || user_authorized) &&
-                                <form method="post">
-                                    <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
-                                        Create lobby
-                                    </button>
-                                </form>
-                            }
-                            {user_authorized &&
-                                <a href={`upload-logs?match=${match.id}`}>Upload Logs</a>
+                        ||
+                        <div class="flex">
+                            <div class="bg-gray-800 bg-opacity-50 shadow-md shadow-black rounded-md p-5 text-center h-fit">
+                                <h4 class="text-2xl mb-2">Match Details</h4>
+                                <p>{match.season_division.season.name} {match.season_division.division.name}</p>
+                                <p>Round {match.round}, Match Week {match.match_week}</p>
+                                <p>Scheduled: {match.scheduled_time || 'Unscheduled'}</p>
+                                <div class="flex justify-center mt-5">
+                                    <div>
+                                        <table class="bg-gray-600 h-full bg-opacity-40 rounded-md shadow-md shadow-black">
+                                            <thead>
+                                                <tr>
+                                                    <td colspan="6" class="rounded-t-md font-bold text-lg px-2" style={color_calc(match.home_team.color)}>
+                                                        <a href={`/league/teams/${match.home_team.id}`}>{match.home_team.name} ({match.home_team.acronym})</a>
+                                                    </td>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {
+                                                    homeTeamPlayers.players.map(player => (
+                                                        <tr>
+                                                            <td class="px-2 py-1">{player.player_name}</td>
+                                                        </tr>
+                                                    ))
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="w-10 mx-5 flex">
+                                        <div class="text-xl font-bold m-auto">VS</div>
+                                    </div>
+                                    <div>
+                                        <table class="bg-gray-600 h-full bg-opacity-40 rounded-md shadow-md shadow-black">
+                                            <thead>
+                                                <tr>
+                                                    <td colspan="6" class="rounded-t-md font-bold text-lg px-2" style={color_calc(match.away_team.color)}>
+                                                        <a href={`/league/teams/${match.away_team.id}`}>{match.away_team.name} ({match.away_team.acronym})</a>
+                                                    </td>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {
+                                                    awayTeamPlayers.players.map(player => (
+                                                        <tr>
+                                                            <td class="px-2 py-1">{player.player_name}</td>
+                                                        </tr>
+                                                    ))
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {(userIsPlayer || userIsStreamer || userIsManager || userElevated) &&
+                                <div class="w-14"></div>
+                                <div class="bg-gray-800 bg-opacity-50 shadow-md shadow-black rounded-md p-5 text-center h-fit">
+                                    <h2 class="text-2xl mb-2">Game Lobby</h2>
+                                    {match.current_lobby &&
+                                        <div>
+                                            <div>
+                                                <div class="px-2 pb-2">An in game lobby has been created!</div>
+                                                <div class="bg-gray-600 p-2 shadow-md shadow-black rounded-md">Lobby password: {match.current_lobby.password}</div>
+                                            </div>
+                                            {(userIsManager || userElevated) &&
+                                                <div class="mt-5">
+                                                    <a id="show-report-issue" class="bg-red-600 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 hover:cursor-pointer duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black px-5 w-full">
+                                                        Report Issue
+                                                    </a>
+                                                    <div id="report-issue-overlay" style="display:none;" class="fixed flex w-screen h-screen z-50 bg-gray-900 bg-opacity-80 top-0 left-0 right-0 bottom-0">
+                                                        <div class="mx-auto my-20 bg-gray-700 w-fit h-fit p-10 rounded-md shadow-lg shadow-black">
+                                                            <a id="hide-report-issue" class="bg-gray-400 text-black font-bold px-2 pb-[2px] pt-[1px] rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2 hover:cursor-pointer">
+                                                                Cancel
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                    <script>
+                                                        document.getElementById('show-report-issue').onclick = function showPopup() {
+                                                            document.getElementById('report-issue-overlay').style.display = 'block';
+                                                        }
+                                                        document.getElementById('hide-report-issue').onclick = function hideUpload() {
+                                                            document.getElementById('report-issue-overlay').style.display = 'none';
+                                                        }
+                                                    </script>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        ||
+
+                                        <div>
+                                            {(userIsManager || userElevated) &&
+                                                <form method="post">
+                                                    <input name="action" value="create-lobby" hidden/>
+                                                    <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full px-5">
+                                                        Create lobby
+                                                    </button>
+                                                </form>
+                                            }
+                                            {userElevated &&
+                                                <div>
+                                                    <p class="mt-5">
+                                                        <a href={`upload-logs?match=${match.id}`} class="bg-green-600 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full px-5">
+                                                            Upload Logs
+                                                        </a>
+                                                    </p>
+                                                    {match.has_review &&
+                                                        <p class="mt-5">
+                                                            <a href={`upload-logs?match=${match.id}`} class="bg-red-500 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full px-5">
+                                                                Review Match
+                                                            </a>
+                                                        </p>
+                                                    }
+                                                </div>
+                                            }
+                                            {!(userIsManager || userElevated) && 
+                                                <p>Lobby has not yet been created</p>
+                                            }
+                                        </div>
+                                    }  
+                                </div>
                             }
                         </div>
                     }
                 </div>
-            }
+            </div>
         </div>
     </main>
 </Layout>

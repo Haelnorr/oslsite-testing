@@ -1,0 +1,76 @@
+---
+import type { Team, Period } from '../util/srlmTypes'
+import { color_calc } from '../util/srlmUtils';
+
+interface Props {
+    home_team: Team,
+    away_team: Team
+    period: Period,
+
+}
+
+const {home_team, away_team, period} = Astro.props;
+
+---
+
+<div>
+    <h2 class="text-2xl mb-3 mt-4">Period {period.current_period}</h2>
+    <table class="bg-gray-600 bg-opacity-40 rounded-md shadow-md shadow-black inline-block">
+        <thead class="bg-gray-900">
+            <tr class="text-xl">
+                <th colspan="3" class="font-bold rounded-tl-md" style={color_calc(home_team.color)}>{home_team.name}</th>
+                <th class="bg-gray-800 pl-4">Score:</th>
+                <th class="bg-gray-800 rounded-tr-md">{period.home_score}</th>
+            </tr>
+            <tr class="divide-x-2 divide-gray-400">
+                <th class="px-2">Player</th>
+                <th class="px-2">Goals</th>
+                <th class="px-2">Shots</th>
+                <th class="px-2">Assists</th>
+                <th class="px-2">Saves</th>
+            </tr>
+        </thead>
+        <tbody>
+            {
+                period.player_data.home.map((player, index) => (
+                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                        <td class={`${(index+1)===period.player_data.home.length && 'rounded-bl-md'} px-2 py-1 min-w-[200px]`}>{player.player}</th>
+                        <td class="px-2 py-1">{player.goals}</td>
+                        <td class="px-2 oy-1">{player.shots}</td>
+                        <td class="px-2 py-1">{player.assists}</td>
+                        <td class={`${(index+1)===period.player_data.home.length && 'rounded-br-md'} px-2 py-1`}>{player.saves}</td>
+                    </tr>
+                ))
+            }
+        </tbody>
+    </table>
+    <table class="bg-gray-600 bg-opacity-40 rounded-md shadow-md shadow-black inline-block">
+        <thead class="bg-gray-900">
+            <tr class="text-xl">
+                <th colspan="3" class="font-bold rounded-tl-md" style={color_calc(away_team.color)}>{away_team.name}</th>
+                <th class="bg-gray-800 pl-4">Score:</th>
+                <th class="bg-gray-800 rounded-tr-md">{period.away_score}</th>
+            </tr>
+            <tr class="divide-x-2 divide-gray-400">
+                <th class="px-2">Player</th>
+                <th class="px-2">Goals</th>
+                <th class="px-2">Shots</th>
+                <th class="px-2">Assists</th>
+                <th class="px-2">Saves</th>
+            </tr>
+        </thead>
+        <tbody>
+            {
+                period.player_data.away.map((player, index) => (
+                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                        <td class={`${(index+1)===period.player_data.away.length && 'rounded-bl-md'} px-2 py-1 min-w-[200px]`}>{player.player}</td>
+                        <td class="px-2 py-1">{player.goals}</td>
+                        <td class="px-2 py-1">{player.shots}</td>
+                        <td class="px-2 py-1">{player.assists}</td>
+                        <td class={`${(index+1)===period.player_data.away.length && 'rounded-br-md'} px-2 py-1`}>{player.saves}</td>
+                    </tr>
+                ))
+            }
+        </tbody>
+    </table>
+</div>

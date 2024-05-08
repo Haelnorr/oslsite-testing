@@ -1,21 +1,21 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { srlm_get, srlm_post } from "../../../util/srlmUtils";
+import { srlmGet, srlmPost } from "../../../util/srlmUtils";
 import { type Match } from "../../../util/srlmTypes";
-import { verify_user, perms_has_one_of } from "../../../util/authUtils";
+import { validateUser, permsHasOneOf } from "../../../util/authUtils";
 
-const user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+const userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/403');
 }
-const required_perms = ['admin', 'leag_coord', 'leag_comm'];
-const user_validate = await verify_user(user_token, required_perms);
+const requiredPerms = ['admin', 'leag_coord', 'leag_comm'];
+const userValidate = await validateUser(userToken, requiredPerms);
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
-const user_authorized = perms_has_one_of(user_validate, required_perms);
+const user_authorized = permsHasOneOf(userValidate, requiredPerms);
 
 if (!user_authorized) {
     return Astro.redirect('/403');
@@ -23,9 +23,9 @@ if (!user_authorized) {
 
 const match_id = Astro.url.searchParams.get('match');
 
-const match: Match = await srlm_get(`/match/${match_id}`);
+const match: Match = await srlmGet(`/match/${match_id}`);
 
-const gamemodes = await srlm_get('/match/gamemodes').then((resp) => resp['items']);
+const gamemodes = await srlmGet('/match/gamemodes').then((resp) => resp['items']);
 
 function timestamp_from_filename(filename: string) {
     const input_format = "%Y%m%d_%H%M%S";
@@ -79,7 +79,7 @@ if (Astro.request.method === "POST") {
             gamemode: form_data.get('gamemode')
         }
 
-        const upload = await srlm_post(`/match/logs`, '', match_data);
+        const upload = await srlmPost(`/match/logs`, '', match_data);
 
         if (upload && upload['result'] === "OK") {
             console.log(upload)

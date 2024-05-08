@@ -169,6 +169,14 @@ export type TeamStats = {
 }
 
 
+export type TeamPlayers = {
+    team: string,
+    acronym: string,
+    color: string,
+    players: Array<Player>
+}
+
+
 export type SeasonDivisionLeaderboard = {
     id: number,
     season: Season,
@@ -320,9 +328,21 @@ export type PlayerCollection = {
 }
 
 
+export type MatchResults = {
+    winner: string,
+    loser: string,
+    draw: boolean,
+    score_winner: number,
+    score_loser: number,
+    overtime: boolean,
+    forfeit: boolean,
+    vod: string
+}
+
+
 export type Match = {
     id: number,
-    season_division: string,
+    season_division: SeasonDivision,
     home_team: Team,
     away_team: Team,
     round: number,
@@ -338,16 +358,8 @@ export type Match = {
         id: number,
         password: string
     }
-    results: {
-        winner: string,
-        loser: string,
-        draw: boolean,
-        score_winner: number,
-        score_loser: number,
-        overtime: boolean,
-        forfeit: boolean,
-        vod: string
-    }
+    results: MatchResults,
+    has_review: boolean
 }
 
 export type Gamemode = {
@@ -356,7 +368,7 @@ export type Gamemode = {
     info: string
 }
 
-type PlayerData = {
+export type PlayerData = {
     id: number,
     player: string,
     team: string,
@@ -379,7 +391,7 @@ type PlayerData = {
     periods_played: number
 }
 
-type Period = {
+export type Period = {
     id: number,
     lobby_id: number,
     processed: boolean,

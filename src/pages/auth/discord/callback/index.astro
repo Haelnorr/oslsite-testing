@@ -1,9 +1,9 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
-import { set_cookies, verify_user } from '../../../../util/authUtils';
+import { set_cookies, validateUser } from '../../../../util/authUtils';
 import { getTokens, getUser } from '../../../../util/discordUtils';
 import type { User } from '../../../../util/srlmTypes';
-import { srlm_basic_auth, srlm_get, srlm_post } from '../../../../util/srlmUtils';
+import { srlm_basic_auth, srlmGet, srlmPost } from '../../../../util/srlmUtils';
 
 const code = Astro.url.searchParams.get('code');
 
@@ -18,16 +18,16 @@ const discord_login = {
     expires_in: data.expires_in
 }
 
-var user_token = Astro.cookies.get('user_token')?.value;
+var userToken = Astro.cookies.get('user_token')?.value;
 
-if (user_token) {
+if (userToken) {
     
-    const user_verify = await verify_user(user_token);
+    const userValidate = await validateUser(userToken);
 
-    console.log(user_verify)
+    console.log(userValidate)
 
-    if (user_verify) {
-        const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
+    if (userValidate) {
+        const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
 
         const discord_user = await getUser(data.access_token);
 
@@ -38,14 +38,14 @@ if (user_token) {
             expires_in: data.expires_in
         }
 
-        await srlm_post(`/users/${user.id}/discord`, user_token, discord_link);
+        await srlmPost(`/users/${user.id}/discord`, userToken, discord_link);
         return Astro.redirect('/profile')
     }
 }
 
-user_token = await srlm_post('/auth/discord', '', discord_login);
+userToken = await srlmPost('/auth/discord', '', discord_login);
 
-set_cookies(Astro, user_token);
+set_cookies(Astro, userToken);
 
 const userResponse = await getUser(data.access_token);
 

@@ -1,7 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import type { SeasonCollection } from "../../../util/srlmTypes";
-import { convert_link, srlm_get } from "../../../util/srlmUtils";
+import { convert_link, srlmGet } from "../../../util/srlmUtils";
 
 var page: string = Astro.url.searchParams.get('page')! || '1';
 var per_page: string = Astro.url.searchParams.get('per_page')! || '10';
@@ -35,7 +35,7 @@ if (end_date) {
 if (order_by) {
     query = query + `&order_by=${order_by}`;
 }
-const seasons: SeasonCollection = await srlm_get(`/seasons?${query}`);
+const seasons: SeasonCollection = await srlmGet(`/seasons?${query}`);
 
 //@ts-ignore
 if (seasons === '503') {

@@ -4,34 +4,34 @@ import Greetings from '../../data/greetings.json';
 import { getUser, refreshToken } from '../../util/discordUtils';
 import { Image } from 'astro:assets';
 import type { Discord, Player, PlayerTeams, Twitch, User } from '../../util/srlmTypes';
-import { srlm_get, srlm_post } from '../../util/srlmUtils';
-import { perms_has_one_of, verify_user } from '../../util/authUtils';
+import { srlmGet, srlmPost } from '../../util/srlmUtils';
+import { permsHasOneOf, validateUser } from '../../util/authUtils';
 import { steam } from '../../util/steamUtils';
 import steamLoginImg from '../../assets/steam.png';
 
 const randomGreeting = Greetings[Math.floor((Math.random() * Greetings.length))];
 
-const user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+const userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/login');
 }
 
 const optional_perms = ['leag_coord', 'leag_comm', 'admin', 'team_manager']
-const user_verify = await verify_user(user_token, optional_perms);
+const userValidate = await validateUser(userToken, optional_perms);
 
-if (user_verify === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
 
-if (!user_verify) {
+if (!userValidate) {
     return Astro.redirect('/login?error=sessionexpire');
 }
 
-const user: User = await srlm_get(`/users/${user_verify.user}`, user_token);
-const discord: Discord = await srlm_get(`/users/${user.id}/discord`, user_token);
-const player: Player = await srlm_get(`/players/${user.player}`);
-const twitch: Twitch = await srlm_get(`/users/${user.id}/twitch`, user_token);
+const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
+const discord: Discord = await srlmGet(`/users/${user.id}/discord`, userToken);
+const player: Player = await srlmGet(`/players/${user.player}`);
+const twitch: Twitch = await srlmGet(`/users/${user.id}/twitch`, userToken);
 
 var discord_profile;
 
@@ -55,14 +55,14 @@ if (discord) {
             expires_in: data.expires_in
         }
 
-        const user_token = await srlm_post('/auth/discord', '', discord_login);
+        const userToken = await srlmPost('/auth/discord', '', discord_login);
 
-        Astro.cookies.set('user_token', user_token.token, { 
+        Astro.cookies.set('user_token', userToken.token, { 
             maxAge: 60480000,
             httpOnly: true,
             path: '/'
         })
-        Astro.cookies.set('token_expiry', user_token.expires, { 
+        Astro.cookies.set('token_expiry', userToken.expires, { 
             maxAge: 604800,
             httpOnly: true,
             path: '/'
@@ -88,7 +88,7 @@ type Team = {
 
 var team: Team;
 if (player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${player.id}/teams?current=true&cached=false`)
+    const resp: PlayerTeams = await srlmGet(`/players/${player.id}/teams?current=true&cached=false`)
     if (resp) {team = resp.current_team}
 }
 
@@ -221,14 +221,14 @@ const steam_redirect = await steam.getRedirectUrl()
                     <p class="text-white py-2 font-bold w-48">To access streamer functions, link your twitch account</p>
                 </div>
             }
-            {perms_has_one_of(user_verify, ['admin', 'leag_coord', 'leag_comm']) &&
+            {permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']) &&
                 <div class="bg-green-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
                     <h3 class="text-white text-lg font-bold pb-2">Moderator Overview</h3>
                     <hr>
                     <p class="text-white py-2 font-bold">Admin Tools:</p>
                     <ul>
                         <li class="text-white py-2">- <a href="/manage/users" class="underline">Manage Users</a></li>
-                        {perms_has_one_of(user_verify, ['admin']) &&
+                        {permsHasOneOf(userValidate, ['admin']) &&
                             <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
                         }
                     </ul>
@@ -237,7 +237,7 @@ const steam_redirect = await steam.getRedirectUrl()
                         <li class="text-white py-2">- <a class="underline">Manage Players</a></li>
                         <li class="text-white py-2">- <a class="underline" href="/manage/teams/list">Manage Teams</a></li>
                         <li class="text-white py-2">- <a class="underline">Registrations</a></li>
-                        {perms_has_one_of(user_verify, ['admin', 'leag_comm']) &&
+                        {permsHasOneOf(userValidate, ['admin', 'leag_comm']) &&
                             <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>
                             <li class="text-white py-2">- <a class="underline" href="/manage/seasons/">Manage Seasons</a></li>
                         }

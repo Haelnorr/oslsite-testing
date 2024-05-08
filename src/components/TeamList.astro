@@ -1,7 +1,7 @@
 ---
 import { ViewTransitions } from 'astro:transitions';
 import type { TeamCollection } from '../util/srlmTypes';
-import { srlm_get } from '../util/srlmUtils';
+import { srlmGet } from '../util/srlmUtils';
 
 
 interface Props {
@@ -33,7 +33,7 @@ var query = `page=${page}&per_page=${per_page}&order=${order}&order_by=${order_b
 if (owner) {
     query = `owner=${owner}&per_page=50&cached=false`;
 }
-const teams: TeamCollection = await srlm_get(`/teams?${query}`);
+const teams: TeamCollection = await srlmGet(`/teams?${query}`);
 
 function query_to_dict(query) {
     var params_list = query.replace('?', '').split('&');

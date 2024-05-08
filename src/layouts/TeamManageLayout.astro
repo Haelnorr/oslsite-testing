@@ -8,14 +8,14 @@ interface Props {
 	title: string,
     team: TeamManage,
     page: string,
-    user_elevated: boolean,
+    userElevated: boolean,
     user_owner: boolean,
     user_manager: boolean,
     user_player: boolean
     user_has_team: boolean,
 }
 
-const { title, team, page, user_elevated, user_owner, user_manager, user_player, user_has_team } = Astro.props;
+const { title, team, page, userElevated, user_owner, user_manager, user_player, user_has_team } = Astro.props;
 
 function getPageTitle(page: string) {
     switch(page) {
@@ -57,7 +57,7 @@ function getPageTitle(page: string) {
                         <a href={`/manage/teams/${team.id}/roster`} class={`${(page === 'roster') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
                             Current Roster
                         </a>
-                        {(user_manager || user_elevated) &&
+                        {(user_manager || userElevated) &&
                             
                             <a href={`/manage/teams/${team.id}/invite`} class={`${(page === 'invite') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
                                 Invite Players
@@ -107,7 +107,7 @@ function getPageTitle(page: string) {
                         <hr><hr><hr>
                     </div>
                 }
-                {user_elevated &&
+                {userElevated &&
                     <div style="margin-bottom: -8px;">
                         <a href={`/manage/teams/list`} class={`${(page === 'list') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
                             List All Teams

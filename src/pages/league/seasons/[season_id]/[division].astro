@@ -1,25 +1,25 @@
 ---
 import Layout from "../../../../layouts/Layout.astro";
-import { perms_has_one_of, verify_user } from "../../../../util/authUtils";
+import { permsHasOneOf, validateUser } from "../../../../util/authUtils";
 import type { SeasonDivisionLeaderboard, Team } from "../../../../util/srlmTypes";
-import { color_calc, srlm_get } from "../../../../util/srlmUtils";
+import { color_calc, srlmGet } from "../../../../util/srlmUtils";
 
 var {season_id, division} = Astro.params;
 
-var user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
-    user_token = '';
+var userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
+    userToken = '';
 }
-const required_perms = ['admin', 'leag_coord', 'leag_comm'];
-const user_validate = await verify_user(user_token, required_perms);
+const requiredPerms = ['admin', 'leag_coord', 'leag_comm'];
+const userValidate = await validateUser(userToken, requiredPerms);
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
-const user_authorized = perms_has_one_of(user_validate, required_perms);
+const user_authorized = permsHasOneOf(userValidate, requiredPerms);
 
-const results: SeasonDivisionLeaderboard = await srlm_get(`/season_division/leaderboard?league=osl&season=${season_id}&division=${division}`);
+const results: SeasonDivisionLeaderboard = await srlmGet(`/season_division/leaderboard?league=osl&season=${season_id}&division=${division}`);
 
 if (!results) {
     return Astro.redirect(`/league/seasons/${season}`)
@@ -40,80 +40,84 @@ type Match = {
     result: string
 }
 
-const upcoming_matches: Match[] = await srlm_get(`/season_division/${results.id}/matches?unplayed=True`).then(resp => resp['matches']);
-const completed_matches: Match[] = await srlm_get(`/season_division/${results.id}/matches?unplayed=False`).then(resp => resp['matches']);
-
-console.log(color_calc(results.teams[0].color))
+const upcoming_matches: Match[] = await srlmGet(`/season_division/${results.id}/matches?unplayed=True`).then(resp => resp['matches']);
+const completed_matches: Match[] = await srlmGet(`/season_division/${results.id}/matches?unplayed=False`).then(resp => resp['matches']);
 
 ---
 <Layout title={`${results.season.name}: ${results.division.acronym}`}>
     <main class="py-10 sm:container mx-auto text-white text-center">
         <h2 class="text-4xl">{results.season.name}: {results.division.name}</h2>
         {user_authorized &&
-            <a href={`/league/match/create?season_division=${results.id}`}>Create Match</a>
+            <a href={`/league/match/create?season_division=${results.id}`} class="hover:underline">Create Match</a>
         }
-        <section class="flex flex-wrap justify-between pt-5">
+        <section class="flex flex-wrap justify-center pt-5">
             <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
                 <h3 class="text-2xl">Ladder:</h3>
-                <table>
-                    <tr>
-                        <th>Position</th>
-                        <th>Team</th>
-                        <th>Matches</th>
-                        <th>Wins</th>
-                        <th>OT Wins</th>
-                        <th>Losses</th>
-                        <th>OT Losses</th>
-                        <th>Points</th>
-                        <th>Goal Diff</th>
-                        <th>Goals For</th>
-                        <th>Goals Against</th>
-                        <th>Goals/Game</th>
-                        <th>Win %</th>
-                    </tr>
-                    {
-                        results.teams.map((team, index) => (
-                            <tr>
-                                <td>{index+1}</td>
-                                <td><a href={`/league/teams/${team.id}`}>{team.name}</a></td>
-                                <td>{team.matches}</td>
-                                <td>{team.wins}</td>
-                                <td>{team.ot_wins}</td>
-                                <td>{team.losses}</td>
-                                <td>{team.ot_losses}</td>
-                                <td>{team.points}</td>
-                                <td>{team.goals_for - team.goals_against}</td>
-                                <td>{team.goals_for}</td>
-                                <td>{team.goals_against}</td>
-                                <td>{(team.goals_for / team.matches) || '-'}</td>
-                                <td>{(team.wins / team.matches * 100) || '-'}</td>
-                            </tr>
-                        ))
-                    }
-                    <tr>
-                        <td rowspan="2" colspan="2">Points Guide</td>
-                        <td>Forfeit</td>
-                        <td>Win</td>
-                        <td>OT Win</td>
-                        <td>Loss</td>
-                        <td>OT Loss</td>
-                        <td colspan="6">Ladder Sorting Priority</td>
-                    </tr>
-                    <tr>
-                        <td>0 - 0 W/L</td>
-                        <td>3</td>
-                        <td>2</td>
-                        <td>0</td>
-                        <td>1</td>
-                        <td colspan="2">1. Points &uarr;</td>
-                        <td colspan="2">2. Goal Diff &uarr;</td>
-                        <td colspan="2">3. Goals For &uarr;</td>
-                    </tr>
-
+                <table class="divide-y-2 divide-gray-400">
+                    <thead class="bg-gray-900">
+                        <tr class="divide-x-2 divide-gray-400">
+                            <th class="px-2">Position</th>
+                            <th class="px-2">Team</th>
+                            <th class="px-2">Matches</th>
+                            <th class="px-2">Wins</th>
+                            <th class="px-2">OT Wins</th>
+                            <th class="px-2">Losses</th>
+                            <th class="px-2">OT Losses</th>
+                            <th class="px-2">Points</th>
+                            <th class="px-2">Goal Diff</th>
+                            <th class="px-2">Goals For</th>
+                            <th class="px-2">Goals Against</th>
+                            <th class="px-2">Goals/Game</th>
+                            <th class="px-2">Win %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            results.teams.map((team, index) => (
+                                <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                    <td class="px-2">{index+1}</td>
+                                    <td class="px-2"><a href={`/league/teams/${team.id}`}>{team.name}</a></td>
+                                    <td class="px-2">{team.matches}</td>
+                                    <td class="px-2">{team.wins}</td>
+                                    <td class="px-2">{team.ot_wins}</td>
+                                    <td class="px-2">{team.losses}</td>
+                                    <td class="px-2">{team.ot_losses}</td>
+                                    <td class="px-2">{team.points}</td>
+                                    <td class="px-2">{team.goals_for - team.goals_against}</td>
+                                    <td class="px-2">{team.goals_for}</td>
+                                    <td class="px-2">{team.goals_against}</td>
+                                    <td class="px-2">{(team.goals_for / team.matches) || '-'}</td>
+                                    <td class="px-2">{(team.wins / team.matches * 100) || '-'}</td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                    <tfoot class="bg-gray-900 divide-y-2 divide-gray-400">
+                        <tr class="divide-x-2 divide-gray-400">
+                            <td rowspan="2" colspan="2" class="border-r-2 border-gray-400">Points Guide</td>
+                            <td>Forfeit</td>
+                            <td>Win</td>
+                            <td>OT Win</td>
+                            <td>Loss</td>
+                            <td>OT Loss</td>
+                            <td colspan="6">Ladder Sorting Priority</td>
+                        </tr>
+                        <tr class="divide-x-2 divide-gray-400">
+                            <td>0 - 0 W/L</td>
+                            <td>3</td>
+                            <td>2</td>
+                            <td>0</td>
+                            <td>1</td>
+                            <td colspan="2">1. Points &uarr;</td>
+                            <td colspan="2">2. Goal Diff &uarr;</td>
+                            <td colspan="2">3. Goals For &uarr;</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </section>
-        <div>
+        <hr>
+        <div class="mt-5">
             {results.teams.length > 0 &&
                <div>
                     <h3 class="text-2xl">Teams:</h3>
@@ -122,231 +126,280 @@ console.log(color_calc(results.teams[0].color))
                             results.teams.map(team => (
                                 <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
                                     <table>
-                                        <tr>
-                                            <td colspan="6" class="rounded-md font-bold" style={color_calc(team.color)}>
-                                                <a href={`/league/teams/${team.id}`}>{team.name} ({team.acronym})</a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th class="px-2">Player</td>
-                                            <th class="px-2">Periods</th>
-                                            <th class="px-2">Goals</tdh>
-                                            <th class="px-2">Shots</th>
-                                            <th class="px-2">Assists</th>
-                                            <th class="px-2">Saves</th>
-                                        </tr>
-                                        {
-                                            team.players.map(player => (
-                                                <tr>
-                                                    <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
-                                                    <td class="px-2">{player.periods}</td>
-                                                    <td class="px-2">{player.goals}</td>
-                                                    <td class="px-2">{player.shots}</td>
-                                                    <td class="px-2">{player.assists}</td>
-                                                    <td class="px-2">{player.saves}</td>
-                                                </tr>
-                                            ))
-                                        }
-                                        
+                                        <thead class="bg-gray-900">
+                                            <tr>
+                                                <td colspan="6" class="rounded-t-md font-bold text-lg" style={color_calc(team.color)}>
+                                                    <a href={`/league/teams/${team.id}`}>{team.name} ({team.acronym})</a>
+                                                </td>
+                                            </tr>
+                                            <tr class="divide-x-2 divide-gray-400">
+                                                <th class="px-2">Player</td>
+                                                <th class="px-2">Periods</th>
+                                                <th class="px-2">Goals</tdh>
+                                                <th class="px-2">Shots</th>
+                                                <th class="px-2">Assists</th>
+                                                <th class="px-2">Saves</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {
+                                                team.players.map((player, index) => (
+                                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                                        <td class="px-2">{player.periods}</td>
+                                                        <td class="px-2">{player.goals}</td>
+                                                        <td class="px-2">{player.shots}</td>
+                                                        <td class="px-2">{player.assists}</td>
+                                                        <td class="px-2">{player.saves}</td>
+                                                    </tr>
+                                                ))
+                                            }
+                                        </tbody>
                                     </table>
                                 </div>
                             ))
                         }
                         <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
                                     <table>
-                                        <tr>
-                                            <td colspan="6" class="rounded-md font-bold">
-                                                Free Agents
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th class="px-2">Player</td>
-                                            <th class="px-2">Periods</th>
-                                            <th class="px-2">Goals</tdh>
-                                            <th class="px-2">Shots</th>
-                                            <th class="px-2">Assists</th>
-                                            <th class="px-2">Saves</th>
-                                        </tr>
-                                        {
-                                            results.free_agents.map(player => (
-                                                <tr>
-                                                    <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
-                                                    <td class="px-2">{player.periods}</td>
-                                                    <td class="px-2">{player.goals}</td>
-                                                    <td class="px-2">{player.shots}</td>
-                                                    <td class="px-2">{player.assists}</td>
-                                                    <td class="px-2">{player.saves}</td>
-                                                </tr>
-                                            ))
-                                        }
-                                        
+                                        <thead class="bg-gray-900">
+                                            <tr>
+                                                <td colspan="6" class="rounded-t-md font-bold text-lg bg-gray-500">
+                                                    Free Agents
+                                                </td>
+                                            </tr>
+                                            <tr class="divide-x-2 divide-gray-400">
+                                                <th class="px-2">Player</td>
+                                                <th class="px-2">Periods</th>
+                                                <th class="px-2">Goals</tdh>
+                                                <th class="px-2">Shots</th>
+                                                <th class="px-2">Assists</th>
+                                                <th class="px-2">Saves</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {
+                                                results.free_agents.map((player, index) => (
+                                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                                        <td class="px-2">{player.periods}</td>
+                                                        <td class="px-2">{player.goals}</td>
+                                                        <td class="px-2">{player.shots}</td>
+                                                        <td class="px-2">{player.assists}</td>
+                                                        <td class="px-2">{player.saves}</td>
+                                                    </tr>
+                                                ))
+                                            }
+                                        </tbody>
                                     </table>
                                 </div>
                     </section>
                 </div>
             }
         </div>
-        <div>
+        <hr>
+        <div class="mt-5">
             <h3 class="text-2xl">Trophy Leaders:</h3>
-            <section class="flex flex-wrap justify-between pt-5">
-                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                    <h4 class="text-xl">Leading Goalscorer:</h4>
-                    <table>
-                        <tr>
-                            <th>Position</th>
-                            <th>Player</th>
-                            <th>Team</th>
-                            <th>Goals</th>
-                            <th>Periods</th>
-                            <th>Shots</th>
-                        </tr>
-                        {
-                            results.most_goals.map((player, index) => (
-                                <tr>
-                                    <td>{index + 1}</td>
-                                    <td><a href={`/league/players/${player.id}`}>{player.name}</a></td>
-                                    <td>{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
-                                    <td>{player.goals}</td>
-                                    <td>{player.periods}</td>
-                                    <td>{player.shots}</td>
-                                </tr>
-                            ))
-                        }
+            <section class="flex flex-wrap justify-center pt-5">
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10 mx-10">
+                    <h4 class="text-lg font-bold">Leading Goalscorer:</h4>
+                    <table class="mt-3">
+                        <thead class="bg-gray-900">
+                            <tr class="divide-x-2 divide-gray-400">
+                                <th class="px-2">Position</th>
+                                <th class="px-2">Player</th>
+                                <th class="px-2">Team</th>
+                                <th class="px-2">Goals</th>
+                                <th class="px-2">Periods</th>
+                                <th class="px-2">Shots</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                results.most_goals.map((player, index) => (
+                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                        <td class="px-2">{index + 1}</td>
+                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                        <td class="px-2">{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                        <td class="px-2">{player.goals}</td>
+                                        <td class="px-2">{player.periods}</td>
+                                        <td class="px-2">{player.shots}</td>
+                                    </tr>
+                                ))
+                            }
+                            {results.most_goals.length == 0 &&
+                                <tr class="bg-gray-600"><td colspan="100%">No stats to display</td></tr>
+                            }
+                        </tbody>
                     </table>
-                    <table class="w-full text-center">
-                        <tr>
-                            <td colspan="3">Sorting Priority</td>
-                        </tr>
-                        <tr>
-                            <td class="w-[33.33%]">1. Goals &uarr;</td>
-                            <td>2. Periods &darr;</td>
-                            <td>3. Shots &darr;</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                    <h4 class="text-xl">Leading Playmaker:</h4>
-                    <table>
-                        <tr>
-                            <th>Position</th>
-                            <th>Player</th>
-                            <th>Team</th>
-                            <th>Assists</th>
-                            <th>Periods</th>
-                            <th>Primary Assists</th>
-                        </tr>
-                        {
-                            results.most_assists.map((player, index) => (
-                                <tr>
-                                    <td>{index + 1}</td>
-                                    <td><a href={`/league/players/${player.id}`}>{player.name}</a></td>
-                                    <td>{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
-                                    <td>{player.assists}</td>
-                                    <td>{player.periods}</td>
-                                    <td>{player.primary_assists}</td>
-                                </tr>
-                            ))
-                        }
-                    </table>
-                    <table class="w-full text-center">
-                        <tr>
-                            <td colspan="3" class="pr-10">Sorting Priority</td>
-                        </tr>
-                        <tr>
-                            <td class="w-[33.33%]">1. Assists &uarr;</td>
-                            <td>2. Periods &darr;</td>
-                            <td>3. Primary Assists &uarr;</td>
-                        </tr>
+                    <table class="w-full text-center bg-gray-900 border-t-2 border-gray-400">
+                        <tbody class="divide-y-2 divide-gray-400">
+                            <tr>
+                                <td colspan="3">Sorting Priority</td>
+                            </tr>
+                            <tr class="divide-x-2 divide-gray-400">
+                                <td class="w-[33.33%]">1. Goals &uarr;</td>
+                                <td>2. Periods &darr;</td>
+                                <td>3. Shots &darr;</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
-                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                    <h4 class="text-xl">Leading Goaltender:</h4>
-                    <table>
-                        <tr>
-                            <th>Position</th>
-                            <th>Player</th>
-                            <th>Team</th>
-                            <th>Saves</th>
-                            <th>Periods</th>
-                            <td>Blocks</td>
-                        </tr>
-                        {
-                            results.most_saves.map((player, index) => (
-                                <tr>
-                                    <td>{index + 1}</td>
-                                    <td><a href={`/league/players/${player.id}`}>{player.name}</a></td>
-                                    <td>{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
-                                    <td>{player.saves}</td>
-                                    <td>{player.periods}</td>
-                                    <td>{player.blocks}</td>
-                                </tr>
-                            ))
-                        }
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10 mx-10">
+                    <h4 class="text-lg font-bold">Leading Playmaker:</h4>
+                    <table class="mt-3">
+                        <thead class="bg-gray-900">
+                            <tr class="divide-x-2 divide-gray-400">
+                                <th class="px-2">Position</th>
+                                <th class="px-2">Player</th>
+                                <th class="px-2">Team</th>
+                                <th class="px-2">Assists</th>
+                                <th class="px-2">Periods</th>
+                                <th class="px-2">Primary Assists</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                results.most_assists.map((player, index) => (
+                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                        <td class="px-2">{index + 1}</td>
+                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                        <td class="px-2">{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                        <td class="px-2">{player.assists}</td>
+                                        <td class="px-2">{player.periods}</td>
+                                        <td class="px-2">{player.primary_assists}</td>
+                                    </tr>
+                                ))
+                            }
+                            {results.most_assists.length == 0 &&
+                                <tr class="bg-gray-600"><td colspan="100%">No stats to display</td></tr>
+                            }
+                        </tbody>
                     </table>
-                    <table class="w-full text-center">
-                        <tr>
-                            <td colspan="3">Sorting Priority</td>
-                        </tr>
-                        <tr>
-                            <td class="w-[33.33%]">1. Saves &uarr;</td>
-                            <td>2. Periods &darr;</td>
-                            <td>3. Blocks &uarr;</td>
-                        </tr>
+                    <table class="w-full text-center bg-gray-900 border-t-2 border-gray-400">
+                        <tbody class="divide-y-2 divide-gray-400">
+                            <tr>
+                                <td colspan="3" class="pr-10">Sorting Priority</td>
+                            </tr>
+                            <tr class="divide-x-2 divide-gray-400">
+                                <td class="w-[33.33%]">1. Assists &uarr;</td>
+                                <td>2. Periods &darr;</td>
+                                <td>3. Primary Assists &uarr;</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10 mx-10">
+                    <h4 class="text-lg">Leading Goaltender:</h4>
+                    <table class="mt-3">
+                        <thead class="bg-gray-900">
+                            <tr class="divide-x-2 divide-gray-400">
+                                <th class="px-2">Position</th>
+                                <th class="px-2">Player</th>
+                                <th class="px-2">Team</th>
+                                <th class="px-2">Saves</th>
+                                <th class="px-2">Periods</th>
+                                <td class="px-2">Blocks</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                results.most_saves.map((player, index) => (
+                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                        <td class="px-2">{index + 1}</td>
+                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                        <td class="px-2">{(player.team_id && <a href={`/league/teams/${player.team_id}`}>{player.team}</a>) || player.team}</td>
+                                        <td class="px-2">{player.saves}</td>
+                                        <td class="px-2">{player.periods}</td>
+                                        <td class="px-2">{player.blocks}</td>
+                                    </tr>
+                                ))
+                            }
+                            {results.most_saves.length == 0 &&
+                                <tr class="bg-gray-600"><td colspan="100%">No stats to display</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                    <table class="w-full text-center bg-gray-900 border-t-2 border-gray-400">
+                        <tbody class="divide-y-2 divide-gray-400">
+                            <tr>
+                                <td colspan="3">Sorting Priority</td>
+                            </tr>
+                            <tr class="divide-x-2 divide-gray-400">
+                                <td class="w-[33.33%]">1. Saves &uarr;</td>
+                                <td>2. Periods &darr;</td>
+                                <td>3. Blocks &uarr;</td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </section>
         </div>
         <div>
-            <section class="flex flex-wrap justify-between pt-5">
+            <section class="flex flex-wrap justify-center pt-5">
                 <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                    <h4>Upcoming matches</h4>
-                    <table>
-                        <tr>
-                            <th>ID</th>
-                            <th>Home</th>
-                            <th>Away</th>
-                            <th>Round</th>
-                            <th>Match Week</th>
-                            <th>Final</th>
-                            <th>Scheduled</th>
-                        </tr>
-                        {
-                            upcoming_matches.map(match => (
-                                <tr>
-                                    <td><a href={`/league/match/${match.id}`}>{match.id}</a></td>
-                                    <td>{match.home_team.name}</td>
-                                    <td>{match.away_team.name}</td>
-                                    <td>{match.round}</td>
-                                    <td>{match.match_week}</td>
-                                    <td>{(match.final && 'Yes') || 'No'}</td>
-                                    <td>{match.scheduled_time || '-'}</td>
+                    <h4 class="text-lg mb-3 font-bold">Upcoming matches</h4>
+                    {upcoming_matches.length > 0 &&
+                        <table>
+                            <thead class="bg-gray-900">
+                                <tr class="divide-x-2 divide-gray-400">
+                                    <th class="px-2">ID</th>
+                                    <th class="px-2">Home</th>
+                                    <th class="px-2">Away</th>
+                                    <th class="px-2">Round</th>
+                                    <th class="px-2">Match Week</th>
+                                    <th class="px-2">Final</th>
+                                    <th class="px-2">Scheduled</th>
                                 </tr>
-                            ))
-                        }
-                    </table>
+                            </thead>
+                            <tbody>
+                                {
+                                    upcoming_matches.map((match, index) => (
+                                        <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                            <td class="px-2"><a href={`/league/match/${match.id}`} class="hover:underline">{match.id}</a></td>
+                                            <td class="px-2">{match.home_team.name}</td>
+                                            <td class="px-2">{match.away_team.name}</td>
+                                            <td class="px-2">{match.round}</td>
+                                            <td class="px-2">{match.match_week}</td>
+                                            <td class="px-2">{(match.final && 'Yes') || 'No'}</td>
+                                            <td class="px-2">{match.scheduled_time || '-'}</td>
+                                        </tr>
+                                    ))
+                                }
+                            </tbody>
+                        </table> ||
+                        <p>No upcoming matches</p>
+                    }
                 </div>
+                <div class="w-32"></div>
                 <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                    <h4>Completed matches</h4>
-                    <table>
-                        <tr>
-                            <th>ID</th>
-                            <th>Result</th>
-                            <th>Round</th>
-                            <th>Match Week</th>
-                            <th>Final</th>
-                        </tr>
-                        {
-                            completed_matches.map(match => (
-                                <tr>
-                                    <td><a href={`/league/match/${match.id}`}>{match.id}</a></td>
-                                    <td>{match.result}</td>
-                                    <td>{match.round}</td>
-                                    <td>{match.match_week}</td>
-                                    <td>{(match.final && 'Yes') || 'No'}</td>
+                    <h4 class="text-lg mb-3 font-bold">Completed matches</h4>
+                    {completed_matches.length > 0 &&
+                        <table>
+                            <thead class="bg-gray-900">
+                                <tr class="divide-x-2 divide-gray-400">
+                                    <th class="px-2">ID</th>
+                                    <th class="px-2">Result</th>
+                                    <th class="px-2">Round</th>
+                                    <th class="px-2">Match Week</th>
+                                    <th class="px-2">Final</th>
                                 </tr>
-                            ))
-                        }
-                    </table>
+                            </thead>
+                            <tbody>
+                                {
+                                    completed_matches.map((match, index) => (
+                                        <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                            <td class="px-2"><a href={`/league/match/${match.id}`} class="hover:underline">{match.id}</a></td>
+                                            <td class="px-2">{match.result}</td>
+                                            <td class="px-2">{match.round}</td>
+                                            <td class="px-2">{match.match_week}</td>
+                                            <td class="px-2">{(match.final && 'Yes') || 'No'}</td>
+                                        </tr>
+                                    ))
+                                }
+                            </tbody>
+                        </table> ||
+                        <p>No completed matches</p>
+                    }
                 </div>
             </section>
         </div>

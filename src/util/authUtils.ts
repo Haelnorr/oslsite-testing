@@ -1,8 +1,8 @@
-import { srlm_post } from "./srlmUtils";
+import { srlmPost } from "./srlmUtils";
 
-export async function verify_user(token: string, perms:Array<string>=null) {
+export async function validateUser(token: string, perms:Array<string>=null) {
     if (perms) {
-        var perms_resp = await srlm_post('/auth/user/validate', token, {perms:perms});
+        var perms_resp = await srlmPost('/auth/user/validate', token, {perms:perms});
         if (perms_resp) {
 
             if (perms_resp === '503') {
@@ -20,11 +20,11 @@ export async function verify_user(token: string, perms:Array<string>=null) {
         }
         
     } else {
-        return await srlm_post('/auth/user/validate', token);
+        return await srlmPost('/auth/user/validate', token);
     }
 }
 
-export function perms_has_one_of(user, perms: Array<string>) {
+export function permsHasOneOf(user, perms: Array<string>) {
     var has_perm = false;
     perms.forEach((perm: string) => {
         try {
@@ -38,7 +38,7 @@ export function perms_has_one_of(user, perms: Array<string>) {
     return has_perm;
 }
 
-export function is_team_manager(user, teams: Array<number>) {
+export function isTeamManager(user, teams: Array<number>) {
     var is_manager = false;
     if (user.has_perms['team_manager']) {
         teams.forEach((team: number) => {
@@ -66,15 +66,15 @@ export function is_team_owner(user, team_id: number) {
     
 }
 
-export function set_cookies(Astro, user_token) {
+export function set_cookies(Astro, userToken) {
     Astro.cookies.delete('user_token');
     Astro.cookies.delete('token_expiry');
-    Astro.cookies.set('user_token', user_token.token, { 
+    Astro.cookies.set('user_token', userToken.token, { 
         maxAge: 60480000,
         httpOnly: true,
         path: '/'
     })
-    Astro.cookies.set('token_expiry', user_token.expires, { 
+    Astro.cookies.set('token_expiry', userToken.expires, { 
         maxAge: 604800,
         httpOnly: true,
         path: '/'

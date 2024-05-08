@@ -2,10 +2,10 @@
 import type { Props } from 'astro/components/ViewTransitions.astro';
 import Layout from '../../layouts/Layout.astro';
 import SeasonCard from '../../components/SeasonCard.astro';
-import { convert_link, srlm_get } from '../../util/srlmUtils';
+import { convert_link, srlmGet } from '../../util/srlmUtils';
 import type { League, SeasonCollection } from '../../util/srlmTypes';
 
-const league_data: League = await srlm_get('/leagues/osl');
+const league_data: League = await srlmGet('/leagues/osl');
 
 //@ts-ignore
 if (league_data === '503') {
@@ -33,10 +33,10 @@ const yesterday: string = get_yesterday();
 
 
 
-const current_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&current=True');
-const last_season: SeasonCollection = await srlm_get('/seasons?league=osl&last=True');
-const upcoming_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&next=True');
-const completed_seasons: SeasonCollection = await srlm_get('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday);
+const current_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&current=True');
+const last_season: SeasonCollection = await srlmGet('/seasons?league=osl&last=True');
+const upcoming_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&next=True');
+const completed_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday);
 
 ---
 <Layout title="League">

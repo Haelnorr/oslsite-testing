@@ -1,29 +1,29 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { perms_has_one_of, set_cookies, verify_user } from "../../../util/authUtils";
+import { permsHasOneOf, set_cookies, validateUser } from "../../../util/authUtils";
 import type { User } from "../../../util/srlmTypes";
-import { checkbox_to_bool, srlm_get, srlm_post, srlm_put } from "../../../util/srlmUtils";
+import { checkbox_to_bool, srlmGet, srlmPost, srlmPut } from "../../../util/srlmUtils";
 
 
-const user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+const userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/403');
 }
-const required_perms = ['admin', 'leag_comm', 'leag_coord'];
-const user_validate = await verify_user(user_token, required_perms);
+const requiredPerms = ['admin', 'leag_comm', 'leag_coord'];
+const userValidate = await validateUser(userToken, requiredPerms);
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
 
-if (!user_validate) {
+if (!userValidate) {
     return Astro.redirect('/403')
 }
 
-const user_authorized = perms_has_one_of(user_validate, required_perms);
-const user_is_admin = perms_has_one_of(user_validate, ['admin']);
-const user_is_comm = perms_has_one_of(user_validate, ['admin']);
+const user_authorized = permsHasOneOf(userValidate, requiredPerms);
+const user_is_admin = permsHasOneOf(userValidate, ['admin']);
+const user_is_comm = permsHasOneOf(userValidate, ['admin']);
 
 const { user_id } = Astro.params;
 
@@ -31,13 +31,13 @@ if (!user_id) {
     return Astro.redirect('/manage/users');
 }
 
-const user: User = await srlm_get(`/users/${user_id}`);
+const user: User = await srlmGet(`/users/${user_id}`);
 
 if (!user) {
     return Astro.redirect('/manage/users');
 }
 
-const user_perms_resp = await srlm_get(`/users/${user_id}/permissions`);
+const user_perms_resp = await srlmGet(`/users/${user_id}/permissions`);
 var user_perms = {}
 user_perms_resp.permissions.map(perm => {
     if (perm.mods === 'True') {
@@ -51,7 +51,7 @@ user_perms_resp.permissions.map(perm => {
     }
 })
 
-const user_editing_self = user_validate.user == user.id;
+const user_editing_self = userValidate.user == user.id;
 
 if (!(user_authorized || user_editing_self)) {
     return Astro.redirect('/403');
@@ -67,7 +67,7 @@ if (Astro.request.method === "POST") {
             username: form_data.get('username')?.toString(),
             email: form_data.get('email')?.toString()
         }
-        const user_update = await srlm_put(`/users/${user.id}`, user_token, user_inputs);
+        const user_update = await srlmPut(`/users/${user.id}`, userToken, user_inputs);
         if (user_update) {
             if (user_update.status && user_update.status === 409) {
                 if (!errors) {
@@ -84,7 +84,7 @@ if (Astro.request.method === "POST") {
         const confirm_password = form_data.get('confirm-password')?.toString();
         if (password) {
             if (password === confirm_password) {
-                const pass_update = await srlm_post(`/users/${user.id}/new_password`, user_token, {password:password});
+                const pass_update = await srlmPost(`/users/${user.id}/new_password`, userToken, {password:password});
                 if (pass_update && pass_update['token']) {
                     set_cookies(Astro, pass_update);
                 }
@@ -104,7 +104,7 @@ if (Astro.request.method === "POST") {
             team_owner: (form_data.getAll('team-owner-mods').length > 0) && form_data.getAll('team-owner-mods'),
             team_manager: checkbox_to_bool(form_data, 'team-manager') && form_data.getAll('team-manager-mod')
         }
-        const perms_update = await srlm_put(`/users/${user.id}/permissions`, '', perm_inputs)
+        const perms_update = await srlmPut(`/users/${user.id}/permissions`, '', perm_inputs)
         console.log(perms_update)
         return Astro.redirect(`/manage/users/${user.id}`)
     }
@@ -116,7 +116,7 @@ type Team = {
     name: string
 }
 
-const teams: Team[] = await srlm_get('/teams/list').then(resp => resp.teams);
+const teams: Team[] = await srlmGet('/teams/list').then(resp => resp.teams);
 
 ---
 <Layout title="Edit User">

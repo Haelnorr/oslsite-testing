@@ -1,22 +1,22 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import { permsHasOneOf, validateUser } from "../../../util/authUtils";
 import type { Season } from "../../../util/srlmTypes";
-import { date_is_none, srlm_get } from "../../../util/srlmUtils";
+import { date_is_none, srlmGet } from "../../../util/srlmUtils";
 
 var can_edit = false;
 
-const user_token = Astro.cookies.get('user_token')?.value;
-if (user_token) {
+const userToken = Astro.cookies.get('user_token')?.value;
+if (userToken) {
     const perms_test = ['admin', 'leag_comm', 'leag_coord']
-    const user_validate = await verify_user(user_token, perms_test);
+    const userValidate = await validateUser(userToken, perms_test);
 
-    if (user_validate === '503') {
+    if (userValidate === '503') {
         return Astro.redirect('/503')
     }
 
-    if (user_validate) {
-        if (perms_has_one_of(user_validate, perms_test)) {
+    if (userValidate) {
+        if (permsHasOneOf(userValidate, perms_test)) {
             can_edit = true;
         }
     }
@@ -25,7 +25,7 @@ if (user_token) {
 const { season_id } = Astro.params;
 
 const cached = Astro.url.searchParams.get('cached')! || true;
-const season: Season = await srlm_get(`/seasons/${season_id}?league=osl&cached=${cached}`);
+const season: Season = await srlmGet(`/seasons/${season_id}?league=osl&cached=${cached}`);
 
 //@ts-ignore
 if (season === '503') {

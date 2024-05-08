@@ -1,26 +1,26 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { perms_has_one_of, verify_user } from "../../../util/authUtils";
-import { srlm_get, srlm_post } from "../../../util/srlmUtils";
+import { permsHasOneOf, validateUser } from "../../../util/authUtils";
+import { srlmGet, srlmPost } from "../../../util/srlmUtils";
 
-const user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+const userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/403');
 }
-const required_perms = ['admin', 'leag_coord', 'leag_comm'];
-const user_validate = await verify_user(user_token, required_perms);
+const requiredPerms = ['admin', 'leag_coord', 'leag_comm'];
+const userValidate = await validateUser(userToken, requiredPerms);
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
-const user_authorized = perms_has_one_of(user_validate, required_perms);
+const user_authorized = permsHasOneOf(userValidate, requiredPerms);
 
 if (!user_authorized) {
     return Astro.redirect('/403');
 }
 
-const matchtypes = await srlm_get('/match/type');
+const matchtypes = await srlmGet('/match/type');
 
 var errors = null;
 
@@ -36,7 +36,7 @@ if (Astro.request.method === "POST") {
         finals_end: form_data.get('finals-end-date')! || null,
         match_type: form_data.get('match-type')! || null
     }
-    const post_data = await srlm_post('/seasons', '', inputs);
+    const post_data = await srlmPost('/seasons', '', inputs);
     if (post_data) {
         if (post_data.status && post_data.status === 409) {
             errors = {};

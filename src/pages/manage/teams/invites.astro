@@ -1,31 +1,31 @@
 ---
 import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
-import { perms_has_one_of, verify_user } from "../../../util/authUtils";
+import { permsHasOneOf, validateUser } from "../../../util/authUtils";
 import type { PlayerTeams, Team, TeamInvite, User } from "../../../util/srlmTypes";
-import { srlm_get, srlm_post } from "../../../util/srlmUtils";
+import { srlmGet, srlmPost } from "../../../util/srlmUtils";
 
-var user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+var userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/login')
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
-const user_validate = await verify_user(user_token, perms);
+const userValidate = await validateUser(userToken, perms);
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
-const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
+const user_is_elevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
 const user_is_owner = false;
-const user_is_manager = false;
-const user_is_player = false;
+const userIsManager = false;
+const userIsPlayer = false;
 const user_has_team = false;
 
 
-const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
+const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
 var player_team: Team = null;
 if (user.player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=false`);
+    const resp: PlayerTeams = await srlmGet(`/players/${user.player}/teams?current=true&cached=false`);
     if (resp) {player_team = resp.current_team};
 } else {
     return Astro.redirect('/profile');
@@ -35,7 +35,7 @@ if (player_team) {
     return Astro.redirect('/manage/teams');
 }
 
-const playerInvites: Array<TeamInvite> = await srlm_get(`/players/${user.player}/invites`).then(resp => resp['invites']);
+const playerInvites: Array<TeamInvite> = await srlmGet(`/players/${user.player}/invites`).then(resp => resp['invites']);
 
 console.log(playerInvites)
 
@@ -44,7 +44,7 @@ if (Astro.request.method === "POST") {
     const action = form_data.get('action')?.toString();
     const value = form_data.get('value')?.toString();
     
-    const resp = await srlm_post(`/players/${user.player}/invites`, '', {
+    const resp = await srlmPost(`/players/${user.player}/invites`, '', {
         invite_id: value,
         action: action
     })
@@ -57,10 +57,10 @@ if (Astro.request.method === "POST") {
     title={`My Team Invites`}
     team={null}
     page="invites"
-    user_elevated={user_is_elevated}
+    userElevated={user_is_elevated}
     user_owner={user_is_owner}
-    user_manager={user_is_manager}
-    user_player={user_is_player}
+    user_manager={userIsManager}
+    user_player={userIsPlayer}
     user_has_team={user_has_team}>
     <div class="mx-auto w-fit divide-y-2 divide-gray-600">
         <div class="mb-5">

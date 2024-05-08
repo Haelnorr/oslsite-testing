@@ -1,44 +1,44 @@
 ---
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
-import { is_team_manager, is_team_owner, perms_has_one_of, verify_user } from "../../../../util/authUtils";
+import { isTeamManager, is_team_owner, permsHasOneOf, validateUser } from "../../../../util/authUtils";
 import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
-import { srlm_delete, srlm_get, leave_team, srlm_post, join_team } from "../../../../util/srlmUtils";
+import { srlmDelete, srlmGet, leave_team, srlmPost, join_team } from "../../../../util/srlmUtils";
 
 var { team_id } = Astro.params;
 
-var user_token = Astro.cookies.get('user_token')?.value;
-if (!user_token) {
+var userToken = Astro.cookies.get('user_token')?.value;
+if (!userToken) {
     return Astro.redirect('/login')
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
-const user_validate = await verify_user(user_token, perms);
-console.log(user_validate)
+const userValidate = await validateUser(userToken, perms);
+console.log(userValidate)
 
-if (user_validate === '503') {
+if (userValidate === '503') {
     return Astro.redirect('/503')
 }
 
-const user_is_elevated = perms_has_one_of(user_validate, ['admin', 'leag_coord', 'leag_comm']);
-const user_is_manager = is_team_manager(user_validate, [+team_id]);
+const user_is_elevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
+const userIsManager = isTeamManager(userValidate, [+team_id]);
 
-const team: TeamManage = await srlm_get(`/teams/${team_id}/manage?cached=false`);
-const user_is_owner = is_team_owner(user_validate, team.id);
+const team: TeamManage = await srlmGet(`/teams/${team_id}/manage?cached=false`);
+const user_is_owner = is_team_owner(userValidate, team.id);
 
-const user: User = await srlm_get(`/users/${user_validate.user}`, user_token);
+const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
 var player_team: Team = null;
 if (user.player) {
-    const resp: PlayerTeams = await srlm_get(`/players/${user.player}/teams?current=true&cached=False`);
+    const resp: PlayerTeams = await srlmGet(`/players/${user.player}/teams?current=true&cached=False`);
     if (resp) {player_team = resp.current_team};
 }
 
-var user_is_player = false;
+var userIsPlayer = false;
 var user_has_team = false;
 if (player_team) {
-    user_is_player = (player_team.id === team.id);
+    userIsPlayer = (player_team.id === team.id);
     user_has_team = true;
 }
 
-if (!user_is_player && !user_is_elevated) {
+if (!userIsPlayer && !user_is_elevated) {
     return Astro.redirect(`/league/teams/${team.id}`);
 }
 
@@ -62,13 +62,13 @@ if (Astro.request.method === "POST") {
             await leave_team(+value);
             break;
         case 'promote':
-            await srlm_post(`/users/${value}/permissions`, '', {
+            await srlmPost(`/users/${value}/permissions`, '', {
                 key: 'team_manager',
                 modifiers: [team.id.toString()]
             });
             break;
         case 'demote':
-            await srlm_post(`/users/${value}/permissions/revoke`, '', {
+            await srlmPost(`/users/${value}/permissions/revoke`, '', {
                 key: 'team_manager',
             });
             break;
@@ -81,10 +81,10 @@ if (Astro.request.method === "POST") {
     title={`Manage Team: ${team.name}`}
     team={team}
     page="roster"
-    user_elevated={user_is_elevated}
+    userElevated={user_is_elevated}
     user_owner={user_is_owner}
-    user_manager={user_is_manager}
-    user_player={user_is_player}
+    user_manager={userIsManager}
+    user_player={userIsPlayer}
     user_has_team={user_has_team}>
         <h3 class="text-3xl pb-5">Players:</h3>
         <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 h-fit mb-10 w-fit mx-auto">
@@ -116,7 +116,7 @@ if (Astro.request.method === "POST") {
                                 }
                                 </td>
                             <td class="px-2">
-                                {(!player.manager && player.user_id && (user_is_elevated || user_is_manager || user_is_owner)) &&
+                                {(!player.manager && player.user_id && (user_is_elevated || userIsManager || user_is_owner)) &&
                                     <form method="post">
                                         <input type="text" name="action" value="promote" hidden/>
                                         <input type="text" name="value" value={player.user_id.toString()} hidden/>
@@ -136,7 +136,7 @@ if (Astro.request.method === "POST") {
                                 }
                             </td>
                             <td class="px-2">
-                                {((!player.manager || user_is_owner ) && player.user_id !== user.id && (user_is_elevated || user_is_manager || user_is_owner)) &&
+                                {((!player.manager || user_is_owner ) && player.user_id !== user.id && (user_is_elevated || userIsManager || user_is_owner)) &&
                                     <form method="post">
                                         <input type="text" name="action" value="kick" hidden/>
                                         <input type="text" name="value" value={player.id.toString()} hidden/>

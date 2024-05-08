@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Callout from "./Callout";
-import { srlm_post } from "../util/srlmUtils";
+import { srlmPost } from "../util/srlmUtils";
 
 interface User {
     username: string;
@@ -85,7 +85,7 @@ const SignupForm = () => {
                 username: user.username,
             }
             
-            srlm_post('/users', '', newUser)
+            srlmPost('/users', '', newUser)
 
         }
     };

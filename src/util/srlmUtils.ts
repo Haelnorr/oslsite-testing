@@ -36,13 +36,13 @@ function handle_err(err: AxiosError) {
  * Uses axios and environment variables to make a GET request to the SRLM api. If request fails, returns null and logs the API's error message and the request headers to console.
  * 
  * @param {string} endpoint       endpoint for the request - appends to env var SRLM_API_URI
- * @param {string} [user_token]   user auth token - appends to SRLM_API_APP_KEY
+ * @param {string} [userToken]   user auth token - appends to SRLM_API_APP_KEY
  * 
  * @returns response.data
  */
-export async function srlm_get(endpoint:string, user_token:string='') {
+export async function srlmGet(endpoint:string, userToken:string='') {
     const request_url = api['uri'] + endpoint;
-    const api_token = api['key'] + user_token;
+    const api_token = api['key'] + userToken;
 
     return await axios.get(request_url, {
         headers: {
@@ -61,14 +61,14 @@ export function convert_link(link: string) {
  * Uses axios and environment variables to make a POST request to the SRLM api. If request fails, returns null and logs the API's error message and the request headers to console.
  * 
  * @param {string} endpoint       endpoint for the request - appends to env var SRLM_API_URI
- * @param {string} [user_token]   user auth token - appends to SRLM_API_APP_KEY
+ * @param {string} [userToken]   user auth token - appends to SRLM_API_APP_KEY
  * @param {dict}   [input]        body of the post request
  * 
  * @returns response.data
  */
-export async function srlm_post(endpoint: string, user_token:string='', input:{}={}) {
+export async function srlmPost(endpoint: string, userToken:string='', input:{}={}) {
     const request_url = api['uri'] + endpoint;
-    const api_token = api['key'] + user_token;
+    const api_token = api['key'] + userToken;
 
     return await axios.post(request_url, input, {
         headers: {
@@ -82,13 +82,13 @@ export async function srlm_post(endpoint: string, user_token:string='', input:{}
  * Uses axios and environment variables to make a DELETE request to the SRLM api. If request fails, returns null and logs the API's error message and the request headers to console.
  * 
  * @param {string} endpoint       endpoint for the request - appends to env var SRLM_API_URI
- * @param {string} [user_token]   user auth token - appends to SRLM_API_APP_KEY
+ * @param {string} [userToken]   user auth token - appends to SRLM_API_APP_KEY
  * 
  * @returns response.data
  */
-export async function srlm_delete(endpoint: string, user_token:string='') {
+export async function srlmDelete(endpoint: string, userToken:string='') {
     const request_url = api['uri'] + endpoint;
-    const api_token = api['key'] + user_token;
+    const api_token = api['key'] + userToken;
 
     return await axios.delete(request_url, {
         headers: {
@@ -102,13 +102,13 @@ export async function srlm_delete(endpoint: string, user_token:string='') {
  * Uses axios and environment variables to make a PUT request to the SRLM api. If request fails, returns null and logs the API's error message and the request headers to console.
  * 
  * @param {string} endpoint       endpoint for the request - appends to env var SRLM_API_URI
- * @param {string} [user_token]   user auth toke   n - appends to SRLM_API_APP_KEY
+ * @param {string} [userToken]   user auth toke   n - appends to SRLM_API_APP_KEY
  * 
  * @returns response.data
  */
-export async function srlm_put(endpoint: string, user_token:string='', input: {}) {
+export async function srlmPut(endpoint: string, userToken:string='', input: {}) {
     const request_url = api['uri'] + endpoint;
-    const api_token = api['key'] + user_token;
+    const api_token = api['key'] + userToken;
 
     return await axios.put(request_url, input, {
         headers: {
@@ -184,11 +184,11 @@ export function color_calc(color: string) {
 }
 
 export async function leave_team(player_id: number) {
-    await srlm_delete(`/players/${player_id}/teams`);
+    await srlmDelete(`/players/${player_id}/teams`);
 }
 
 export async function join_team(player_id: number, team_id:string) {
-    return await srlm_post(`/players/${player_id}/teams`, '', {team:team_id});
+    return await srlmPost(`/players/${player_id}/teams`, '', {team:team_id});
 }
 
 export function checkbox_to_bool(form_data: FormData, field: string) {

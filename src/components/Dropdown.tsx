@@ -1,7 +1,6 @@
 import type React from "react";
 
 type Input = {
-    state: boolean,
     items: Array<DropdownItem>
 }
 

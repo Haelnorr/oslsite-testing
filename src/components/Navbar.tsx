@@ -132,7 +132,7 @@ function Navbar(props: Input) {
                             <li className="nav-item mt-1">
                                 {item.isDropdown && 
                                     <span>
-                                        <a onClick={item.dropdown.handleDropdown} class="hover:cursor-pointer">
+                                        <a onClick={item.dropdown.handleDropdown} className="hover:cursor-pointer">
                                             {item.label}
                                             {item.dropdown.state &&
                                                 <svg className="w-[16px] h-[16px] text-gray-800 dark:text-white ml-1 mb-1 inline" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -157,20 +157,20 @@ function Navbar(props: Input) {
                         ))
                     }
                     {props.userLoggedIn &&
-                        <li className="nav-item ml-[-5px]">
-                            <a onClick={profileDropdown.handleDropdown} class="hover:cursor-pointer">
+                        <li className="nav-item ml-[-10px]">
+                            <a onClick={profileDropdown.handleDropdown} className="hover:cursor-pointer">
                                 <img className="h-8 text-white font-bold text-base profile-icon"
                                 src={ProfileIcon.src} 
                                 alt="OSL"
                                 loading="lazy" />
-                                <span class="profile-link-mobile">Profile</span>
+                                <span className="profile-link-mobile">Profile</span>
                             </a>
                             {profileDropdown.state &&
                                 <Dropdown items={profileDropdown.items}/>
                             }
                         </li>
                         ||
-                        <li class='nav-item'>
+                        <li className='nav-item mt-1'>
                             <a href="/login">Login</a>
                         </li>
                     }

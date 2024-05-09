@@ -1,0 +1,41 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+
+---
+<Layout title="Register">
+    <main class="text-white text-center">
+        <div class="divide-y-2 divide-gray-400 w-fit mx-auto">
+            <h2 class="text-4xl my-5">League Registration</h2>
+            <div class="py-5 max-w-80">
+                <h4 class="text-2xl mb-3 underline">Pre-registration</h4>
+                <p class="mb-5">To play in the Oceanic Slapshot League, you need to either be part of a team or register as a free agent.</p>
+                <p class="mb-5">
+                    To do either of these things, you must first link your Slapshot player details to your profile by linking your Steam account.
+                    <br><a class="underline" href="/profile">Link your steam account here.</a>
+                </p>
+                <p>Once your Steam account has been linked, you can join a team or register to a season as a free agent.</p>
+            </div>
+            <div class="py-5 max-w-80">
+                <h4 class="text-2xl mb-3 underline">Joining/Creating a Team</h4>
+                <p class="mb-5">To play as part of a team, you can join an existing team by accepting an invite; or you can create a new team and invite other players!</p>
+                <p class="mb-5">
+                    <a class="underline" href="/manage/teams/invites">View team invites here</a>
+                    <br><a class="underline" href="/manage/teams/create">Create a new team here</a>
+                </p>
+                <p class="mb-5">To find other players and form a team, <a href="https://slapshot.gg/osl" class="underline" target="_blank">head to the discord!</a></p>
+                <p>Once you have a team with between 3-5 players, the team manager can apply to join a season through your <a class="underline" href="/manage/teams">team management dashboard</a>.</p>
+            </div>
+            <div class="py-5 max-w-80">
+                <h4 class="text-2xl mb-3 underline">Free Agent Registration</h4>
+                <p class="mb-5">
+                    Free Agents are players who sign up for league matches but are not associated with a specific team. They can act as substitutes if 
+                    a team has a player who cannot make a scheduled game.
+                </p>
+                <p class="mb-5">
+                    <a class="underline" href="/league/free-agent-registration">Sign up as a free agent</a>
+                </p>
+            </div>
+        </div>
+    </main>
+</Layout>

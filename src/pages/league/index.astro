@@ -53,13 +53,7 @@ const completed_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&o
                         }
                     </div>
                 }
-
-                {last_season && (last_season.items.length > 0) &&
-                    <div id="season-recent">
-                        <h2>Recently Completed</h2>
-                        <SeasonCard season={last_season.items[0]} />
-                    </div>
-                }
+                
                 
                 {upcoming_seasons && (upcoming_seasons.items.length > 0) &&
                     <div id="seasons-upcoming">
@@ -69,6 +63,13 @@ const completed_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&o
                                 <SeasonCard season={season} />
                             ))
                         }
+                    </div>
+                }
+
+                {last_season && (last_season.items.length > 0) &&
+                    <div id="season-recent">
+                        <h2>Recently Completed</h2>
+                        <SeasonCard season={last_season.items[0]} />
                     </div>
                 }
                 

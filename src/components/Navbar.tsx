@@ -103,7 +103,6 @@ function Navbar(props: Input) {
     [profileDropdown.state, profileDropdown.setState] = useState(false);
     leagueDropdown.handleDropdown = () => leagueDropdown.setState(!leagueDropdown.state);
     profileDropdown.handleDropdown = () => profileDropdown.setState(!profileDropdown.state);
-    const test = () => console.log('test');
 
     return (
         <>

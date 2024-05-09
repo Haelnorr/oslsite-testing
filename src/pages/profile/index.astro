@@ -227,7 +227,7 @@ const steam_redirect = await steam.getRedirectUrl()
                     <hr>
                     <p class="text-white py-2 font-bold">Admin Tools:</p>
                     <ul>
-                        <li class="text-white py-2">- <a href="/manage/users" class="underline">Manage Users</a></li>
+                        <li class="text-white py-2">- <a href="/manage/admin/users" class="underline">Manage Users</a></li>
                         {permsHasOneOf(userValidate, ['admin']) &&
                             <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
                         }

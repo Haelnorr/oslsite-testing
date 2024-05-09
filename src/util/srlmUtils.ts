@@ -1,3 +1,4 @@
+import { executionAsyncResource } from "async_hooks";
 import axios, { AxiosError } from "axios";
 
 const api = {
@@ -7,13 +8,12 @@ const api = {
 
 // handles response errors from the SRLM API
 // will log the error message from SRLM API to the console along with the headers of the failed request
-// returns null
+// returns error status code in most cases, unless error code was 409, in which case returns entire response
 function handle_err(err: AxiosError) {
     if (err) {       
         if (err.code === 'ECONNREFUSED') {
-            return '503'
+            return '503';
         } else if (err.response) {
-            console.log(err.response.status)
             if (err.response.status === 409) {
                 // this will check if status code is 409 (only used for input errors on post/put requests)
                 // and returns the response which contains error messages that can be displayed on the form
@@ -24,9 +24,8 @@ function handle_err(err: AxiosError) {
                 } else {
                     console.error(err.response.data);
                 }
-                return null
+                return err.response.status;
             }
-            
         }
     }
 }

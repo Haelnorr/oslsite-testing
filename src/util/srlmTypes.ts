@@ -59,7 +59,7 @@ export type League = {
     };
 }
 
-type DivisionLink = {
+export type DivisionLink = {
     name: string,
     acronym: string,
     _link: string

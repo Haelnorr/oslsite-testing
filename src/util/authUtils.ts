@@ -2,19 +2,19 @@ import { srlmPost } from "./srlmUtils";
 
 export async function validateUser(token: string, perms:Array<string>=null) {
     if (perms) {
-        var perms_resp = await srlmPost('/auth/user/validate', token, {perms:perms});
-        if (perms_resp) {
+        var permsResp = await srlmPost('/auth/user/validate', token, {perms:perms});
+        if (!(typeof permsResp === "number" || typeof permsResp === "string")) {
 
-            if (perms_resp === '503') {
-                return perms_resp
+            if (permsResp === '503') {
+                return permsResp
             }
 
             var perms_list = {};
-            perms_resp.has_perms.map(perm => {
+            permsResp.has_perms.map(perm => {
                 perms_list[perm[0]] = perm[1];
             })
-            perms_resp['has_perms'] = perms_list;
-            return perms_resp;
+            permsResp['has_perms'] = perms_list;
+            return permsResp;
         } else {
             return null;
         }

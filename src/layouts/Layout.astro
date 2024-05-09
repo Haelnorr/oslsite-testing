@@ -1,8 +1,25 @@
 ---
-import Header from "../components/Header.tsx"
+import Header from "../components/Header.tsx";
+import Navbar from "../components/Navbar.tsx"
+import { validateUser } from "../util/authUtils";
 
 interface Props {
 	title: string;
+}
+
+const userToken = Astro.cookies.get('user_token')?.value;
+const userValidate = await validateUser(userToken, ['admin', 'leag_coord', 'leag_comm'])
+var userPerms = []
+var userLoggedIn = false;
+if (userValidate) {
+	if (userValidate.user) {
+		userLoggedIn = true;
+		for (const [key, value] of Object.entries(userValidate.has_perms)) {
+			if (value) {
+				userPerms.push(key.toString());
+			}
+		}
+	}
 }
 
 const { title } = Astro.props;
@@ -21,7 +38,7 @@ const { title } = Astro.props;
 		<title>OSL | {title}</title>
 	</head>
 	<body class="bg-neutral-800 bg-no-repeat bg-center bg-fixed">
-		<Header client:load />
+		<Navbar userLoggedIn={userLoggedIn || false} userPerms={userPerms} client:load />
 		<slot />
 	</body>
 </html>

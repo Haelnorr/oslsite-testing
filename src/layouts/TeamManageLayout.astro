@@ -42,9 +42,9 @@ function getPageTitle(page: string) {
 
 ---
 <Layout title={title}>
-    <main class="py-10 sm:container mx-auto text-white text-center">
-        <div class="rounded-md shadow-md shadow-black mx-auto bg-gray-800 relative min-h-[40rem]">
-            <div class="w-52 bg-gray-700 absolute h-full min-h-80 rounded-l-md shadow-[rgba(0,0,15,0.5)_10px_5px_4px_0px]">
+    <main class="py-10 sm:container mx-auto text-white text-center z-10">
+        <div class="rounded-md relative shadow-md shadow-black mx-auto bg-gray-800 min-h-[40rem] z-10">
+            <div class="w-52 bg-gray-700 absolute min-h-full rounded-l-md shadow-[rgba(0,0,15,0.5)_10px_5px_4px_0px]">
                 {team &&
                     <div style="margin-bottom: -8px;">
                         <h4 class="font-bold py-3 rounded-tl-md text-xl" style={color_calc(team.color)}>

@@ -1,0 +1,17 @@
+---
+import PlayerList from "../../../components/PlayerList.astro";
+import Layout from "../../../layouts/Layout.astro";
+
+const page = Astro.url.searchParams.get('page')!;
+const per_page = Astro.url.searchParams.get('per_page')!;
+const order = Astro.url.searchParams.get('order')!;
+const order_by = Astro.url.searchParams.get('order_by')!;
+
+
+---
+<Layout title="Manage Users">
+    <main class="text-white mt-10 text-center">
+        <h2 class="text-3xl mb-5">Players</h2>
+        <PlayerList page={page} per_page={per_page} order_by={order_by} order={order} manage={false} />
+    </main>
+</Layout>

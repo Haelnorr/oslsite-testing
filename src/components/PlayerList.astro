@@ -1,0 +1,211 @@
+---
+import ViewTransitions from "astro/components/ViewTransitions.astro";
+import type { PlayerCollection } from "../util/srlmTypes";
+import { srlmGet } from "../util/srlmUtils";
+
+interface Props {
+    page: string,
+    per_page: string,
+    order: string,
+    order_by: string,
+    manage: boolean
+}
+
+var { page, per_page, order, order_by, manage } = Astro.props;
+
+if (isNaN(+page) || !page) {page='1'}
+if (isNaN(+per_page) || !per_page) {per_page='20'}
+if (order != 'desc' && order != 'asc') {order = 'asc'}
+if (order_by != 'id' &&
+    order_by != 'name' &&
+    order_by != 'user' &&
+    order_by != 'slap_id' &&
+    order_by != 'rookie' &&
+    order_by != 'first_season' &&
+    order_by != 'current_team' &&
+    order_by != 'awards') {order_by = 'id'}
+
+var query = `page=${page}&per_page=${per_page}&order=${order}&order_by=${order_by}&cached=false`;
+
+const players: PlayerCollection = await srlmGet(`/players?${query}`);
+
+function query_to_dict(query) {
+    var params_list = query.replace('?', '').split('&');
+
+    var params = {};
+
+    params_list.forEach(split_param);
+
+    function split_param(param: string) {
+        const keypair = param.split('=');
+        params[keypair[0]] = keypair[1];
+    }
+
+
+    return params;
+}
+
+function update_query(link) {
+    var old_query = query_to_dict(Astro.url.search);
+    if (!Astro.url.search) {
+        old_query = {}
+    }
+    
+    var new_query = query_to_dict(link.replace('/api/teams', ''));
+
+    if (Object.keys(new_query).includes('order_by')) {
+        if (new_query['order_by'] === old_query['order_by'] || new_query['order_by'] === order_by){
+            switch (order) {
+                case 'asc':
+                    new_query['order'] = 'desc';
+                    break;
+                case 'desc':
+                    new_query['order'] = 'asc';
+                    break;
+            }
+        } else {
+            new_query['order'] = 'asc';
+        }
+    }
+
+    const updated_params = {
+        ...old_query, 
+        ...new_query
+    }
+
+    var updated_query = '?';
+
+    for (let key in updated_params) {
+        if (updated_query != '?') {updated_query = updated_query + '&'}
+        updated_query = updated_query + `${key}=${updated_params[key]}`
+    }
+    return Astro.url.pathname + updated_query;
+    
+}
+
+function getPageNums(players: PlayerCollection) {
+    const totalPages = players._meta.total_pages;
+    var pageNums: Array<number> = [];
+    if (totalPages > 8) {
+        const currentPage = players._meta.page;
+        if (currentPage > 4) {
+            pageNums.push(-2);
+        }
+        for (var i=currentPage-3;i<currentPage+4;i++) {
+            if (i > 0 && i <= players._meta.total_pages) {
+                pageNums.push(i);
+            }
+        }
+        if (currentPage < totalPages -3) {
+            pageNums.push(-1);
+        }
+    } else {
+        pageNums = Array.from({length: players._meta.total_pages}, (_, i) => i + 1);
+    }
+    return pageNums;
+}
+
+const pageNums = getPageNums(players);
+
+---
+<ViewTransitions></ViewTransitions>
+
+<div class="mx-auto w-fit max-w-full overflow-x-auto">
+    <table>
+        <thead class="bg-gray-900">
+            <tr class="divide-x-2 divide-gray-400">
+                <th class="px-2">ID</th>
+                <th class="px-2">Name</th>
+                <th class="px-2">User</th>
+                <th class="px-2">SlapID</th>
+                <th class="px-2">Rookie</th>
+                <th class="px-2">First Season</th>
+                <th class="px-2">Current Team</th>
+                <th class="px-2">Awards</th>
+            </tr>
+        </thead>
+        <tbody>
+            {
+                players.items.map((player, index) => (
+                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                        <td class="px-2">
+                            <a href={`/league/players/${player.id}`} class="hover:underline">
+                                {player.id}
+                            </a>
+                        </td>
+                        <td class="px-2">
+                            <a href={`/league/players/${player.id}`} class="hover:underline">
+                                {player.player_name}
+                            </a>
+                        </td>
+                        <td class="px-2">
+                            {player.user}
+                        </td>
+                        <td class="px-2">
+                            {player.slap_id}
+                        </td>
+                        <td class="px-2">
+                            {player.rookie && 'Yes' || 'No'}
+                        </td>
+                        <td class="px-2">
+                            {player.first_season}
+                        </td>
+                        <td class="px-2">
+                            {player.current_team}
+                        </td>
+                        <td class="px-2">
+                            {player.awards}
+                        </td>
+                    </tr>
+                ))
+            }
+            {players.items.length === 0 &&
+                <tr class="bg-gray-600"><td colspan="100%">No players to display</td></tr>
+            }
+        </tbody>
+    </table>
+    <div class="mt-3 flex justify-center">
+        <div class="w-14 h-6">
+            {players._links.prev &&
+                <a href={update_query(players._links.prev)}
+                    class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                    Prev
+                </a>
+            }
+        </div>
+        <div class="mx-3 w-fit">
+            {
+                pageNums.map(page => (
+                    <span>
+                        {(page != players._meta.page) &&
+                            <span>
+                                {page === -2 &&
+                                    <a href={update_query(`page=1`)} class="hover:underline px-1 hover:cursor-pointer font-bold">1</a>
+                                    <span>. . .</span>
+                                }
+                                {page > 0 &&
+                                    <a href={update_query(`page=${page}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{page}</a>
+                                }
+                                {page === -1 &&
+                                    <span>. . .</span>
+                                    <a href={update_query(`page=${players._meta.total_pages}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{players._meta.total_pages}</a>
+                                }
+                            </span>
+                            
+                            ||
+                            <a class="px-1">{page}</a>
+                        }
+                    </span>
+                ))
+            }
+        </div>
+        <div class="w-14 h-6">
+            {players._links.next &&
+                <a href={update_query(players._links.next)}
+                    class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                    Next
+                </a>
+            }
+        </div>
+    </div>
+</div>

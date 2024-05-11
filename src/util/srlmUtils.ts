@@ -24,9 +24,14 @@ function handleError(err: AxiosError): void {
             errorMsg = 'Connection Refused';
             errorCode = '503';
         } else if (err.response) {
+            errorCode = err.response.status.toString();
+            errorData = err.response.data;
             switch (err.response.status) {
                 case 400:
                     errorMsg = 'Bad Request';
+                    if ((err.response.data as any).messages) {
+                        errorData = (err.response.data as any).messages.json;
+                    }
                     break;
                 case 401:
                     errorMsg = 'Unauthorized';
@@ -43,8 +48,6 @@ function handleError(err: AxiosError): void {
                 default:
                     errorMsg = "Unknown error occured";
             }
-            errorCode = err.response.status.toString();
-            errorData = err.response.data;
 
         } else {
             errorMsg = "Unknown error occured";

@@ -17,67 +17,74 @@ if (!code) {
     return Astro.redirect('/auth/login?error=discordauth');
 }
 
-const discordLogin = await getTokens(code);
+const discordLogin = await getTokens(code).catch(err => {
+    status = '500';
+});
 const userTokenStr = Astro.cookies.get('user_token')?.value;
 
-if (userTokenStr) {
-    
-    const userValidate = await validateUser(userTokenStr).catch(err => {
-        if (err instanceof SRLMAPIError) {
-            status = err.code;
-        }
-        console.error(err.message);
-    });;
-
-    if (userValidate) {
-        const user: User = await srlmGet(`/users/${userValidate.user}`, userTokenStr).catch(err => {
+if (discordLogin) {
+    if (userTokenStr) {
+        
+        const userValidate = await validateUser(userTokenStr).catch(err => {
             if (err instanceof SRLMAPIError) {
                 status = err.code;
             }
-            console.error(err);
-        });
-        const discordUser = await getUser(discordLogin.access_token);
+            console.error(err.message);
+        });;
 
-        const discordLink = {
-            discord_id: discordUser.id,
-            access_token: discordLogin.access_token,
-            refresh_token: discordLogin.refresh_token,
-            expires_in: discordLogin.expires_in
-        }
-        var resp;
-        if (!user.discord) {
-            resp = await srlmPost(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
-                console.error(err.message);
+        if (userValidate) {
+            const user: User = await srlmGet(`/users/${userValidate.user}`, userTokenStr).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                }
+                console.error(err);
             });
-        } else {
-            resp = await srlmPut(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
-                console.error(err.message);
-                console.error(err.data)
-            })
-        }
-        if (resp) {
-            return Astro.redirect('/profile')
+            const discordUser = await getUser(discordLogin.access_token).catch(err => {
+                status = '500';
+            });
+            if (discordUser) {
+                const discordLink = {
+                    discord_id: discordUser.id,
+                    access_token: discordLogin.access_token,
+                    refresh_token: discordLogin.refresh_token,
+                    expires_in: discordLogin.expires_in
+                }
+                var resp;
+                if (!user.discord) {
+                    resp = await srlmPost(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
+                        console.error(err.message);
+                    });
+                } else {
+                    resp = await srlmPut(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
+                        console.error(err.message);
+                        console.error(err.data)
+                    })
+                }
+                if (resp) {
+                    return Astro.redirect('/profile')
+                }
+            }
         }
     }
-}
+    const userToken: Token = await srlmPost('/auth/discord', '', discordLogin).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
 
-const userToken: Token = await srlmPost('/auth/discord', '', discordLogin).catch(err => {
-    if (err instanceof SRLMAPIError) {
-        status = err.code;
+    if (userToken) {
+        setCookies(Astro, userToken);
     }
-	console.error(err);
-});
 
-if (userToken) {
-    setCookies(Astro, userToken);
+    const userResponse = await getUser(discordLogin.access_token).catch(err => {
+        status = '500';
+    });
+
+    if (!userResponse) {
+        return Astro.redirect('/auth/login?error=discordauth');
+    }
 }
-
-const userResponse = await getUser(discordLogin.access_token);
-
-if (!userResponse) {
-    return Astro.redirect('/auth/login?error=discordauth');
-}
-
 
 if (status === '200') {
     return Astro.redirect('/profile');

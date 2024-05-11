@@ -1,8 +1,15 @@
 ---
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
-import { isTeamManager, is_team_owner, permsHasOneOf, validateUser } from "../../../../util/authUtils";
-import type { PlayerCollection, PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
-import { srlmDelete, srlmGet, srlmPost } from "../../../../util/srlmUtils";
+import { isTeamManager, isTeamOwner, permsHasOneOf, validateUser } from "../../../../util/authUtils";
+import type { PlayerCollection, TeamManage, User } from "../../../../util/srlmTypes";
+import { SRLMAPIError, srlmDelete, srlmGet, srlmPost } from "../../../../util/srlmUtils";
+import Page401 from '../../../401.astro';
+import Page403 from '../../../403.astro';
+import Page404 from '../../../404.astro';
+import Page500 from '../../../500.astro';
+import Page503 from '../../../503.astro';
+
+var status = '200';
 
 var { team_id } = Astro.params;
 
@@ -11,50 +18,65 @@ if (!userToken) {
     return Astro.redirect('/login')
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
-const userValidate = await validateUser(userToken, perms);
+const userValidate = await validateUser(userToken, perms).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (userValidate === '503') {
-    return Astro.redirect('/503')
-}
+const userIsElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
+const userIsOwner = isTeamOwner(userValidate, +team_id!);
+const userIsManager = isTeamManager(userValidate, [+team_id!]);
 
-const user_is_elevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
-const user_is_owner = is_team_owner(userValidate, +team_id);
-const userIsManager = isTeamManager(userValidate, [+team_id]);
+const team: TeamManage = await srlmGet(`/teams/${team_id}/manage`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-const team: TeamManage = await srlmGet(`/teams/${team_id}/manage`);
-
-const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
-var player_team: Team;
-if (user.player) {
-    const resp: PlayerTeams = await srlmGet(`/players/${user.player}/teams?current=true&cached=False`);
-    if (resp) {player_team = resp.current_team};
-}
+const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 var userIsPlayer = false;
-var user_has_team = false;
-if (player_team) {
-    userIsPlayer = (player_team.id === team.id);
-    user_has_team = true;
+var userHasTeam = false;
+if (user?.player.current_team) {
+    userIsPlayer = (user.player.current_team.id === team.id);
+    userHasTeam = true;
 }
 
-if (!userIsPlayer && !user_is_elevated) {
-    return Astro.redirect(`/league/teams/${team.id}`);
+if (!userIsPlayer && !userIsElevated) {
+    status = '403';
 }
 
 if (Astro.request.method === "POST") {
-    const form_data = await Astro.request.formData();
-    const action = form_data.get('action')?.toString();
-    const value = form_data.get('value')?.toString();
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+    const value = formData.get('value')?.toString();
 
     switch (action) {
         case 'invite':
             await srlmPost(`/teams/${team.id}/invite`, userToken, {
-                player_id: +value
+                player_id: +value!
+            }).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                }
+                console.error(err);
             });
             break;
         case 'cancel':
-            // cancel invite with id 'value'
-            const resp = await srlmDelete(`/teams/invite/${value}`);
+            await srlmDelete(`/teams/invite/${value}`).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                }
+                console.error(err);
+            });
             break;
     }
 
@@ -62,122 +84,146 @@ if (Astro.request.method === "POST") {
 }
 
 const search = Astro.url.searchParams.get('search')! || null;
-var invitablePlayers: PlayerCollection = null
+var invitablePlayers: PlayerCollection|null = null;
 
 if (search) {
-    const query = `/players?has_team=false&cached=false&search=${search}`
-    invitablePlayers = await srlmGet(query);
+    const query = `/players?has_team=false&cached=false&search=${search}`;
+    invitablePlayers = await srlmGet(query).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
 }
 
 
 
 ---
-<TeamManageLayout 
-    title={`Manage Team: ${team.name}`}
-    team={team}
-    page="invite"
-    userElevated={user_is_elevated}
-    user_owner={user_is_owner}
-    user_manager={userIsManager}
-    user_player={userIsPlayer}
-    user_has_team={user_has_team}>
-    <div class="divide-y divide-gray-600">
-        <div class="w-fit mx-auto">
-            <h4 class="text-xl">Sent Invites</h4>
-            <table class="mt-5">
-                <thead class="bg-gray-900">
-                    <tr class="divide-x-2 divide-gray-400">
-                        <th class="px-2">Player</th>
-                        <th class="px-2">Invited by</th>
-                        <th class="px-2">Status</th>
-                        <th class="px-2">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {team.invites.length > 0 &&
-                        team.invites.map((invite, index) => (
-                            <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
-                                <td class="px-2"><a href={`/league/players/${invite.invited_player.id}`}>{invite.invited_player.player_name}</a></td>
-                                <td class="px-2">{invite.inviting_player.player_name}</td>
-                                <td class="px-2">{invite.status}</td>
-                                <td class="px-2 py-1">
-                                    <form method="post">
-                                        <input type="text" name="action" value="cancel" hidden/>
-                                        <input type="text" name="value" value={invite.id.toString()} hidden/>
-                                        <button formaction={`/manage/teams/${team.id}/invite`} class="cancel bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
-                                            Cancel
-                                        </button>
-                                    </form>
-                                    
-                                </td>
-                            </tr>
-                        )) ||
-                        <tr class="bg-gray-700"><td colspan="100%" class="p-1">No invites sent</td></tr> 
-                    }
-                    
-                </tbody>
-            </table>
-            <script>
-                var cancel_buttons = [].slice.call(document.getElementsByClassName('cancel'));
-                cancel_buttons.forEach(element => {
-                    element.onclick = function confirmCancel(e) {
-                        if (!confirm('Are you sure you wish to cancel this invite?')) 
-                            e.preventDefault();
-                    }
-                });
-            </script>
-            
-        </div>
-        <div class="w-fit mx-auto mt-5">
-            <h4 class="text-xl m-5">Invite Players</h4>
-            <form class="mb-5">
-                <input type="text" name="search" value={search} class="text-black rounded-md"/>
-            </form>
-            
-            {!invitablePlayers &&
-                <p>Search for a player to invite</p> ||
-            
-                <table class="w-80">
+{status === '401' &&
+    <Page401/>
+}
+{status === '403' &&
+    <Page403/>
+}
+{status === '404' &&
+    <Page404/>
+}
+{status === '500' &&
+    <Page500/>
+}
+{status === '503' &&
+    <Page503/>
+}
+{status === '200' &&
+    <TeamManageLayout 
+        title={`Manage Team: ${team.name}`}
+        team={team}
+        page="invite"
+        userElevated={userIsElevated}
+        userOwner={userIsOwner}
+        userManager={userIsManager}
+        userPlayer={userIsPlayer}
+        userHasTeam={userHasTeam}>
+        <div class="divide-y divide-gray-600">
+            <div class="w-fit mx-auto">
+                <h4 class="text-xl">Sent Invites</h4>
+                <table class="mt-5">
                     <thead class="bg-gray-900">
                         <tr class="divide-x-2 divide-gray-400">
-                            <th class="w-[50%]">Player</th>
-                            <th class="w-[50%] px-2">Team</th>
+                            <th class="px-2">Player</th>
+                            <th class="px-2">Invited by</th>
+                            <th class="px-2">Status</th>
+                            <th class="px-2">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {invitablePlayers.items.length > 0 &&
-                            invitablePlayers.items.map((player, index) => (
+                        {team.invites.length > 0 &&
+                            team.invites.map((invite, index) => (
                                 <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
-                                    <td class="p-1">{player.player_name}</td>
-                                    <td class="p-1">
-                                        {player.current_team &&
-                                            player.current_team ||
-                                            <form method="post">
-                                                <input type="text" name="action" value="invite" hidden/>
-                                                <input type="text" name="value" value={player.id.toString()} hidden/>
-                                                <button formaction={`/manage/teams/${team.id}/invite`} class="invite bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
-                                                    Invite
-                                                </button>
-                                            </form>
-                                        }
+                                    <td class="px-2"><a href={`/league/players/${invite.invited_player.id}`}>{invite.invited_player.player_name}</a></td>
+                                    <td class="px-2">{invite.inviting_player.player_name}</td>
+                                    <td class="px-2">{invite.status}</td>
+                                    <td class="px-2 py-1">
+                                        <form method="post">
+                                            <input type="text" name="action" value="cancel" hidden/>
+                                            <input type="text" name="value" value={invite.id.toString()} hidden/>
+                                            <button formaction={`/manage/teams/${team.id}/invite`} class="cancel bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                Cancel
+                                            </button>
+                                        </form>
+                                        
                                     </td>
                                 </tr>
                             )) ||
-
-                            <tr class="bg-gray-700"><td colspan="100%" class="p-1">No players found</td></tr>
+                            <tr class="bg-gray-700"><td colspan="100%" class="p-1">No invites sent</td></tr> 
                         }
-                        <script>
-                            var invite_buttons = [].slice.call(document.getElementsByClassName('invite'));
-                            invite_buttons.forEach(element => {
-                                element.onclick = function confirmInvite(e) {
-                                    if (!confirm('Are you sure you wish to invite this player?')) 
-                                        e.preventDefault();
-                                }
-                            });
-                        </script>
+                        
                     </tbody>
                 </table>
-            }
+                <script>
+                    var cancel_buttons = [].slice.call(document.getElementsByClassName('cancel'));
+                    cancel_buttons.forEach(element => {
+                        //@ts-ignore
+                        element.onclick = function confirmCancel(e) {
+                            if (!confirm('Are you sure you wish to cancel this invite?')) 
+                                e.preventDefault();
+                        }
+                    });
+                </script>
+                
+            </div>
+            <div class="w-fit mx-auto mt-5">
+                <h4 class="text-xl m-5">Invite Players</h4>
+                <form class="mb-5">
+                    <input type="text" name="search" value={search} class="text-black rounded-md"/>
+                </form>
+                
+                {!invitablePlayers &&
+                    <p>Search for a player to invite</p> ||
+                
+                    <table class="w-80">
+                        <thead class="bg-gray-900">
+                            <tr class="divide-x-2 divide-gray-400">
+                                <th class="w-[50%]">Player</th>
+                                <th class="w-[50%] px-2">Team</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {(invitablePlayers && invitablePlayers.items.length > 0) &&
+                                invitablePlayers.items.map((player, index) => (
+                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                        <td class="p-1">{player.player_name}</td>
+                                        <td class="p-1">
+                                            {player.current_team &&
+                                                player.current_team.name ||
+                                                <form method="post">
+                                                    <input type="text" name="action" value="invite" hidden/>
+                                                    <input type="text" name="value" value={player.id.toString()} hidden/>
+                                                    <button formaction={`/manage/teams/${team.id}/invite`} class="invite bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                        Invite
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                )) ||
+
+                                <tr class="bg-gray-700"><td colspan="100%" class="p-1">No players found</td></tr>
+                            }
+                            <script>
+                                var invite_buttons = [].slice.call(document.getElementsByClassName('invite'));
+                                invite_buttons.forEach(element => {
+                                    //@ts-ignore
+                                    element.onclick = function confirmInvite(e) {
+                                        if (!confirm('Are you sure you wish to invite this player?')) 
+                                            e.preventDefault();
+                                    }
+                                });
+                            </script>
+                        </tbody>
+                    </table>
+                }
+            </div>
         </div>
-    </div>
-</TeamManageLayout>
+    </TeamManageLayout>
+}

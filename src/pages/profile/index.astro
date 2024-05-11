@@ -1,13 +1,21 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Greetings from '../../data/greetings.json';
-import { getUser, refreshToken } from '../../util/discordUtils';
+import { getUser, refreshToken, type DiscordUser } from '../../util/discordUtils';
 import { Image } from 'astro:assets';
-import type { Discord, Player, PlayerTeams, Twitch, User } from '../../util/srlmTypes';
-import { srlmGet, srlmPost } from '../../util/srlmUtils';
-import { permsHasOneOf, validateUser } from '../../util/authUtils';
+import type { Token, User } from '../../util/srlmTypes';
+import { SRLMAPIError, srlmGet, srlmPost, srlmPut } from '../../util/srlmUtils';
+import { permsHasOneOf, setCookies, validateUser } from '../../util/authUtils';
 import { steam } from '../../util/steamUtils';
 import steamLoginImg from '../../assets/steam.png';
+import Page401 from '../401.astro';
+import Page403 from '../403.astro';
+import Page404 from '../404.astro';
+import Page500 from '../500.astro';
+import Page503 from '../503.astro';
+
+
+var status = '200';
 
 const randomGreeting = Greetings[Math.floor((Math.random() * Greetings.length))];
 
@@ -17,235 +25,239 @@ if (!userToken) {
 }
 
 const optional_perms = ['leag_coord', 'leag_comm', 'admin', 'team_manager']
-const userValidate = await validateUser(userToken, optional_perms);
-
-if (userValidate === '503') {
-    return Astro.redirect('/503')
-}
+const userValidate = await validateUser(userToken, optional_perms).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+    console.error(err.message);
+});;
 
 
 if (!userValidate) {
     return Astro.redirect('/login?error=sessionexpire');
 }
 
-const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
-const discord: Discord = await srlmGet(`/users/${user.id}/discord`, userToken);
-const player: Player = await srlmGet(`/players/${user.player}`);
-const twitch: Twitch = await srlmGet(`/users/${user.id}/twitch`, userToken);
-
-var discord_profile;
-
-if (discord) {
-    discord_profile = await getUser(discord.access_token);
-
-    if (discord_profile.status_code) {
-        if (!discord.refresh_token) {
-            return Astro.redirect('/login?error=sessionexpire');
+const user: User = await srlmGet(`/users/${userValidate.user}`, userToken).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+        if (err.code === '404') {
+            status = '500'
         }
-        
-        const data = await refreshToken(discord.refresh_token);
-        
-        if (data.response && data.response.status === 400) {
-            return Astro.redirect('/login?error=sessionexpire');
-        }
-
-        const discord_login = {
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-            expires_in: data.expires_in
-        }
-
-        const userToken = await srlmPost('/auth/discord', '', discord_login);
-
-        Astro.cookies.set('user_token', userToken.token, { 
-            maxAge: 60480000,
-            httpOnly: true,
-            path: '/'
-        })
-        Astro.cookies.set('token_expiry', userToken.expires, { 
-            maxAge: 604800,
-            httpOnly: true,
-            path: '/'
-        })
-
-        return Astro.redirect('/profile');
     }
+    console.error('User ' + err.message);
+});
+
+var discordSessionExpired = false;
+
+var discordProfile: DiscordUser|null = null;
+
+if (user && user.discord) {
+    var discordUser = await getUser(user.discord.access_token).catch(err => {
+        if (err.response) {
+            if (err.response.status === 401) {
+                console.log('User token invalid or expired')
+            } else {
+                console.error(err.response.data);
+            }
+        } else {
+            console.error(err);
+        }
+    });
+
+    if (!discordUser) {
+        const newToken = await refreshToken(user.discord.refresh_token).catch(err => {
+            discordSessionExpired = true;
+            console.log(err)
+        });
+        if (newToken) {
+            const discordLink = {
+                discord_id: user.discord.discord_id,
+                access_token: newToken.access_token,
+                refresh_token: newToken.refresh_token,
+                expires_in: newToken.expires_in
+            }
+            const newUserToken: Token = await srlmPut(`/users/${user.id}/discord`, userToken, discordLink).catch(err => {
+                console.error(err.response);
+            });
+            if (newUserToken) {
+                setCookies(Astro, newUserToken);
+            }
+        }
+    } else{discordProfile = discordUser}
 }
 
-
-type Team = {
-    id: number,
-    name: string,
-    acronym: string,
-    color: string,
-    owner: string,
-    managers: Array<string>,
-    dates: {
-        start:string,
-        end:string
-    }
-}
-
-var team: Team;
-if (player) {
-    const resp: PlayerTeams = await srlmGet(`/players/${player.id}/teams?current=true&cached=false`)
-    if (resp) {team = resp.current_team}
+if (discordSessionExpired) {
+    return Astro.redirect('/login?error=discordauth');
 }
 
 const steam_redirect = await steam.getRedirectUrl()
 
 ---
-
-<Layout title="Profile">
-	<main class="py-10 sm:container mx-auto">
-        <div class="flex justify-center pb-2">
-            {discord &&
-                <Image 
-                    class="rounded-full h-40 w-40 text-center text-white" 
-                    src={`https://cdn.discordapp.com/avatars/${discord_profile.id}/${discord_profile.avatar}.jpg?size=4096`} 
-                    alt={`${discord_profile.username} Profile Picture`} height={500} width={500} />
-            }
-        </div>
-        <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
-        <h2 class="text-white text-center"><a href={`/manage/users/${user.id}`}>(Edit details)</a> | <a href="/logout">(Not you?)</a></h2>
-        <section class="flex flex-wrap justify-between pt-10">           
-            {player &&
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
-                    <h3 class="text-white text-lg font-bold pb-2">Career Stats</h3>
-                    <hr>
-                    <table class="text-white">
-                        <tr>
-                            <td class="px-3 font-bold">Periods:</td>
-                            <td>{player.stats.periods}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-3 font-bold">Goals:</td>
-                            <td>{player.stats.goals}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-3 font-bold">Shots:</td>
-                            <td>{player.stats.shots}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-3 font-bold">Assists:</td>
-                            <td>{player.stats.assists}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-3 font-bold">Saves:</td>
-                            <td>{player.stats.saves}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-72 h-fit">
-                    <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
-                    <hr>
-                    {team &&
-                        <ul class="text-white py-2">
-                            <li class="py-1"><b>Team ID:</b> {team.acronym}</li>
-                            <li class="py-1"><b>Team Name:</b> {team.name}</li>
-                            <li class="py-1"><b>Owner:</b> {team.owner}</li>
-                            <li class="py-1"><b>Manager(s):</b> {(team.managers.length > 0) &&
-                                team.managers.join(', ')
-                            }</li>
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+	<Layout title="Profile">
+        <main class="py-10 sm:container mx-auto">
+            <div class="flex justify-center pb-2">
+                {user.discord &&
+                    <Image 
+                        class="rounded-full h-40 w-40 text-center text-white" 
+                        src={`https://cdn.discordapp.com/avatars/${discordProfile?.id}/${discordProfile?.avatar}.jpg?size=4096`} 
+                        alt={`${discordProfile?.username} Profile Picture`} height={500} width={500} />
+                }
+            </div>
+            <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
+            <h2 class="text-white text-center"><a href={`/manage/users/${user.id}`}>(Edit details)</a> | <a href="/logout">(Not you?)</a></h2>
+            <section class="flex flex-wrap justify-between pt-10">           
+                {user.player &&
+                    <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
+                        <h3 class="text-white text-lg font-bold pb-2">Career Stats</h3>
+                        <hr/>
+                        <table class="text-white">
+                            <tr>
+                                <td class="px-3 font-bold">Periods:</td>
+                                <td>{user.player.stats.periods}</td>
+                            </tr>
+                            <tr>
+                                <td class="px-3 font-bold">Goals:</td>
+                                <td>{user.player.stats.goals}</td>
+                            </tr>
+                            <tr>
+                                <td class="px-3 font-bold">Shots:</td>
+                                <td>{user.player.stats.shots}</td>
+                            </tr>
+                            <tr>
+                                <td class="px-3 font-bold">Assists:</td>
+                                <td>{user.player.stats.assists}</td>
+                            </tr>
+                            <tr>
+                                <td class="px-3 font-bold">Saves:</td>
+                                <td>{user.player.stats.saves}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-72 h-fit">
+                        <h3 class="text-white text-lg font-bold pb-2">Team Overview</h3>
+                        <hr/>
+                        {user.player.current_team &&
+                            <ul class="text-white py-2">
+                                <li class="py-1"><b>Team ID:</b> {user.player.current_team.acronym}</li>
+                                <li class="py-1"><b>Team Name:</b> {user.player.current_team.name}</li>
+                                <li class="py-1"><b>Color:</b> {user.player.current_team.color}</li>
+                            </ul>
+                            <hr/>
+                            <p class="text-white text-center pt-2 font-bold"><a href={`/league/teams/${user.player.current_team.id}`} class="hover:underline">View Team</a> | <a href={`/manage/teams/${user.player.current_team.id}`} class="hover:underline">Manage Team</a></p>
+                        }
+                        <!--<h4 class="text-white font-bold py-2">Matches</h4>
+                            <div class="flex flex-wrap gap-2">
+                                {team.matches.map((match) => (
+                                    <div class={`${match.score ? 'opacity-40': 'opacity-100'} rounded-md bg-orange-300 py-2 shadow-inner shadow-black`}>
+                                        <p class="px-2">{match.id}</p>
+                                        <p class="px-2">{team.id} vs {match.opponent}</p>   
+                                        <p class="px-2">{match.schedule}</p>
+                                        {match.score ? <p class="px-2">{match.score}</p> : null}   
+                                    </div>
+                                ))}
+                            </div> -->
+                        {!user.player.current_team && 
+                            <p class="text-white text-center pt-2 font-bold">No current team</p>
+                            <p class="text-white text-center pt-2 font-bold"><a href={`/manage/teams/create`} class="hover:underline">Create Team</a> | <a href={`/manage/teams/invites`} class="hover:underline">View Invites</a></p>
+                        }
+                    </div>
+                }
+                {!user.player &&
+                    <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
+                        <h3 class="text-white text-lg font-bold pb-2">Link Player</h3>
+                        <hr/>
+                        <p class="text-white w-44">To register for league matches, join a team, or view your stats - link your Steam account!</p>
+                            <a href={steam_redirect}><Image 
+                        class="w-24 h-16 mt-5 m-auto" 
+                        src={steamLoginImg}
+                        alt="Login with Steam" height={200} width={200} /></a>
+                    </div>
+                }
+                {user.discord &&
+                    <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit" style="background-color: #5865f2">
+                        <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
+                        <hr/>
+                        <p class="text-white py-2 font-bold">Your Discord account is linked!</p>
+                        <p class="text-white py-2 font-bold">Username: {user.discord.user}</p>
+                        <p class="text-white py-2 font-bold">ID: {user.discord.discord_id}</p>
+                        <p class="text-white py-2 font-bold"><a href="/auth/discord/unlink">Unlink account</a></p>
+                    </div>
+                }
+                {!user.discord &&
+                    <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit" style="background-color: #5865f2">
+                        <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
+                        <hr/>
+                        <p class="text-white py-2 font-bold">Your discord account is not linked.</p>
+                        <p class="text-white py-2 font-bold"><a href={import.meta.env.PUBLIC_DISCORD_AUTH_URI}>Click here to link it!</a></p>
+                    </div>
+                }
+                {user.twitch &&
+                    <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black h-fit">
+                        <h3 class="text-white text-lg font-bold pb-2">Streamer Overview</h3>
+                        <hr/>
+                        <p class="text-white py-2 font-bold">Availability</p>
+                        <ul class="text-white pt-2 pb-4">
+                            <li><p><b>Mon:</b></p></li>
+                            <li><p><b>Tues:</b></p></li>
+                            <li><p><b>Wed:</b></p></li>
+                            <li><p><b>Thur:</b></p></li>
+                            <li><p><b>Fri:</b></p></li>
+                            <li><p><b>Sat:</b></p></li>
+                            <li><p><b>Sun</b></p></li>
                         </ul>
-                        <hr>
-                        <p class="text-white text-center pt-2 font-bold"><a href={`/league/teams/${team.id}`} class="hover:underline">View Team</a> | <a href={`/manage/teams/${team.id}`} class="hover:underline">Manage Team</a></p>
-                    }
-                    <!--<h4 class="text-white font-bold py-2">Matches</h4>
-                        <div class="flex flex-wrap gap-2">
-                            {team.matches.map((match) => (
-                                <div class={`${match.score ? 'opacity-40': 'opacity-100'} rounded-md bg-orange-300 py-2 shadow-inner shadow-black`}>
-                                    <p class="px-2">{match.id}</p>
-                                    <p class="px-2">{team.id} vs {match.opponent}</p>   
-                                    <p class="px-2">{match.schedule}</p>
-                                    {match.score ? <p class="px-2">{match.score}</p> : null}   
-                                </div>
-                            ))}
-                        </div> -->
-                    {!team && 
-                        <p class="text-white text-center pt-2 font-bold">No current team</p>
-                        <p class="text-white text-center pt-2 font-bold"><a href={`/manage/teams/create`} class="hover:underline">Create Team</a> | <a href={`/manage/teams/invites`} class="hover:underline">View Invites</a></p>
-                    }
-                </div>
-            }
-            {!player &&
-                <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
-                    <h3 class="text-white text-lg font-bold pb-2">Link Player</h3>
-                    <hr>
-                    <p class="text-white w-44">To register for league matches, join a team, or view your stats - link your Steam account!</p>
-                        <a href={steam_redirect}><Image 
-                    class="w-24 h-16 mt-5 m-auto" 
-                    src={steamLoginImg}
-                    alt="Login with Steam" height={200} width={200} /></a>
-                </div>
-            }
-            {discord &&
-                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit" style="background-color: #5865f2">
-                    <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
-                    <hr>
-                    <p class="text-white py-2 font-bold">Your Discord account is linked!</p>
-                    <p class="text-white py-2 font-bold">Username: {discord.user}</p>
-                    <p class="text-white py-2 font-bold">ID: {discord.discord_id}</p>
-                    <p class="text-white py-2 font-bold"><a href="/auth/discord/unlink">Unlink account</a></p>
-                </div>
-            }
-            {!discord &&
-                <div class="bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit" style="background-color: #5865f2">
-                    <h3 class="text-white text-lg font-bold pb-2">Discord</h3>
-                    <hr>
-                    <p class="text-white py-2 font-bold">Your discord account is not linked.</p>
-                    <p class="text-white py-2 font-bold"><a href={import.meta.env.PUBLIC_DISCORD_AUTH_URI}>Click here to link it!</a></p>
-                </div>
-            }
-            {twitch &&
-                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black h-fit">
-                    <h3 class="text-white text-lg font-bold pb-2">Streamer Overview</h3>
-                    <hr>
-                    <p class="text-white py-2 font-bold">Availability</p>
-                    <ul class="text-white pt-2 pb-4">
-                        <li><p><b>Mon:</b></p></li>
-                        <li><p><b>Tues:</b></p></li>
-                        <li><p><b>Wed:</b></p></li>
-                        <li><p><b>Thur:</b></p></li>
-                        <li><p><b>Fri:</b></p></li>
-                        <li><p><b>Sat:</b></p></li>
-                        <li><p><b>Sun</b></p></li>
-                    </ul>
-                    <a href="#" class="p-2 rounded-md bg-green-600 text-white hover:bg-opacity-70">Adjust Streaming Availability</a>
-                </div>
-            }
-            {!twitch &&
-                <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black h-fit">
-                    <h3 class="text-white text-lg font-bold pb-2">Twitch</h3>
-                    <hr>
-                    <p class="text-white py-2 font-bold w-48">To access streamer functions, link your twitch account</p>
-                </div>
-            }
-            {permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']) &&
-                <div class="bg-green-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
-                    <h3 class="text-white text-lg font-bold pb-2">Moderator Overview</h3>
-                    <hr>
-                    <p class="text-white py-2 font-bold">Admin Tools:</p>
-                    <ul>
-                        <li class="text-white py-2">- <a href="/manage/admin/users" class="underline">Manage Users</a></li>
-                        {permsHasOneOf(userValidate, ['admin']) &&
-                            <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
-                        }
-                    </ul>
-                    <p class="text-white py-2 font-bold">League Tools:</p>
-                    <ul>
-                        <li class="text-white py-2">- <a class="underline">Manage Players</a></li>
-                        <li class="text-white py-2">- <a class="underline" href="/manage/teams/list">Manage Teams</a></li>
-                        <li class="text-white py-2">- <a class="underline">Registrations</a></li>
-                        {permsHasOneOf(userValidate, ['admin', 'leag_comm']) &&
-                            <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>
-                            <li class="text-white py-2">- <a class="underline" href="/manage/seasons/">Manage Seasons</a></li>
-                        }
-                        <li class="text-white py-2">- <a class="underline">Match Reviews</a></li>
-                    </ul>
-                    <hr>
-                </div>
-            }
-        </section>
-	</main>
-</Layout>
+                        <a href="#" class="p-2 rounded-md bg-green-600 text-white hover:bg-opacity-70">Adjust Streaming Availability</a>
+                    </div>
+                }
+                {!user.twitch &&
+                    <div class="bg-purple-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black h-fit">
+                        <h3 class="text-white text-lg font-bold pb-2">Twitch</h3>
+                        <hr/>
+                        <p class="text-white py-2 font-bold w-48">To access streamer functions, link your twitch account</p>
+                    </div>
+                }
+                {permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']) &&
+                    <div class="bg-green-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
+                        <h3 class="text-white text-lg font-bold pb-2">Moderator Overview</h3>
+                        <hr/>
+                        <p class="text-white py-2 font-bold">Admin Tools:</p>
+                        <ul>
+                            <li class="text-white py-2">- <a href="/manage/admin/users" class="underline">Manage Users</a></li>
+                            {permsHasOneOf(userValidate, ['admin']) &&
+                                <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
+                            }
+                        </ul>
+                        <p class="text-white py-2 font-bold">League Tools:</p>
+                        <ul>
+                            <li class="text-white py-2">- <a class="underline">Manage Players</a></li>
+                            <li class="text-white py-2">- <a class="underline" href="/manage/teams/list">Manage Teams</a></li>
+                            <li class="text-white py-2">- <a class="underline">Registrations</a></li>
+                            {permsHasOneOf(userValidate, ['admin', 'leag_comm']) &&
+                                <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>
+                                <li class="text-white py-2">- <a class="underline" href="/manage/seasons/">Manage Seasons</a></li>
+                            }
+                            <li class="text-white py-2">- <a class="underline">Match Reviews</a></li>
+                        </ul>
+                        <hr/>
+                    </div>
+                }
+            </section>
+        </main>
+    </Layout>
+}
+

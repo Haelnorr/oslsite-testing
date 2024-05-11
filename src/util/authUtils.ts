@@ -1,72 +1,90 @@
-import { srlmPost } from "./srlmUtils";
+import type { AstroGlobal } from "astro";
+import type { AstroComponentFactory } from "astro/runtime/server/index.js";
+import { SRLMAPIError, srlmPost } from "./srlmUtils";
+import type { Token, UserValidate } from "./srlmTypes";
 
-export async function validateUser(token: string, perms:Array<string>=null) {
+/**
+ * Returns a UserVerify object with user details and permissions
+ * @param  token user token from cookies
+ * @param perms array of perm identifiers
+ */
+export async function validateUser(token: string|undefined, perms?:Array<string>): Promise<UserValidate|undefined> {
+    var input = {};
     if (perms) {
-        var permsResp = await srlmPost('/auth/user/validate', token, {perms:perms});
-        if (!(typeof permsResp === "number" || typeof permsResp === "string")) {
+        input = {perms:perms}  
+    }
 
-            if (permsResp === '503') {
-                return permsResp
-            }
+    try {
+        const permsResp: UserValidate = await srlmPost('/auth/user/validate', token, input);
+        var permsList:{[key:string]:string} = {};
+        permsResp.has_perms.map((perm: Array<string>) => {
+            permsList[perm[0]] = perm[1];
+        })
+        permsResp.perms = permsList;
+        return permsResp;
 
-            var perms_list = {};
-            permsResp.has_perms.map(perm => {
-                perms_list[perm[0]] = perm[1];
-            })
-            permsResp['has_perms'] = perms_list;
-            return permsResp;
+    } catch (error) {
+        if (error instanceof SRLMAPIError) {
+            throw error;
         } else {
-            return null;
+            console.error(error);
+            return;
         }
-        
-    } else {
-        return await srlmPost('/auth/user/validate', token);
     }
 }
 
-export function permsHasOneOf(user, perms: Array<string>) {
-    var has_perm = false;
+export function permsHasOneOf(user: void|UserValidate, perms: Array<string>): boolean {
+    if (!user) {
+        return false
+    }
+    var hasPerm = false;
     perms.forEach((perm: string) => {
         try {
-            if (user.has_perms[perm] === 'True') {
-                has_perm = true;
+            if (user.perms[perm] !== 'False') {
+                hasPerm = true;
             }
         } catch (error) {
             console.error(error)
         }
     })
-    return has_perm;
+    return hasPerm;
 }
 
-export function isTeamManager(user, teams: Array<number>) {
-    var is_manager = false;
-    if (user.has_perms['team_manager']) {
+export function isTeamManager(user: UserValidate|void, teams: Array<number>): boolean {
+    var isManager = false;
+    if(!user) {
+        return false;
+    }
+    if (user.perms['team_manager']) {
         teams.forEach((team: number) => {
-            if (team === parseInt(user.has_perms['team_manager'])) {
-                is_manager = true;
+            if (team === parseInt(user.perms['team_manager'])) {
+                isManager = true;
             }
         })
     }
-    return is_manager;
+    return isManager;
     
 }
 
-export function is_team_owner(user, team_id: number) {
-    var is_owner = false;
-    if (user.has_perms['team_owner']) {
-        const teams = user.has_perms['team_owner'].split(',');
+export function isTeamOwner(user: UserValidate|void, team_id: number): boolean {
+    var isOwner = false;
+    if(!user) {
+        return false;
+    }
+    if (user.perms['team_owner']) {
+        const teams = user.perms['team_owner'].split(',');
 
         teams.forEach((team: string) => {
             if (parseInt(team) === team_id) {
-                is_owner = true;
+                isOwner = true;
             }
         })
     }
-    return is_owner;
+    return isOwner;
     
 }
 
-export function set_cookies(Astro, userToken) {
+export function setCookies(Astro: Readonly<AstroGlobal<Record<string, any>, AstroComponentFactory, Record<string, any>>>, userToken: Token): void {
     Astro.cookies.delete('user_token');
     Astro.cookies.delete('token_expiry');
     Astro.cookies.set('user_token', userToken.token, { 

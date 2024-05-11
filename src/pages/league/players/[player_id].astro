@@ -1,31 +1,33 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import type { Player } from "../../../util/srlmTypes";
-import { srlmGet } from "../../../util/srlmUtils";
+import { SRLMAPIError, srlmGet } from "../../../util/srlmUtils";
 import Page404 from '../../404.astro';
 import Page500 from '../../500.astro';
 import Page503 from '../../503.astro';
 
+var status = '200';
+
 const { player_id } = Astro.params;
 
-const player: Player = await srlmGet(`/players/${player_id}`);
-
-var status = 200;
-if (typeof player === "number") {
-    status = player;
-}
+const player: Player = await srlmGet(`/players/${player_id}`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 ---
-{status === 404 &&
+{status === '404' &&
     <Page404></Page404>
 }
-{status === 500 &&
+{status === '500' &&
     <Page500></Page500>
 }
-{status === 503 &&
+{status === '503' &&
     <Page503></Page503>
 }
-{status == 200 &&
+{status == '200' &&
     <Layout title={`Player: ${player.player_name}`}>
         <main class="p-5">
             <div class="text-white mx-auto w-fit">

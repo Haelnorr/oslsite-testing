@@ -17,7 +17,7 @@ var { page, per_page, owner, order, order_by, manage } = Astro.props;
 
 if (isNaN(+page) || !page) {page='1'}
 if (isNaN(+per_page) || !per_page) {per_page='20'}
-if (isNaN(+owner)) {owner=null}
+if (isNaN(+owner!)) {owner=undefined}
 if (order != 'desc' && order != 'asc') {order = 'asc'}
 if (order_by != 'id' &&
     order_by != 'name' &&
@@ -33,16 +33,18 @@ var query = `page=${page}&per_page=${per_page}&order=${order}&order_by=${order_b
 if (owner) {
     query = `owner=${owner}&per_page=50&cached=false`;
 }
-const teams: TeamCollection = await srlmGet(`/teams?${query}`);
+const teams: TeamCollection = await srlmGet(`/teams?${query}`).catch(err => {
+	console.error(err);
+});
 
-function query_to_dict(query) {
-    var params_list = query.replace('?', '').split('&');
+function queryToDict(query:string):{[key:string]:string} {
+    var paramsList = query.replace('?', '').split('&');
 
-    var params = {};
+    var params:{[key:string]:string} = {};
 
-    params_list.forEach(split_param);
+    paramsList.forEach(splitParam);
 
-    function split_param(param: string) {
+    function splitParam(param: string) {
         const keypair = param.split('=');
         params[keypair[0]] = keypair[1];
     }
@@ -52,44 +54,44 @@ function query_to_dict(query) {
 }
 
 
-function update_query(link) {
-    var old_query = query_to_dict(Astro.url.search);
+function updateQuery(link:string):string {
+    var oldQuery = queryToDict(Astro.url.search);
     if (!Astro.url.search) {
-        old_query = {}
+        oldQuery = {}
     }
     
-    var new_query = query_to_dict(link.replace('/api/teams', ''));
+    var newQuery = queryToDict(link.replace('/api/teams', ''));
 
-    if (Object.keys(new_query).includes('order_by')) {
-        if (new_query['order_by'] === old_query['order_by'] || new_query['order_by'] === order_by){
+    if (Object.keys(newQuery).includes('order_by')) {
+        if (newQuery['order_by'] === oldQuery['order_by'] || newQuery['order_by'] === order_by){
             switch (order) {
                 case 'asc':
-                    new_query['order'] = 'desc';
+                    newQuery['order'] = 'desc';
                     break;
                 case 'desc':
-                    new_query['order'] = 'asc';
+                    newQuery['order'] = 'asc';
                     break;
             }
         } else {
-            new_query['order'] = 'asc';
+            newQuery['order'] = 'asc';
         }
     }
 
-    const updated_params = {
-        ...old_query, 
-        ...new_query
+    const updatedParams = {
+        ...oldQuery, 
+        ...newQuery
     }
 
-    var updated_query = '?';
+    var updatedQuery = '?';
 
-    for (let key in updated_params) {
-        if (updated_query != '?') {updated_query = updated_query + '&'}
-        updated_query = updated_query + `${key}=${updated_params[key]}`
+    for (let key in updatedParams) {
+        if (updatedQuery != '?') {updatedQuery = updatedQuery + '&'}
+        updatedQuery = updatedQuery + `${key}=${updatedParams[key]}`
     }
-    return Astro.url.pathname + updated_query;
+    return Astro.url.pathname + updatedQuery;
     
 }
-var page_nums = Array.from({length: teams._meta.total_pages}, (_, i) => i + 1);
+var pageNums = Array.from({length: teams._meta.total_pages}, (_, i) => i + 1);
 
 function prettyDate(date: string) {
     if (!date) {
@@ -106,47 +108,47 @@ function prettyDate(date: string) {
         <thead class="bg-gray-900">
             <tr class="divide-x-2 divide-gray-400">
                 <th class="px-2 w-12">
-                    <a href={update_query('order_by=id')} class="hover:underline">
+                    <a href={updateQuery('order_by=id')} class="hover:underline">
                         ID
                     </a>
                 </th>
                 <th class="w-[300px] px-2">
-                    <a href={update_query('order_by=name')} class="hover:underline">
+                    <a href={updateQuery('order_by=name')} class="hover:underline">
                         Name
                     </a>
                 </th>
                 <th class="px-2">
-                    <a href={update_query('order_by=acronym')} class="hover:underline">
+                    <a href={updateQuery('order_by=acronym')} class="hover:underline">
                         Acronym
                     </a>
                 </th>
                 <th class="px-2">
-                    <a href={update_query('order_by=founded_date')} class="hover:underline">
+                    <a href={updateQuery('order_by=founded_date')} class="hover:underline">
                         Founded
                     </a>
                 </th>
                 <th class="px-2 w-24">
-                    <a href={update_query('order_by=color')} class="hover:underline">
+                    <a href={updateQuery('order_by=color')} class="hover:underline">
                         Colour
                     </a>
                 </th>
                 <th class="px-2">
-                    <a href={update_query('order_by=logo')} class="hover:underline">
+                    <a href={updateQuery('order_by=logo')} class="hover:underline">
                         Logo
                     </a>
                 </th>
                 <th class="px-2">
-                    <a href={update_query('order_by=active_players')} class="hover:underline">
+                    <a href={updateQuery('order_by=active_players')} class="hover:underline">
                         Active Players
                     </a>
                 </th>
                 <th class="px-2">
-                    <a href={update_query('order_by=seasons_played')} class="hover:underline">
+                    <a href={updateQuery('order_by=seasons_played')} class="hover:underline">
                         Seasons Played
                     </a>
                 </th>
                 <th class="px-2">
-                    <a href={update_query('order_by=awards')} class="hover:underline">
+                    <a href={updateQuery('order_by=awards')} class="hover:underline">
                         Awards
                     </a>
                 </th>
@@ -200,7 +202,7 @@ function prettyDate(date: string) {
     <div class="mt-3 flex justify-center">
         <div class="w-14 h-6">
             {teams._links.prev &&
-                <a href={update_query(teams._links.prev)}
+                <a href={updateQuery(teams._links.prev)}
                     class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
                     Prev
                 </a>
@@ -208,10 +210,10 @@ function prettyDate(date: string) {
         </div>
         <div class="mx-3 w-fit">
             {
-                page_nums.map(page => (
+                pageNums.map(page => (
                     <span>
                         {(page != teams._meta.page) &&
-                            <a href={update_query(`page=${page}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{page}</a>
+                            <a href={updateQuery(`page=${page}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{page}</a>
                             ||
                             <a class="px-1">{page}</a>
                         }
@@ -221,7 +223,7 @@ function prettyDate(date: string) {
         </div>
         <div class="w-14 h-6">
             {teams._links.next &&
-                <a href={update_query(teams._links.next)}
+                <a href={updateQuery(teams._links.next)}
                     class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
                     Next
                 </a>

@@ -1,16 +1,30 @@
-import { number, string } from "astro/zod";
-
 export type Token = {
     token: string,
     expires: string
+}
+
+export type UserValidate = {
+    user: number,
+    has_perms: Array<Array<string>>,
+    expires: Date,
+    perms: {[key:string]:string}
+}
+
+export type UserPermissions = {
+    username: string,
+    permissions: Array<{
+        key: string,
+        mods: string
+    }>
 }
 
 export type User = {
     id: number,
     username: string,
     email: string,
-    player: number,
-    discord: number,
+    player: Player,
+    discord: Discord,
+    twitch: Twitch,
     permissions: Array<string>,
     matches_streamed: number,
     reset_pass: boolean,
@@ -21,6 +35,21 @@ export type User = {
         permissions: string,
         matches_streamed: string
     }
+}
+
+export type UserCollection = {
+    items: Array<User>,
+    _links: {
+        self: string,
+        next: string,
+        prev: string
+    },
+    _meta: {
+        page: number,
+        per_page: number,
+        total_pages: number,
+        total_items: number
+    };
 }
 
 export type Permission = {
@@ -56,7 +85,7 @@ export type League = {
         self: string,
         seasons: string,
         divisions: string
-    };
+    }
 }
 
 export type DivisionLink = {
@@ -83,7 +112,7 @@ export type Season = {
         league: string;
         match_type: string;
         divisions: string;
-    };
+    }
 }
 
 export type SeasonCollection = {
@@ -98,7 +127,7 @@ export type SeasonCollection = {
         per_page: number,
         total_pages: number,
         total_items: number
-    };
+    }
 }
 
 export type Division = {
@@ -108,10 +137,26 @@ export type Division = {
     league: string,
     description: string,
     seasons_count: number,
+    in_season?: boolean,
     _links: {
         self: string,
         league: string,
         seasons: string
+    }
+}
+
+export type DivisionCollection = {
+    items: Array<Division>,
+    _links: {
+        self: string,
+        next: string,
+        prev: string
+    },
+    _meta: {
+        page: number,
+        per_page: number,
+        total_pages: number,
+        total_items: number
     }
 }
 
@@ -230,7 +275,12 @@ export type Player = {
     slap_id:number,
     rookie:boolean,
     first_season:string,
-    current_team:string,
+    current_team: {
+        id: number,
+        name: string,
+        acronym: string,
+        color: string
+    },
     teams:number,
     free_agent_seasons:number,
     awards:number,
@@ -281,6 +331,8 @@ export type Team = {
     name: string,
     acronym: string,
     color: string,
+    owner?: string,
+    managers?: Array<string>,
     dates: {
         start:string,
         end:string
@@ -475,4 +527,25 @@ export type TeamManage = {
     applications: Array<SeasonApplication>,
     invites: Array<TeamInvite>,
     open_seasons: Array<Season>
+}
+
+export type Matchtype = {
+    id: number,
+    name: string,
+    description: string,
+    periods: boolean,
+    arena: string,
+    mercy_rule: number,
+    match_length: number,
+    game_mode: string,
+    num_players: number
+}
+
+export type Matchtypes = {
+    matchtypes: Array<Matchtype>
+}
+
+export type FreeAgentData = {
+    open_seasons: Array<Season>,
+    applications: Array<SeasonApplication>
 }

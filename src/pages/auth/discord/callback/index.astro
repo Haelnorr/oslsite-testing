@@ -1,53 +1,65 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
-import { set_cookies, validateUser } from '../../../../util/authUtils';
+import { setCookies, validateUser } from '../../../../util/authUtils';
 import { getTokens, getUser } from '../../../../util/discordUtils';
-import type { User } from '../../../../util/srlmTypes';
-import { srlm_basic_auth, srlmGet, srlmPost } from '../../../../util/srlmUtils';
+import type { Token, User } from '../../../../util/srlmTypes';
+import { SRLMAPIError, srlmGet, srlmPost, srlmPut } from '../../../../util/srlmUtils';
+import Page401 from '../../../401.astro';
+import Page403 from '../../../403.astro';
+import Page404 from '../../../404.astro';
+import Page500 from '../../../500.astro';
+import Page503 from '../../../503.astro';
 
 const code = Astro.url.searchParams.get('code');
+var status = '200';
 
 if (!code) {
     return Astro.redirect('/login?error=discordauth');
 }
-const data = await getTokens(code);
 
-const discord_login = {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_in: data.expires_in
-}
+const discordLogin = await getTokens(code);
+const userTokenStr = Astro.cookies.get('user_token')?.value;
 
-var userToken = Astro.cookies.get('user_token')?.value;
-
-if (userToken) {
+if (userTokenStr) {
     
-    const userValidate = await validateUser(userToken);
-
-    console.log(userValidate)
+    const userValidate = await validateUser(userTokenStr).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err.message);
+    });;
 
     if (userValidate) {
-        const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
+        const user: User = await srlmGet(`/users/${userValidate.user}`, userTokenStr);
+        const discordUser = await getUser(discordLogin.access_token);
 
-        const discord_user = await getUser(data.access_token);
-
-        const discord_link = {
-            discord_id: discord_user.id,
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-            expires_in: data.expires_in
+        const discordLink = {
+            discord_id: discordUser.id,
+            access_token: discordLogin.access_token,
+            refresh_token: discordLogin.refresh_token,
+            expires_in: discordLogin.expires_in
         }
-
-        await srlmPost(`/users/${user.id}/discord`, userToken, discord_link);
+        if (!user.discord) {
+            await srlmPost(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
+                console.error(err.message);
+            });
+        } else {
+            await srlmPut(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
+                console.error(err.message);
+                console.error(err.data)
+            })
+        }
+        
         return Astro.redirect('/profile')
     }
 }
 
-userToken = await srlmPost('/auth/discord', '', discord_login);
+const userToken: Token = await srlmPost('/auth/discord', '', discordLogin);
 
-set_cookies(Astro, userToken);
+setCookies(Astro, userToken);
 
-const userResponse = await getUser(data.access_token);
+const userResponse = await getUser(discordLogin.access_token);
+console.log(userResponse)
 
 if (!userResponse) {
     return Astro.redirect('/login?error=discordauth');
@@ -55,10 +67,24 @@ if (!userResponse) {
 
 return Astro.redirect('/profile');
 
-return Astro.redirect('/login?error=sessionexpire');
-
 ---
-
-<Layout title='Validating credentials...'>
-    <p class="text-white"></p>
-</Layout>
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+	<Layout title='Validating credentials...'>
+        <p class="text-white"></p>
+    </Layout>
+}

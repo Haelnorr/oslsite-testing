@@ -5,9 +5,9 @@ type Input = {
 }
 
 export type DropdownItems = {
-    state?: boolean,
-    setState?: React.Dispatch<React.SetStateAction<boolean>>,
-    handleDropdown?: () => void,
+    state: boolean,
+    setState: React.Dispatch<React.SetStateAction<boolean>>,
+    handleDropdown: () => void,
     items: Array<DropdownItem>
 }
 

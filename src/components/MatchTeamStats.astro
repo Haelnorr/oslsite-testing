@@ -1,6 +1,6 @@
 ---
 import type { PlayerData, Team, MatchResults } from '../util/srlmTypes'
-import { color_calc } from '../util/srlmUtils';
+import { colorCalc } from '../util/srlmUtils';
 
 interface Props {
     team: Team,
@@ -13,7 +13,7 @@ const {team, playerData, results } = Astro.props;
 <table class="bg-gray-600 bg-opacity-40 rounded-md shadow-md shadow-black">
     <thead class="bg-gray-900">
         <tr class="text-2xl bg-gray-800">
-            <th colspan="4" class="font-bold rounded-tl-md" style={color_calc(team.color)}>{team.name}</th>
+            <th colspan="4" class="font-bold rounded-tl-md" style={colorCalc(team.color)}>{team.name}</th>
             <th class="pl-6">
                 Score:
             </th>

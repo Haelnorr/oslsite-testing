@@ -2,18 +2,17 @@
 import type { Props } from 'astro/components/ViewTransitions.astro';
 import Layout from '../../layouts/Layout.astro';
 import SeasonCard from '../../components/SeasonCard.astro';
-import { convert_link, srlmGet } from '../../util/srlmUtils';
-import type { League, SeasonCollection } from '../../util/srlmTypes';
+import { SRLMAPIError, convertLink, srlmGet } from '../../util/srlmUtils';
+import type { SeasonCollection } from '../../util/srlmTypes';
+import Page401 from '../401.astro';
+import Page403 from '../403.astro';
+import Page404 from '../404.astro';
+import Page500 from '../500.astro';
+import Page503 from '../503.astro';
 
-const league_data: League = await srlmGet('/leagues/osl');
+var status = '200';
 
-//@ts-ignore
-if (league_data === '503') {
-    return Astro.redirect('/503')
-}
-
-
-function get_yesterday() {
+function getYesterday() {
     let date = new Date();
     let options = [
         {year: 'numeric'},
@@ -29,63 +28,96 @@ function get_yesterday() {
     return options.map(format).join('-');
 }
 
-const yesterday: string = get_yesterday();
+const yesterday: string = getYesterday();
 
 
 
-const current_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&current=True');
-const last_season: SeasonCollection = await srlmGet('/seasons?league=osl&last=True');
-const upcoming_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&next=True');
-const completed_seasons: SeasonCollection = await srlmGet('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday);
+const currentSeasons: SeasonCollection = await srlmGet('/seasons?league=osl&current=True').catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
+const lastSeason: SeasonCollection = await srlmGet('/seasons?league=osl&last=True').catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
+const upcomingSeasons: SeasonCollection = await srlmGet('/seasons?league=osl&next=True').catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
+const completedSeasons: SeasonCollection = await srlmGet('/seasons?league=osl&order=desc&per_page=50&end_date=' + yesterday).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 ---
-<Layout title="League">
-    <main class="py-10 sm:container mx-auto text-white">
-        <div class="flex flex-wrap justify-between">
-            <div class="w-3/4">
-                {current_seasons && (current_seasons.items.length > 0) &&
-                    <div id="seasons-active">
-                        <h2>Current</h2>
-                        {   
-                            current_seasons.items.map(season => (
-                                <SeasonCard season={season} />
-                            ))
-                        }
-                    </div>
-                }
-                
-                
-                {upcoming_seasons && (upcoming_seasons.items.length > 0) &&
-                    <div id="seasons-upcoming">
-                        <h2>Upcoming</h2>
-                        {
-                            upcoming_seasons.items.map(season => (
-                                <SeasonCard season={season} />
-                            ))
-                        }
-                    </div>
-                }
-
-                {last_season && (last_season.items.length > 0) &&
-                    <div id="season-recent">
-                        <h2>Recently Completed</h2>
-                        <SeasonCard season={last_season.items[0]} />
-                    </div>
-                }
-                
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+    <Layout title="League">
+        <main class="py-10 sm:container mx-auto text-white">
+            <div class="flex flex-wrap justify-between">
+                <div class="w-3/4">
+                    {currentSeasons.items.length > 0 &&
+                        <div id="seasons-active">
+                            <h2>Current</h2>
+                            {   
+                                currentSeasons.items.map(season => (
+                                    <SeasonCard season={season} />
+                                ))
+                            }
+                        </div>
+                    }
+                    {upcomingSeasons.items.length > 0 &&
+                        <div id="seasons-upcoming">
+                            <h2>Upcoming</h2>
+                            {
+                                upcomingSeasons.items.map(season => (
+                                    <SeasonCard season={season} />
+                                ))
+                            }
+                        </div>
+                    }
+                    {lastSeason.items.length > 0 &&
+                        <div id="season-recent">
+                            <h2>Recently Completed</h2>
+                            <SeasonCard season={lastSeason.items[0]} />
+                        </div>
+                    }
+                </div>
+                <div class="w-1/5">
+                    Completed Seasons | <a href="/league/seasons">View all</a>
+                    <ol class="text-right">
+                    {
+                        completedSeasons.items.map(season => (
+                            <li class="text-sm border-b hover:text-osl-yellow-500 hover:border-b-osl-yellow-500 transition-all duration-200 hover:text-base">
+                                <a href={"league" + convertLink(season._links.self)}><p class="py-2">{season.name}</p></a>
+                            </li>
+                        ))
+                    }
+                    </ol>
+                </div>
             </div>
-            <div class="w-1/5">
-                Completed Seasons | <a href="/league/seasons">View all</a>
-                <ol class="text-right">
-                {
-                    completed_seasons.items.map(season => (
-                        <li class="text-sm border-b hover:text-osl-yellow-500 hover:border-b-osl-yellow-500 transition-all duration-200 hover:text-base">
-                            <a href={"league" + convert_link(season._links.self)}><p class="py-2">{season.name}</p></a>
-                        </li>
-                    ))
-                }
-                </ol>
-            </div>
-        </div>
-    </main>
-</Layout>
+        </main>
+    </Layout>
+}

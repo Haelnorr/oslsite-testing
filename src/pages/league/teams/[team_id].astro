@@ -1,9 +1,16 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { isTeamManager, is_team_owner, permsHasOneOf, validateUser } from "../../../util/authUtils";
-import type { PlayerTeams, Team, TeamStats, User } from "../../../util/srlmTypes";
-import { color_calc, srlmGet } from "../../../util/srlmUtils";
+import { isTeamManager, isTeamOwner, permsHasOneOf, validateUser } from "../../../util/authUtils";
+import type { TeamStats, User } from "../../../util/srlmTypes";
+import { SRLMAPIError, colorCalc, srlmGet } from "../../../util/srlmUtils";
 import { Image } from 'astro:assets';
+import Page401 from '../../401.astro';
+import Page403 from '../../403.astro';
+import Page404 from '../../404.astro';
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
 
 var { team_id } = Astro.params;
 
@@ -12,100 +19,149 @@ if (!userToken) {
     userToken = '';
 }
 const requiredPerms = ['admin', 'leag_coord', 'leag_comm', 'team_owner', 'team_manager'];
-const userValidate = await validateUser(userToken, requiredPerms);
-
-if (userValidate === '503') {
-    return Astro.redirect('/503')
-}
-
-const user_authorized = permsHasOneOf(userValidate, requiredPerms);
-
-const team: TeamStats = await srlmGet(`/teams/${team_id}/stats?cached=false`);
-
-const user_is_owner = is_team_owner(userValidate, team.id);
-const userIsManager = isTeamManager(userValidate, [team.id]);
-const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
-var userIsPlayer = false;
-if (user.player) {
-    const resp: PlayerTeams = await srlmGet(`/players/${user.player}/teams?current=true&cached=false`);
-    if (resp) {
-        if (resp.current_team.id === team.id) {
-            userIsPlayer = true;
+const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
+    if (err.code !== '401') {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
         }
-    };
-}
+        console.error(err);
+    }
+});
 
-if (!team) {
-    return Astro.redirect('/404')
-}
+const userAuthorized = permsHasOneOf(userValidate, requiredPerms);
 
+const team: TeamStats = await srlmGet(`/teams/${team_id}/stats?cached=false`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-const current_players: TeamStats = await srlmGet(`/teams/${team_id}/stats?current=True&cached=false`);
+const userIsOwner = isTeamOwner(userValidate, team?.id);
+const userIsManager = isTeamManager(userValidate, [team?.id]);
+const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+    if (err.code !== '401' &&  err.code !== '404') {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    }
+});
+const userIsPlayer = user?.player?.current_team?.id === team?.id
 
-var team_logo = null;
-if (team.logo) {
+const currentPlayers: TeamStats = await srlmGet(`/teams/${team_id}/stats?current=True&cached=false`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
+
+var teamLogo;
+if (team?.logo) {
     const images = import.meta.glob<{default: ImageMetadata}>('/public/upload/team-logos/*.{jpeg,jpg,png,gif}')
     try {
-        team_logo = images[`/public/upload/team-logos/${team.logo}`]()
+        teamLogo = images[`/public/upload/team-logos/${team.logo}`]()
     } catch (err) {};
 }
 
 ---
-<Layout title={`Team: ${team.name}`}>
-    <main class="py-10 sm:container mx-auto text-white text-center">
-        <div class="justify-center w-fit min-w-80 rounded-md shadow-md shadow-black mx-auto bg-gray-700">
-            <div style={color_calc(team.color)} class="py-5 rounded-md">
-                {team.logo &&
-                    <Image 
-                        class="rounded-full h-40 w-40 text-center text-white mx-auto" 
-                        alt={`${team.name} logo`}
-                        height={500}
-                        width={500}
-                        src={team_logo} />
-                }
-                <h2 class="font-bold text-2xl">{team.name}  ({team.acronym})</h2>
-                {(user_authorized || user_is_owner || userIsManager || userIsPlayer) &&
-                    <span><a href={`/manage/teams/${team.id}`}>(Manage)</a></span>
-                }
-            </div>
-            <div>
-                <table>
-                    <tr class="bg-gray-800">
-                        <th class="px-2">Matches</th>
-                        <th class="px-2">Wins</th>
-                        <th class="px-2">OT Wins</th>
-                        <th class="px-2">Losses</th>
-                        <th class="px-2">OT Losses</th>
-                        <th class="px-2">Points</th>
-                        <th class="px-2">Goal Diff</th>
-                        <th class="px-2">Goals For</th>
-                        <th class="px-2">Goals Against</th>
-                        <th class="px-2">Goals/Game</th>
-                        <th class="px-2">Win %</th>
-                    </tr>
-                    <tr>
-                        <td>{team.matches}</td>
-                        <td>{team.wins}</td>
-                        <td>{team.ot_wins}</td>
-                        <td>{team.losses}</td>
-                        <td>{team.ot_losses}</td>
-                        <td>{team.points}</td>
-                        <td>{team.goals_for - team.goals_against}</td>
-                        <td>{team.goals_for}</td>
-                        <td>{team.goals_against}</td>
-                        <td>{(team.goals_for / team.matches) || '-'}</td>
-                        <td>{(team.wins / team.matches * 100) || '-'}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        <div class="pt-10">
-            <section class="flex flex-wrap justify-between pt-5">
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+    <Layout title={`Team: ${team?.name}`}>
+        <main class="py-10 sm:container mx-auto text-white text-center">
+            <div class="justify-center w-fit min-w-80 rounded-md shadow-md shadow-black mx-auto bg-gray-700">
+                <div style={colorCalc(team.color)} class="py-5 rounded-md">
+                    {team.logo &&
+                        <Image 
+                            class="rounded-full h-40 w-40 text-center text-white mx-auto" 
+                            alt={`${team.name} logo`}
+                            height={500}
+                            width={500}
+                            src={teamLogo!} />
+                    }
+                    <h2 class="font-bold text-2xl">{team.name}  ({team.acronym})</h2>
+                    {(userAuthorized || userIsOwner || userIsManager || userIsPlayer) &&
+                        <span><a href={`/manage/teams/${team.id}`}>(Manage)</a></span>
+                    }
+                </div>
                 <div>
-                    <h3 class="text-3xl pb-5">Players:</h3>
-                    {current_players.players.length > 0 &&
+                    <table>
+                        <tr class="bg-gray-800">
+                            <th class="px-2">Matches</th>
+                            <th class="px-2">Wins</th>
+                            <th class="px-2">OT Wins</th>
+                            <th class="px-2">Losses</th>
+                            <th class="px-2">OT Losses</th>
+                            <th class="px-2">Points</th>
+                            <th class="px-2">Goal Diff</th>
+                            <th class="px-2">Goals For</th>
+                            <th class="px-2">Goals Against</th>
+                            <th class="px-2">Goals/Game</th>
+                            <th class="px-2">Win %</th>
+                        </tr>
+                        <tr>
+                            <td>{team.matches}</td>
+                            <td>{team.wins}</td>
+                            <td>{team.ot_wins}</td>
+                            <td>{team.losses}</td>
+                            <td>{team.ot_losses}</td>
+                            <td>{team.points}</td>
+                            <td>{team.goals_for - team.goals_against}</td>
+                            <td>{team.goals_for}</td>
+                            <td>{team.goals_against}</td>
+                            <td>{(team.goals_for / team.matches) || '-'}</td>
+                            <td>{(team.wins / team.matches * 100) || '-'}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="pt-10">
+                <section class="flex flex-wrap justify-between pt-5">
+                    <div>
+                        <h3 class="text-3xl pb-5">Players:</h3>
+                        {currentPlayers.players.length > 0 &&
+                            <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                                <h4 class="text-xl">Current:</h4>
+                                <table>
+                                    <tr>
+                                        <th class="px-2">Player</td>
+                                        <th class="px-2">Periods</th>
+                                        <th class="px-2">Goals</th>
+                                        <th class="px-2">Shots</th>
+                                        <th class="px-2">Assists</th>
+                                        <th class="px-2">Saves</th>
+                                    </tr>
+                                    {
+                                        currentPlayers.players.map(player => (
+                                            <tr>
+                                                <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
+                                                <td class="px-2">{player.periods}</td>
+                                                <td class="px-2">{player.goals}</td>
+                                                <td class="px-2">{player.shots}</td>
+                                                <td class="px-2">{player.assists}</td>
+                                                <td class="px-2">{player.saves}</td>
+                                            </tr>
+                                        ))
+                                    }
+                                </table>
+                            </div>
+                        }
                         <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                            <h4 class="text-xl">Current:</h4>
+                            <h4 class="text-xl">All:</h4>
                             <table>
                                 <tr>
                                     <th class="px-2">Player</td>
@@ -116,7 +172,7 @@ if (team.logo) {
                                     <th class="px-2">Saves</th>
                                 </tr>
                                 {
-                                    current_players.players.map(player => (
+                                    team.players.map(player => (
                                         <tr>
                                             <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
                                             <td class="px-2">{player.periods}</td>
@@ -129,46 +185,50 @@ if (team.logo) {
                                 }
                             </table>
                         </div>
-                    }
-                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                        <h4 class="text-xl">All:</h4>
-                        <table>
-                            <tr>
-                                <th class="px-2">Player</td>
-                                <th class="px-2">Periods</th>
-                                <th class="px-2">Goals</th>
-                                <th class="px-2">Shots</th>
-                                <th class="px-2">Assists</th>
-                                <th class="px-2">Saves</th>
-                            </tr>
-                            {
-                                team.players.map(player => (
-                                    <tr>
-                                        <td class="px-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
-                                        <td class="px-2">{player.periods}</td>
-                                        <td class="px-2">{player.goals}</td>
-                                        <td class="px-2">{player.shots}</td>
-                                        <td class="px-2">{player.assists}</td>
-                                        <td class="px-2">{player.saves}</td>
-                                    </tr>
-                                ))
-                            }
-                        </table>
                     </div>
-                </div>
-                <div>
-                    <h3 class="text-3xl pb-5">Matches:</h3>
-                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                        <h4 class="text-xl">Upcoming:</h4>
-                        {team.upcoming_matches.length > 0 &&
+                    <div>
+                        <h3 class="text-3xl pb-5">Matches:</h3>
+                        <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                            <h4 class="text-xl">Upcoming:</h4>
+                            {team.upcoming_matches.length > 0 &&
+                                <table>
+                                    <tr>
+                                        <th class="px-2">ID</td>
+                                        <th class="px-2">Versus</th>
+                                        <th class="px-2">Scheduled</th>
+                                    </tr>
+                                    {
+                                        team.upcoming_matches.map(match => (
+                                            <tr>
+                                                <td class="px-2">
+                                                    <a href={`/league/match/${match.id}`}>
+                                                        {match.id}
+                                                    </a>
+                                                </td>
+                                                <td class="px-2">
+                                                    <a href={`/league/teams/` + (((match.home_team.id === team.id) && match.away_team.id) || match.home_team.id)}>
+                                                        {((match.home_team.id === team.id) && match.away_team.name) || match.home_team.name}
+                                                    </a>
+                                                </td>
+                                                <td class="px-2">{match.scheduled_time || '-'}</td>
+                                            </tr>
+                                        ))
+                                    }
+                                </table>
+                            || 'No upcoming matches'
+                            }
+                        </div>
+                        <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
+                            <h4 class="text-xl">Completed:</h4>
                             <table>
                                 <tr>
                                     <th class="px-2">ID</td>
                                     <th class="px-2">Versus</th>
-                                    <th class="px-2">Scheduled</th>
+                                    <th class="px-2">Result</th>
+                                    <th class="px-2">Score</th>
                                 </tr>
                                 {
-                                    team.upcoming_matches.map(match => (
+                                    team.completed_matches.map(match => (
                                         <tr>
                                             <td class="px-2">
                                                 <a href={`/league/match/${match.id}`}>
@@ -180,58 +240,29 @@ if (team.logo) {
                                                     {((match.home_team.id === team.id) && match.away_team.name) || match.home_team.name}
                                                 </a>
                                             </td>
-                                            <td class="px-2">{match.scheduled_time || '-'}</td>
+                                            <td class="px-2">
+                                                {(match.results.winner === team.name) &&
+                                                    'Won'
+                                                }
+                                                {(match.results.draw) &&
+                                                    'Draw'
+                                                }
+                                                {(match.results.loser === team.name) &&
+                                                    'Lost'
+                                                }
+                                                {(match.results.forfeit) &&
+                                                    'Forfeit'
+                                                }
+                                            </td>
+                                            <td class="px-2">{match.results.score_winner}-{match.results.score_loser}</td>
                                         </tr>
                                     ))
                                 }
                             </table>
-                        || 'No upcoming matches'
-                        }
+                        </div>
                     </div>
-                    <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 shadow-md shadow-black h-fit mb-10">
-                        <h4 class="text-xl">Completed:</h4>
-                        <table>
-                            <tr>
-                                <th class="px-2">ID</td>
-                                <th class="px-2">Versus</th>
-                                <th class="px-2">Result</th>
-                                <th class="px-2">Score</th>
-                            </tr>
-                            {
-                                team.completed_matches.map(match => (
-                                    <tr>
-                                        <td class="px-2">
-                                            <a href={`/league/match/${match.id}`}>
-                                                {match.id}
-                                            </a>
-                                        </td>
-                                        <td class="px-2">
-                                            <a href={`/league/teams/` + (((match.home_team.id === team.id) && match.away_team.id) || match.home_team.id)}>
-                                                {((match.home_team.id === team.id) && match.away_team.name) || match.home_team.name}
-                                            </a>
-                                        </td>
-                                        <td class="px-2">
-                                            {(match.results.winner === team.name) &&
-                                                'Won'
-                                            }
-                                            {(match.results.draw) &&
-                                                'Draw'
-                                            }
-                                            {(match.results.loser === team.name) &&
-                                                'Lost'
-                                            }
-                                            {(match.results.forfeit) &&
-                                                'Forfeit'
-                                            }
-                                        </td>
-                                        <td class="px-2">{match.results.score_winner}-{match.results.score_loser}</td>
-                                    </tr>
-                                ))
-                            }
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </main>
-</Layout>
+                </section>
+            </div>
+        </main>
+    </Layout>
+}

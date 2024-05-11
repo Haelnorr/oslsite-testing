@@ -1,46 +1,64 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { srlmGet, srlmPost } from "../../../util/srlmUtils";
-import { type Match } from "../../../util/srlmTypes";
+import { SRLMAPIError, srlmGet, srlmPost } from "../../../util/srlmUtils";
+import { type Gamemode, type Match } from "../../../util/srlmTypes";
 import { validateUser, permsHasOneOf } from "../../../util/authUtils";
+import Page400 from '../../400.astro';
+import Page401 from '../../401.astro';
+import Page403 from '../../403.astro';
+import Page404 from '../../404.astro';
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
 
 const userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
-    return Astro.redirect('/403');
+    return Astro.redirect('/login');
 }
 const requiredPerms = ['admin', 'leag_coord', 'leag_comm'];
-const userValidate = await validateUser(userToken, requiredPerms);
+const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (userValidate === '503') {
-    return Astro.redirect('/503')
+const userAuthorized = permsHasOneOf(userValidate, requiredPerms);
+
+if (!userAuthorized) {
+    status = '403';
 }
 
-const user_authorized = permsHasOneOf(userValidate, requiredPerms);
+const matchID = Astro.url.searchParams.get('match');
 
-if (!user_authorized) {
-    return Astro.redirect('/403');
-}
+const match: Match = await srlmGet(`/match/${matchID}`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-const match_id = Astro.url.searchParams.get('match');
+const gamemodes: Gamemode[] = await srlmGet('/match/gamemodes').then((resp) => resp['items']).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-const match: Match = await srlmGet(`/match/${match_id}`);
+function timestampFromFileName(filename: string) {
+    // const inputFormat = "%Y%m%d_%H%M%S";
+    // const outputFormat = "%Y-%m-%dT%H:%M:%SZ";
 
-const gamemodes = await srlmGet('/match/gamemodes').then((resp) => resp['items']);
+    const timestampRaw = filename.slice(0,15);
 
-function timestamp_from_filename(filename: string) {
-    const input_format = "%Y%m%d_%H%M%S";
-    const output_format = "%Y-%m-%dT%H:%M:%SZ";
+    const year = +timestampRaw.slice(0,4);
+    const month = +timestampRaw.slice(4,6);
+    const day = +timestampRaw.slice(6,8);
+    const hour = +timestampRaw.slice(9,11);
+    const minute = +timestampRaw.slice(11,13);
+    const second = +timestampRaw.slice(13,15);
 
-    const timestamp_raw = filename.slice(0,15);
-
-    const year = timestamp_raw.slice(0,4);
-    const month = timestamp_raw.slice(4,6);
-    const day = timestamp_raw.slice(6,8);
-    const hour = timestamp_raw.slice(9,11);
-    const minute = timestamp_raw.slice(11,13);
-    const second = timestamp_raw.slice(13,15);
-
-    //@ts-ignore
     var timestamp = new Date(year, month, day, hour, minute, second)
 
     return timestamp;
@@ -48,169 +66,184 @@ function timestamp_from_filename(filename: string) {
 
 if (Astro.request.method === "POST") {
     try {
-        const form_data = await Astro.request.formData();
+        const formData = await Astro.request.formData();
 
-        //@ts-ignore
-        const period1data = JSON.parse(form_data.get('period1data'));
-        //@ts-ignore
-        const period2data = JSON.parse(form_data.get('period2data'));
-        //@ts-ignore
-        const period3data = JSON.parse(form_data.get('period3data'));
+        const period1data = JSON.parse(formData.get('period1data')!.toString());
+        const period2data = JSON.parse(formData.get('period2data')!.toString());
+        const period3data = JSON.parse(formData.get('period3data')!.toString());
 
         const periods = [
             {
                 log_json: period1data,
-                created: timestamp_from_filename(form_data.get('period1').toString())
+                created: timestampFromFileName(formData.get('period1')!.toString())
             },
             {
                 log_json: period2data,
-                created: timestamp_from_filename(form_data.get('period2').toString())
+                created: timestampFromFileName(formData.get('period2')!.toString())
             },
             {
                 log_json: period3data,
-                created: timestamp_from_filename(form_data.get('period3').toString())
+                created: timestampFromFileName(formData.get('period3')!.toString())
             },
         ]
 
-        const match_data = {
+        const matchData = {
             periods: periods,
             match_id: match.id,
             region: "oce-east",
-            gamemode: form_data.get('gamemode')
+            gamemode: formData.get('gamemode')
         }
 
-        const upload = await srlmPost(`/match/logs`, '', match_data);
+        const upload = await srlmPost(`/match/logs`, '', matchData).catch(err => {
+            if (err instanceof SRLMAPIError) {
+                status = err.code;
+            }
+            console.error(err);
+        });
 
-        if (upload && upload['result'] === "OK") {
-            console.log(upload)
+        if (upload) {
             return Astro.redirect(`/league/match/${match.id}`);
         }
-
     } catch (error) {
         if (error instanceof Error) {
             console.error(error.message);
+            status = '500';
         }
     }
 }
 
 ---
-<Layout title="upload-logs">
-    <main class="py-10">
-        <div class="flex justify-evenly text-white">
-            {!match_id &&
-                <p>No match specified</p>
-            }
-            {!match &&
-                <p>Invalid match ID</p>
-            }
-            {match &&
-                <div>
-                    <h2>Upload Logs</h2>
-                    <p>Match: {match.home_team.name} vs {match.away_team.name}</p>
-                    <p>Round: {match.round}</p>
-                    <p>Match week: {match.match_week}</p>
-                    <br>
-                    <form method="post">
-                        <label for="gamemode">
-                        Game mode:  
-                        </label>
-                        <select class="text-black" name="gamemode" required>
-                            {
-                                gamemodes.map(gamemode => (
-                                    <option 
-                                        value={gamemode.value} 
-                                        title={gamemode.info}
-                                        selected={(gamemode.value === 'hockey') && "selected"}>
-                                            {gamemode.label}
-                                    </option>
-                                ))
-                            }
-                        </select><br><br>
-                        <label>
-                            Period 1:
-                            <input name="period1" id="period1" type="file" accept="application/json" required/>
-                            <input class="text-black" name="period1data" id="period1data" type="text" hidden="true"/>
-                            
-                        </label><br>
-                        <label>
-                            Period 2:
-                            <input name="period2" id="period2" type="file" accept="application/json" required/>
-                            <input class="text-black" name="period2data" id="period2data" type="text" hidden="true"/>
-                            
-                        </label><br>
-                        <label>
-                            Period 3:
-                            <input name="period3" id="period3" type="file" accept="application/json" required/>
-                            <input class="text-black" name="period3data" id="period3data" type="text" hidden="true"/>
-                            
-                        </label><br><br>
-                        <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
-                            Upload Logs
-                        </button>
-                        <script>
-                                (function(){
-    
-                                    function onChange1(event) {
-                                        var reader = new FileReader();
-                                        reader.onload = onReaderLoad1;
-                                        reader.readAsText(event.target.files[0]);
-                                    }
-
-                                    function onReaderLoad1(event){
-                                        console.log(event.target.result);
-                                        var obj = JSON.parse(event.target.result);
-                                        let data_element = document.getElementById('period1data');
-                                        //@ts-ignore
-                                        data_element.value = JSON.stringify(obj) // IGNORE THIS TYPE ERROR
-                                        // When i attempted to resolve it by casting the element as HTMLInputElement to fix the type error
-                                        // The whole script just broke and stopped working
-                                        // Works fine like this so ¯\_(ツ)_/¯
-                                    }
+{status === '400' &&
+	<Page400/>
+}
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+    <Layout title="upload-logs">
+        <main class="py-10">
+            <div class="flex justify-evenly text-white">
+                {!matchID &&
+                    <p>No match specified</p>
+                }
+                {!match &&
+                    <p>Invalid match ID</p>
+                }
+                {match &&
+                    <div>
+                        <h2>Upload Logs</h2>
+                        <p>Match: {match.home_team.name} vs {match.away_team.name}</p>
+                        <p>Round: {match.round}</p>
+                        <p>Match week: {match.match_week}</p>
+                        <br>
+                        <form method="post">
+                            <label for="gamemode">
+                            Game mode:  
+                            </label>
+                            <select class="text-black" name="gamemode" required>
+                                {
+                                    gamemodes.map(gamemode => (
+                                        <option 
+                                            value={gamemode.value} 
+                                            title={gamemode.info}
+                                            selected={(gamemode.value === 'hockey') && "selected"}>
+                                                {gamemode.label}
+                                        </option>
+                                    ))
+                                }
+                            </select><br><br>
+                            <label>
+                                Period 1:
+                                <input name="period1" id="period1" type="file" accept="application/json" required/>
+                                <input class="text-black" name="period1data" id="period1data" type="text" hidden="true"/>
                                 
-                                    document.getElementById('period1').addEventListener('change', onChange1);
-
-                                    function onChange2(event) {
-                                        var reader = new FileReader();
-                                        reader.onload = onReaderLoad2;
-                                        reader.readAsText(event.target.files[0]);
-                                    }
-
-                                    function onReaderLoad2(event){
-                                        console.log(event.target.result);
-                                        var obj = JSON.parse(event.target.result);
-                                        let data_element = document.getElementById('period2data');
-                                        //@ts-ignore
-                                        data_element.value = JSON.stringify(obj) // IGNORE THIS TYPE ERROR
-                                        // When i attempted to resolve it by casting the element as HTMLInputElement to fix the type error
-                                        // The whole script just broke and stopped working
-                                        // Works fine like this so ¯\_(ツ)_/¯
-                                    }
+                            </label><br>
+                            <label>
+                                Period 2:
+                                <input name="period2" id="period2" type="file" accept="application/json" required/>
+                                <input class="text-black" name="period2data" id="period2data" type="text" hidden="true"/>
                                 
-                                    document.getElementById('period2').addEventListener('change', onChange2);
+                            </label><br>
+                            <label>
+                                Period 3:
+                                <input name="period3" id="period3" type="file" accept="application/json" required/>
+                                <input class="text-black" name="period3data" id="period3data" type="text" hidden="true"/>
+                                
+                            </label><br><br>
+                            <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
+                                Upload Logs
+                            </button>
+                            <script>
+                                    (function(){
+        
+                                        function onChange1(event:any) {
+                                            var reader = new FileReader();
+                                            reader.onload = onReaderLoad1;
+                                            reader.readAsText(event.target.files[0]);
+                                        }
+
+                                        function onReaderLoad1(event:any){
+                                            console.log(event.target.result);
+                                            var obj = JSON.parse(event.target.result);
+                                            let data_element = document.getElementById('period1data');
+                                            //@ts-ignore
+                                            data_element.value = JSON.stringify(obj) // IGNORE THIS TYPE ERROR
+                                            // When i attempted to resolve it by casting the element as HTMLInputElement to fix the type error
+                                            // The whole script just broke and stopped working
+                                            // Works fine like this so ¯\_(ツ)_/¯
+                                        }
                                     
-                                    function onChange3(event) {
-                                        var reader = new FileReader();
-                                        reader.onload = onReaderLoad3;
-                                        reader.readAsText(event.target.files[0]);
-                                    }
+                                        document.getElementById('period1')!.addEventListener('change', onChange1);
 
-                                    function onReaderLoad3(event){
-                                        console.log(event.target.result);
-                                        var obj = JSON.parse(event.target.result);
-                                        let data_element = document.getElementById('period3data');
-                                        //@ts-ignore
-                                        data_element.value = JSON.stringify(obj) // IGNORE THIS TYPE ERROR
-                                        // When i attempted to resolve it by casting the element as HTMLInputElement to fix the type error
-                                        // The whole script just broke and stopped working
-                                        // Works fine like this so ¯\_(ツ)_/¯
-                                    }
-                                
-                                    document.getElementById('period3').addEventListener('change', onChange3);
-                                }());
-                            </script>
-                    </form>
-                </div>  
-            }
-        </div>
-    </main>
-</Layout>
+                                        function onChange2(event:any) {
+                                            var reader = new FileReader();
+                                            reader.onload = onReaderLoad2;
+                                            reader.readAsText(event.target.files[0]);
+                                        }
+
+                                        function onReaderLoad2(event:any){
+                                            console.log(event.target.result);
+                                            var obj = JSON.parse(event.target.result);
+                                            let data_element = document.getElementById('period2data');
+                                            //@ts-ignore
+                                            data_element.value = JSON.stringify(obj)
+                                        }
+                                    
+                                        document.getElementById('period2')!.addEventListener('change', onChange2);
+                                        
+                                        function onChange3(event:any) {
+                                            var reader = new FileReader();
+                                            reader.onload = onReaderLoad3;
+                                            reader.readAsText(event.target.files[0]);
+                                        }
+
+                                        function onReaderLoad3(event:any){
+                                            console.log(event.target.result);
+                                            var obj = JSON.parse(event.target.result);
+                                            let data_element = document.getElementById('period3data');
+                                            //@ts-ignore
+                                            data_element.value = JSON.stringify(obj)
+                                        }
+                                    
+                                        document.getElementById('period3')!.addEventListener('change', onChange3);
+                                    }());
+                                </script>
+                        </form>
+                    </div>  
+                }
+            </div>
+        </main>
+    </Layout>
+}

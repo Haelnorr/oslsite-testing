@@ -1,26 +1,50 @@
 ---
 import { validateUser } from "../../../util/authUtils";
-import type { Discord, User } from "../../../util/srlmTypes";
-import { srlmDelete, srlmGet } from "../../../util/srlmUtils";
+import type { User } from "../../../util/srlmTypes";
+import { SRLMAPIError, srlmDelete, srlmGet } from "../../../util/srlmUtils";
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
 
 const userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
     return Astro.redirect('/login');
 }
 
-const userValidate = await validateUser(userToken);
+const userValidate = await validateUser(userToken).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 if (!userValidate) {
     return Astro.redirect('/login?error=sessionexpire');
 }
 
-const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
-const discord: Discord = await srlmGet(`/users/${user.id}/discord`, userToken);
+const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (!discord) {
-    return Astro.redirect('/profile')
+await srlmDelete(`/users/${user.id}/discord`, userToken).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
+
+if (status !== '500' && status !== '503') {
+    return Astro.redirect('/profile');
 }
 
-const test = await srlmDelete(`/users/${user.id}/discord`, userToken);
-return Astro.redirect('/profile')
 ---
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}

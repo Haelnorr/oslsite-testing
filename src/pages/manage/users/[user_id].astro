@@ -1,92 +1,94 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
-import { permsHasOneOf, set_cookies, validateUser } from "../../../util/authUtils";
-import type { User } from "../../../util/srlmTypes";
-import { checkbox_to_bool, srlmGet, srlmPost, srlmPut } from "../../../util/srlmUtils";
+import { permsHasOneOf, setCookies, validateUser } from "../../../util/authUtils";
+import type { User, UserPermissions } from "../../../util/srlmTypes";
+import { SRLMAPIError, checkboxToBool, srlmGet, srlmPost, srlmPut } from "../../../util/srlmUtils";
+import Page401 from '../../401.astro';
+import Page403 from '../../403.astro';
+import Page404 from '../../404.astro';
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
 
 
 const userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
-    return Astro.redirect('/403');
+    return Astro.redirect('/login');
 }
 const requiredPerms = ['admin', 'leag_comm', 'leag_coord'];
-const userValidate = await validateUser(userToken, requiredPerms);
+const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (userValidate === '503') {
-    return Astro.redirect('/503')
-}
-
-
-if (!userValidate) {
-    return Astro.redirect('/403')
-}
-
-const user_authorized = permsHasOneOf(userValidate, requiredPerms);
-const user_is_admin = permsHasOneOf(userValidate, ['admin']);
-const user_is_comm = permsHasOneOf(userValidate, ['admin']);
+const userAuthorized = permsHasOneOf(userValidate, requiredPerms);
+const userIsAdmin = permsHasOneOf(userValidate, ['admin']);
+const userIsComm = permsHasOneOf(userValidate, ['admin']);
 
 const { user_id } = Astro.params;
 
-if (!user_id) {
-    return Astro.redirect('/manage/users');
-}
+const user: User = await srlmGet(`/users/${user_id}`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-const user: User = await srlmGet(`/users/${user_id}`);
-
-if (!user) {
-    return Astro.redirect('/manage/users');
-}
-
-const user_perms_resp = await srlmGet(`/users/${user_id}/permissions`);
-var user_perms = {}
-user_perms_resp.permissions.map(perm => {
+const userPermsResp: UserPermissions = await srlmGet(`/users/${user_id}/permissions`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
+var userPerms:{[key:string]:any} = {};
+userPermsResp.permissions.map(perm => {
     if (perm.mods === 'True') {
-        user_perms[perm.key] = true;
+        userPerms[perm.key] = true;
     } else {
         if (perm.key === 'team_owner') {
-            user_perms[perm.key] = perm.mods.split(',')
+            userPerms[perm.key] = perm.mods.split(',')
         } else {
-            user_perms[perm.key] = +perm.mods
+            userPerms[perm.key] = +perm.mods
         }
     }
 })
 
-const user_editing_self = userValidate.user == user.id;
+const userEditingSelf = userValidate?.user == user.id;
 
-if (!(user_authorized || user_editing_self)) {
-    return Astro.redirect('/403');
+if (!(userAuthorized || userEditingSelf)) {
+    status = '403';
 }
 
-var errors = null;
-var post_success = true;
+var errors:{[key:string]:string} = {};
+var postSuccess = true;
 
 if (Astro.request.method === "POST") {
-    const form_data = await Astro.request.formData();
-    if (user_editing_self) {
-        const user_inputs = {
-            username: form_data.get('username')?.toString(),
-            email: form_data.get('email')?.toString()
+    const formData = await Astro.request.formData();
+    if (userEditingSelf) {
+        const userInputs = {
+            username: formData.get('username')?.toString(),
+            email: formData.get('email')?.toString()
         }
-        const user_update = await srlmPut(`/users/${user.id}`, userToken, user_inputs);
-        if (user_update) {
-            if (user_update.status && user_update.status === 409) {
-                if (!errors) {
-                    errors = {};
-                }
-                user_update.data.fields.map(err => {
+        const userUpdate = await srlmPut(`/users/${user.id}`, userToken, userInputs);
+        if (userUpdate) {
+            if (userUpdate.status && userUpdate.status === 409) {
+                userUpdate.data.fields.map((err:{field:string,error:string}) => {
                     errors[err.field] = err.error;                
                 })
             } else {
-                post_success = false;
+                postSuccess = false;
             }
         }
-        const password = form_data.get('password')?.toString();
-        const confirm_password = form_data.get('confirm-password')?.toString();
+        const password = formData.get('password')?.toString();
+        const confirmPassword = formData.get('confirm-password')?.toString();
         if (password) {
-            if (password === confirm_password) {
-                const pass_update = await srlmPost(`/users/${user.id}/new_password`, userToken, {password:password});
-                if (pass_update && pass_update['token']) {
-                    set_cookies(Astro, pass_update);
+            if (password === confirmPassword) {
+                const passUpdate = await srlmPost(`/users/${user.id}/new_password`, userToken, {password:password});
+                if (passUpdate && passUpdate['token']) {
+                    setCookies(Astro, passUpdate);
                 }
             } else {
                 if (!errors) {
@@ -96,16 +98,16 @@ if (Astro.request.method === "POST") {
             }
             
         }
-    } else if (user_authorized) {
-        const perm_inputs = {
-            admin: checkbox_to_bool(form_data, 'admin'),
-            leag_comm: checkbox_to_bool(form_data, 'leag-comm'),
-            leag_coord: checkbox_to_bool(form_data, 'leag-coord'),
-            team_owner: (form_data.getAll('team-owner-mods').length > 0) && form_data.getAll('team-owner-mods'),
-            team_manager: checkbox_to_bool(form_data, 'team-manager') && form_data.getAll('team-manager-mod')
+    } else if (userAuthorized) {
+        const permInputs = {
+            admin: checkboxToBool(formData, 'admin'),
+            leag_comm: checkboxToBool(formData, 'leag-comm'),
+            leag_coord: checkboxToBool(formData, 'leag-coord'),
+            team_owner: (formData.getAll('team-owner-mods').length > 0) && formData.getAll('team-owner-mods'),
+            team_manager: checkboxToBool(formData, 'team-manager') && formData.getAll('team-manager-mod')
         }
-        const perms_update = await srlmPut(`/users/${user.id}/permissions`, '', perm_inputs)
-        console.log(perms_update)
+        const permsUpdate = await srlmPut(`/users/${user.id}/permissions`, '', permInputs)
+        console.log(permsUpdate)
         return Astro.redirect(`/manage/users/${user.id}`)
     }
 }
@@ -116,156 +118,178 @@ type Team = {
     name: string
 }
 
-const teams: Team[] = await srlmGet('/teams/list').then(resp => resp.teams);
+const teams: Team[] = await srlmGet('/teams/list').then(resp => resp.teams).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 ---
-<Layout title="Edit User">
-    <main class="py-10 sm:container mx-auto text-white">
-        <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
-            <h2 class="text-4xl">Editing User: {user.username}</h2>
-            <form class="mt-5" method="post">
-                <table class="w-full border-spacing-y-1.5 border-separate px-10">
-                    {user_editing_self &&
-                        <div>
-                            <tr>
-                                <td colspan="2" class="align-text-top text-left">
-                                    Name:
-                                </td>
-                                <td>
-                                    <input type="text" name="username" id="username" value={user.username} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
-                                    {(errors && errors['username']) && (
-                                        <br/>
-                                        <span class="text-red-600 font-bold">
-                                            {errors['username']}
-                                        </span>  
-                                    )}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" class="align-text-top text-left">
-                                    Email:
-                                </td>
-                                <td>
-                                    <input type="email" name="email" id="email" value={user.email} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
-                                    {(errors && errors['email']) && (
-                                        <br/>
-                                        <span class="text-red-600 font-bold">
-                                            {errors['email']}
-                                        </span>  
-                                    )}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" class="font-bold">Change Password:</td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" class="align-text-top text-left">
-                                    Password:
-                                </td>
-                                <td>
-                                    <input type="password" name="password" id="password" minlength="6" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" class="align-text-top text-left">
-                                    Confirm:
-                                </td>
-                                <td>
-                                    <input type="password" name="confirm-password" id="confirm-password" minlength="6" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
-                                    {(errors && errors['password']) && (
-                                        <br/>
-                                        <span class="text-red-600 font-bold">
-                                            {errors['password']}
-                                        </span>  
-                                    )}
-                                </td>
-                            </tr>
-                        </div>
-                    }
-                    {user_authorized && 
-                        <div>
-                            <tr>
-                                <td colspan="3" class="text-2xl">Permissions:</td>
-                            </tr>
-                            {(user_is_admin || user_is_comm) &&
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+    {status === '200' &&
+    <Layout title="Edit User">
+        <main class="py-10 sm:container mx-auto text-white">
+            <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
+                <h2 class="text-4xl">Editing User: {user.username}</h2>
+                <form class="mt-5" method="post">
+                    <table class="w-full border-spacing-y-1.5 border-separate px-10">
+                        {userEditingSelf &&
+                            <div>
                                 <tr>
-                                    <td colspan="3" class="font-bold">Management:</td>
-                                </tr>
-                            }
-                            {(user_is_admin && !user_editing_self) && 
-                                <tr>
-                                    <td colspan="2" class="w-[70%] text-right">Admin:</td>
-                                    <td class="w-[20%] text-left pl-5">
-                                        <input type="checkbox" name="admin" checked={user.permissions.includes('admin')} />
+                                    <td colspan="2" class="align-text-top text-left">
+                                        Name:
+                                    </td>
+                                    <td>
+                                        <input type="text" name="username" id="username" value={user.username} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required />
+                                        {(errors && errors['username']) && (
+                                            <br/>
+                                            <span class="text-red-600 font-bold">
+                                                {errors['username']}
+                                            </span>  
+                                        )}
                                     </td>
                                 </tr>
-                            }
-                            {(user_is_admin || user_is_comm) &&
                                 <tr>
-                                    <td colspan="2" class="text-right">League Commissioner:</td>
+                                    <td colspan="2" class="align-text-top text-left">
+                                        Email:
+                                    </td>
+                                    <td>
+                                        <input type="email" name="email" id="email" value={user.email} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                        {(errors && errors['email']) && (
+                                            <br/>
+                                            <span class="text-red-600 font-bold">
+                                                {errors['email']}
+                                            </span>  
+                                        )}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="font-bold">Change Password:</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" class="align-text-top text-left">
+                                        Password:
+                                    </td>
+                                    <td>
+                                        <input type="password" name="password" id="password" minlength="6" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" class="align-text-top text-left">
+                                        Confirm:
+                                    </td>
+                                    <td>
+                                        <input type="password" name="confirm-password" id="confirm-password" minlength="6" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                        {(errors && errors['password']) && (
+                                            <br/>
+                                            <span class="text-red-600 font-bold">
+                                                {errors['password']}
+                                            </span>  
+                                        )}
+                                    </td>
+                                </tr>
+                            </div>
+                        }
+                        {userAuthorized && 
+                            <div>
+                                <tr>
+                                    <td colspan="3" class="text-2xl">Permissions:</td>
+                                </tr>
+                                {(userIsAdmin || userIsComm) &&
+                                    <tr>
+                                        <td colspan="3" class="font-bold">Management:</td>
+                                    </tr>
+                                }
+                                {(userIsAdmin && !userEditingSelf) && 
+                                    <tr>
+                                        <td colspan="2" class="w-[70%] text-right">Admin:</td>
+                                        <td class="w-[20%] text-left pl-5">
+                                            <input type="checkbox" name="admin" checked={user.permissions.includes('admin')} />
+                                        </td>
+                                    </tr>
+                                }
+                                {(userIsAdmin || userIsComm) &&
+                                    <tr>
+                                        <td colspan="2" class="text-right">League Commissioner:</td>
+                                        <td class="text-left pl-5">
+                                            <input type="checkbox" name="leag-comm" checked={user.permissions.includes('leag_comm')} />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="text-right">League Coordinator:</td>
+                                        <td class="text-left pl-5">
+                                            <input type="checkbox" name="leag-coord" checked={user.permissions.includes('leag_coord')} />
+                                        </td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td colspan="3" class="font-bold">Team Management:</td>
+                                </tr>
+                                <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+                                <tr>
+                                    <td class="text-right">Team Owner:</td>
+                                    </td>
+                                    <td colspan="2" class="text-left pl-5 text-black">
+                                        <select multiple="multiple" class="w-48 text-black indent-2 rounded-sm outline outline-2 outline-gray-400 team-list-select" name="team-owner-mods" id="team-owner-list">
+                                            {
+                                                teams.map(team => (
+                                                    <option value={team.id} selected={(userPerms['team_owner'] && (userPerms['team_owner'].includes(team.id.toString())))}>{team.name}</option>
+                                                ))
+                                            }
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-right">Team Manager:</td>
                                     <td class="text-left pl-5">
-                                        <input type="checkbox" name="leag-comm" checked={user.permissions.includes('leag_comm')} />
+                                        <input type="checkbox" name="team-manager" checked={userPerms['team_manager']}/>
+                                    </td>
+                                    <td class="text-left">
+                                        <select class="w-40 text-black indent-2 rounded-sm outline outline-2 outline-gray-400 team-list-select" name="team-manager-mod" id="team-manager-list">
+                                            <option value="" disabled selected={!userPerms['team_manager']}>Select team</option>
+                                            {
+                                                teams.map(team => (
+                                                    <option value={team.id} selected={(userPerms['team_manager'] && (team.id === userPerms['team_manager']))}>{team.name}</option>
+                                                ))
+                                            }
+                                        </select>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td colspan="2" class="text-right">League Coordinator:</td>
-                                    <td class="text-left pl-5">
-                                        <input type="checkbox" name="leag-coord" checked={user.permissions.includes('leag_coord')} />
-                                    </td>
-                                </tr>
-                            }
-                            <tr>
-                                <td colspan="3" class="font-bold">Team Management:</td>
-                            </tr>
-                            <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-                            <tr>
-                                <td class="text-right">Team Owner:</td>
-                                </td>
-                                <td colspan="2" class="text-left pl-5 text-black">
-                                    <select multiple="multiple" class="w-48 text-black indent-2 rounded-sm outline outline-2 outline-gray-400 team-list-select" name="team-owner-mods" id="team-owner-list">
-                                        {
-                                            teams.map(team => (
-                                                <option value={team.id} selected={(user_perms['team_owner'] && (user_perms['team_owner'].includes(team.id.toString())))}>{team.name}</option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-right">Team Manager:</td>
-                                <td class="text-left pl-5">
-                                    <input type="checkbox" name="team-manager" checked={user_perms['team_manager']}/>
-                                </td>
-                                <td class="text-left">
-                                    <select class="w-40 text-black indent-2 rounded-sm outline outline-2 outline-gray-400 team-list-select" name="team-manager-mod" id="team-manager-list">
-                                        <option value="" disabled selected={!user_perms['team_manager']}>Select team</option>
-                                        {
-                                            teams.map(team => (
-                                                <option value={team.id} selected={(user_perms['team_manager'] && (team.id === user_perms['team_manager']))}>{team.name}</option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                            </tr>
-                        </div>
-                        
-                        <script>
-                            {/**@ts-ignore */}
-                            $(document).ready(function() {
-                                //@ts-ignore
-                                $('.team-list-select').select2();
-                            });
-                        </script>
-                    }
-                    <tr class="py-5">
-                        <td colspan="3">
-                            <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-[80%]">
-                                Update
-                            </button>
-                        </td>
-                    </tr>
-                </table>
-            </form>
-        </div>
-    </main>
-</Layout>
+                            </div>
+                            
+                            <script>
+                                {/**@ts-ignore */}
+                                $(document).ready(function() {
+                                    //@ts-ignore
+                                    $('.team-list-select').select2();
+                                });
+                            </script>
+                        }
+                        <tr class="py-5">
+                            <td colspan="3">
+                                <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-[80%]">
+                                    Update
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+        </main>
+    </Layout>
+}

@@ -1,0 +1,16 @@
+---
+import Layout from '../layouts/Layout.astro';
+import LocalLogoImage from "../assets/logo.png";
+import { Image } from 'astro:assets';
+---
+
+<Layout title="403">
+	<main class="py-10 grid grid-cols-1 place-items-center gap-4">
+        <Image src={LocalLogoImage} alt='OSL Logo' class='lg:w-1/4 lg:aspect-square' width="400" />
+		<h1 class="text-white font-bold text-2xl">400 Bad Request</h1>
+		<p class="text-white">
+			A bad request was made. This likely occurred because you submitted invalid data.  
+			Please report this to an administrator.
+		</p>
+	</main>
+</Layout>

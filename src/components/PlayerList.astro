@@ -27,16 +27,18 @@ if (order_by != 'id' &&
 
 var query = `page=${page}&per_page=${per_page}&order=${order}&order_by=${order_by}&cached=false`;
 
-const players: PlayerCollection = await srlmGet(`/players?${query}`);
+const players: PlayerCollection = await srlmGet(`/players?${query}`).catch(err => {
+	console.error(err);
+});
 
-function query_to_dict(query) {
-    var params_list = query.replace('?', '').split('&');
+function queryToDict(query:string):{[key:string]:string} {
+    var paramsList = query.replace('?', '').split('&');
 
-    var params = {};
+    var params:{[key:string]:string} = {};
 
-    params_list.forEach(split_param);
+    paramsList.forEach(splitParam);
 
-    function split_param(param: string) {
+    function splitParam(param: string) {
         const keypair = param.split('=');
         params[keypair[0]] = keypair[1];
     }
@@ -45,41 +47,41 @@ function query_to_dict(query) {
     return params;
 }
 
-function update_query(link) {
-    var old_query = query_to_dict(Astro.url.search);
+function updateQuery(link:string):string {
+    var oldQuery = queryToDict(Astro.url.search);
     if (!Astro.url.search) {
-        old_query = {}
+        oldQuery = {}
     }
     
-    var new_query = query_to_dict(link.replace('/api/teams', ''));
+    var newQuery = queryToDict(link.replace('/api/teams', ''));
 
-    if (Object.keys(new_query).includes('order_by')) {
-        if (new_query['order_by'] === old_query['order_by'] || new_query['order_by'] === order_by){
+    if (Object.keys(newQuery).includes('order_by')) {
+        if (newQuery['order_by'] === oldQuery['order_by'] || newQuery['order_by'] === order_by){
             switch (order) {
                 case 'asc':
-                    new_query['order'] = 'desc';
+                    newQuery['order'] = 'desc';
                     break;
                 case 'desc':
-                    new_query['order'] = 'asc';
+                    newQuery['order'] = 'asc';
                     break;
             }
         } else {
-            new_query['order'] = 'asc';
+            newQuery['order'] = 'asc';
         }
     }
 
-    const updated_params = {
-        ...old_query, 
-        ...new_query
+    const updatedParams = {
+        ...oldQuery, 
+        ...newQuery
     }
 
-    var updated_query = '?';
+    var updatedQuery = '?';
 
-    for (let key in updated_params) {
-        if (updated_query != '?') {updated_query = updated_query + '&'}
-        updated_query = updated_query + `${key}=${updated_params[key]}`
+    for (let key in updatedParams) {
+        if (updatedQuery != '?') {updatedQuery = updatedQuery + '&'}
+        updatedQuery = updatedQuery + `${key}=${updatedParams[key]}`
     }
-    return Astro.url.pathname + updated_query;
+    return Astro.url.pathname + updatedQuery;
     
 }
 
@@ -167,7 +169,7 @@ const pageNums = getPageNums(players);
     <div class="mt-3 flex justify-center">
         <div class="w-14 h-6">
             {players._links.prev &&
-                <a href={update_query(players._links.prev)}
+                <a href={updateQuery(players._links.prev)}
                     class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
                     Prev
                 </a>
@@ -180,15 +182,15 @@ const pageNums = getPageNums(players);
                         {(page != players._meta.page) &&
                             <span>
                                 {page === -2 &&
-                                    <a href={update_query(`page=1`)} class="hover:underline px-1 hover:cursor-pointer font-bold">1</a>
+                                    <a href={updateQuery(`page=1`)} class="hover:underline px-1 hover:cursor-pointer font-bold">1</a>
                                     <span>. . .</span>
                                 }
                                 {page > 0 &&
-                                    <a href={update_query(`page=${page}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{page}</a>
+                                    <a href={updateQuery(`page=${page}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{page}</a>
                                 }
                                 {page === -1 &&
                                     <span>. . .</span>
-                                    <a href={update_query(`page=${players._meta.total_pages}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{players._meta.total_pages}</a>
+                                    <a href={updateQuery(`page=${players._meta.total_pages}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{players._meta.total_pages}</a>
                                 }
                             </span>
                             
@@ -201,7 +203,7 @@ const pageNums = getPageNums(players);
         </div>
         <div class="w-14 h-6">
             {players._links.next &&
-                <a href={update_query(players._links.next)}
+                <a href={updateQuery(players._links.next)}
                     class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
                     Next
                 </a>

@@ -1,6 +1,14 @@
 import axios from "axios";
 
-export async function getTokens(code:string) {
+type DiscordToken = {
+    access_token: string,
+    refresh_token: string,
+    expires_in: number,
+    scope: string,
+    token_type: string
+}
+
+export async function getTokens(code:string): Promise<DiscordToken> {
     const params = {
         client_id: import.meta.env.DISCORD_CLIENT_ID,
         client_secret: import.meta.env.DISCORD_CLIENT_SECRET,
@@ -18,21 +26,36 @@ export async function getTokens(code:string) {
     ).then((response) => response.data).catch((err) => err);
 }
 
-export async function getUser(access_token:string|undefined) {
-    if(!access_token) {
-        return {
-            status_code: 401
-        }
-    }
+export type DiscordUser = {
+    id: string,
+    username: string,
+    avatar: string,
+    discriminator: string,
+    public_flags: number,
+    flags: number,
+    //banner: null,
+    //accent_color: null,
+    global_name: string,
+    //avatar_decoration_data: null,
+    //banner_color: null,
+    //clan: null,
+    mfa_enabled: boolean,
+    locale: string,
+    premium_type: number,
+    email: string,
+    verified: boolean
+  }
+
+export async function getUser(access_token:string): Promise<DiscordUser> {
 
     return await axios.get('https://discord.com/api/users/@me', {
     headers: {
         Authorization: `Bearer ${access_token}`
     }
-    }).then((response) => response.data).catch((err) => err);
+    }).then((response) => response.data);
 }
 
-export async function refreshToken(refreshToken) {    
+export async function refreshToken(refreshToken: string): Promise<DiscordToken> {    
     const params = {
         client_id: import.meta.env.DISCORD_CLIENT_ID,
         client_secret: import.meta.env.DISCORD_CLIENT_SECRET,
@@ -46,5 +69,5 @@ export async function refreshToken(refreshToken) {
         {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         }
-    ).then((response) => response.data).catch((err) => err);
+    ).then((response) => response.data);
 }

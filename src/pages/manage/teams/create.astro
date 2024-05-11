@@ -1,143 +1,178 @@
 ---
-import TeamList from "../../../components/TeamList.astro";
 import TeamManageLayout from "../../../layouts/TeamManageLayout.astro";
-import { isTeamManager, is_team_owner, permsHasOneOf, validateUser } from "../../../util/authUtils";
-import type { PlayerTeams, Team, TeamManage, User } from "../../../util/srlmTypes";
-import { srlmGet, srlmPost } from "../../../util/srlmUtils";
+import { isTeamManager, isTeamOwner, permsHasOneOf, validateUser } from "../../../util/authUtils";
+import type { TeamManage, User } from "../../../util/srlmTypes";
+import { SRLMAPIError, srlmGet, srlmPost } from "../../../util/srlmUtils";
+import Page400 from '../../400.astro';
+import Page401 from '../../401.astro';
+import Page403 from '../../403.astro';
+import Page404 from '../../404.astro';
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
 
 var userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
     return Astro.redirect('/login')
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
-const userValidate = await validateUser(userToken, perms);
+const userValidate = await validateUser(userToken, perms).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (userValidate === '503') {
-    return Astro.redirect('/503')
-}
-
-const user_is_elevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
-var user_is_owner = false;
+const userIsElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
+var userIsOwner = false;
 var userIsManager = false;
 
 
-const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
+const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 if (!user.player) {
     return Astro.redirect('/profile')
 }
-var player_team: Team = null;
-const resp: PlayerTeams = await srlmGet(`/players/${user.player}/teams?current=true&cached=false`);
-if (resp) {player_team = resp.current_team};
 
-var team: TeamManage = null;
+var team: TeamManage|null = null;
 var userIsPlayer = false;
-var user_has_team = false;
+var userHasTeam = false;
 
-if (player_team) {
-    team = await srlmGet(`/teams/${player_team.id}/manage`);
-    userIsPlayer = (player_team.id === team.id);
-    user_has_team = true;
-    userIsManager = isTeamManager(userValidate, [team.id]);
-    user_is_owner = is_team_owner(userValidate, team.id);
+if (user.player.current_team) {
+    team = await srlmGet(`/teams/${user.player.current_team.id}/manage`);
+    userIsPlayer = (user.player.current_team.id === team!.id);
+    userHasTeam = true;
+    userIsManager = isTeamManager(userValidate, [team!.id]);
+    userIsOwner = isTeamOwner(userValidate, team!.id);
 }
 
-var errors = null;
+var errors:{[key:string]:string} = {};
 
-var team_name: string;
-var team_acronym: string;
-var team_color: string = '#1F2937';
+var teamName: string = '';
+var teamAcronym: string = '';
+var teamColor: string = '#1F2937';
 
 if (Astro.request.method === "POST") {
-    const form_data = await Astro.request.formData();
+    const formData = await Astro.request.formData();
 
-    team_name = form_data.get('name').toString();
-    team_acronym = form_data.get('acronym').toString();
-    team_color = form_data.get('color').toString();
+    teamName = formData.get('name')!.toString();
+    teamAcronym = formData.get('acronym')!.toString();
+    teamColor = formData.get('color')!.toString();
     
 
-    const team_input = {
-        name: team_name,
-        acronym: team_acronym,
-        color: team_color.replace('#', ''),
+    const teamInput = {
+        name: teamName,
+        acronym: teamAcronym,
+        color: teamColor.replace('#', ''),
         founded_date: new Date()
     }
 
-    const update = await srlmPost(`/teams`, userToken, team_input);
-    if (update) {
-        console.log(update)
-        if (update.status && update.status === 409) {
-            errors = {};
-            update.data.fields.map(err => {
-                errors[err.field] = err.error;                
-            })
-        } else {
-            return Astro.redirect(`/manage/teams/`);
+    const resp = await srlmPost(`/teams`, userToken, teamInput).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            if (err.code === '409') {
+                err.data.fields.map((err:{field:string, error: string}) => {
+                    errors[err.field] = err.error;                
+                })
+            } else {
+                status = err.code;
+            }
         }
-    } else {
-        return Astro.redirect(`/manage/teams/create`);
+        console.error(err);
+    });
+    if (resp) {
+        return Astro.redirect(`/manage/teams/`);
     }
-}//75cf0e
+}
 
 ---
-<TeamManageLayout 
-    title={`Create Team`}
-    team={team}
-    page="create"
-    userElevated={user_is_elevated}
-    user_owner={user_is_owner}
-    user_manager={userIsManager}
-    user_player={userIsPlayer}
-    user_has_team={user_has_team}>
-    <div>
-        <form method="post" class="w-fit mx-auto">
-            <table>
-                <tr>
-                    <td class="p-2">Name:</td>
-                    <td class="p-2">
-                        
-                        <input type="text" name="name" id="name" value={team_name} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
-                        {(errors && errors['name']) && (
-                            <br/>
-                            <span class="text-red-600 font-bold">
-                                {errors['name']}
-                            </span>  
-                        )}
-                    </td>
-                </tr>
-                <tr>
-                    <td class="p-2">Acronym:</td>
-                    <td class="p-2">
-                        <input type="text" name="acronym" id="acronym" value={team_acronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
-                        {(errors && errors['acronym']) && (
-                            <br/>
-                            <span class="text-red-600 font-bold">
-                                {errors['acronym']}
-                            </span>  
-                        )}
-                    </td>
-                </tr>
-                <tr>
-                    <td class="p-2">Colour:</td>
-                    <td class="p-2">
-                        <input type="color" name="color" id="color" value={team_color} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
-                    </td>
-                </tr>
-                {user_is_elevated &&
-                    <tr>
+{status === '400' &&
+    <Page400/>
+}
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+    <TeamManageLayout 
+        title={`Create Team`}
+        team={team}
+        page="create"
+        userElevated={userIsElevated}
+        userOwner={userIsOwner}
+        userManager={userIsManager}
+        userPlayer={userIsPlayer}
+        userHasTeam={userHasTeam}>
+        <div>
+            {!userHasTeam &&
+                <form method="post" class="w-fit mx-auto">
+                    <table>
+                        <tr>
+                            <td class="p-2">Name:</td>
+                            <td class="p-2">
+                                
+                                <input type="text" name="name" id="name" value={teamName} maxlength="64" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                                {(errors && errors['name']) && (
+                                    <br/>
+                                    <span class="text-red-600 font-bold">
+                                        {errors['name']}
+                                    </span>  
+                                )}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-2">Acronym:</td>
+                            <td class="p-2">
+                                <input type="text" name="acronym" id="acronym" maxlength="5" value={teamAcronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                                {(errors && errors['acronym']) && (
+                                    <br/>
+                                    <span class="text-red-600 font-bold">
+                                        {errors['acronym']}
+                                    </span>  
+                                )}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-2">Colour:</td>
+                            <td class="p-2">
+                                <input type="color" name="color" id="color" value={teamColor} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                            </td>
+                        </tr>
+                        {userIsElevated &&
+                            <tr>
 
-                    </tr>
-                    <tr id="set-owner">
+                            </tr>
+                            <tr id="set-owner">
 
-                    </tr>
-                }
-                <tr>
-                    <td colspan="2" class="py-4">
-                        <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-                            Create
-                        </button>
-                    </td>
-                </tr>
-            </table>
-        </form>
-    </div>
-</TeamManageLayout>
+                            </tr>
+                        }
+                        <tr>
+                            <td colspan="2" class="py-4">
+                                <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                    Create
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+                ||
+                'Leave your current team to create a new one'
+            }
+        </div>
+    </TeamManageLayout>
+}

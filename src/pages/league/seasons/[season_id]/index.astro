@@ -2,74 +2,69 @@
 import Layout from "../../../../layouts/Layout.astro";
 import { permsHasOneOf, validateUser } from "../../../../util/authUtils";
 import type { DivisionLink, Season } from "../../../../util/srlmTypes";
-import { date_is_none, srlmGet } from "../../../../util/srlmUtils";
+import { SRLMAPIError, dateIsNone, srlmGet } from "../../../../util/srlmUtils";
 import Page404 from '../../../404.astro';
 import Page503 from '../../../503.astro';
 import Page500 from '../../../500.astro';
 
-var status = 200;
+var status = '200';
 
-var can_edit = false;
+var canEdit = false;
 
 const userToken = Astro.cookies.get('user_token')?.value;
 if (userToken) {
-    const perms_test = ['admin', 'leag_comm', 'leag_coord']
-    const userValidate = await validateUser(userToken, perms_test);
-
-    if (userValidate === '503') {
-        status = 503;
-    }
-
-    if (!(typeof userValidate === "number" || typeof userValidate === "string")) {
-        if (permsHasOneOf(userValidate, perms_test)) {
-            can_edit = true;
+    const permsTest = ['admin', 'leag_comm', 'leag_coord']
+    const userValidate = await validateUser(userToken, permsTest).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
         }
+        console.error(err);
+    });
+    if (permsHasOneOf(userValidate, permsTest)) {
+        canEdit = true;
     }
 }
 
 const { season_id } = Astro.params;
-console.log(season_id)
 
 const cached = Astro.url.searchParams.get('cached')! || true;
-const season: Season = await srlmGet(`/seasons/${season_id}?league=osl&cached=${cached}`);
+const season: Season = await srlmGet(`/seasons/${season_id}?league=osl&cached=${cached}`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 
-if (typeof season === "number") {
-    status = season;
-} else if (typeof season === "string") {
-    status = +season;
-}
+const startDate = dateIsNone(season?.start_date);
+const endDate = dateIsNone(season?.end_date);
+const finalsStart = dateIsNone(season?.finals_start);
+const finalsEnd = dateIsNone(season?.finals_end);
 
+const baseUrl = Astro.url.host;
 
-const start_date = date_is_none(season.start_date);
-const end_date = date_is_none(season.end_date);
-const finals_start = date_is_none(season.finals_start);
-const finals_end = date_is_none(season.finals_end);
+function convertSeasonDivisionLink(seasonDivision: DivisionLink) {
+    const pathToSeasonDivision = `//${baseUrl}/league/seasons/${season.acronym}/${seasonDivision.acronym}`;
 
-const base_url = Astro.url.host;
-
-function convert_sd_link(season_division: DivisionLink) {
-    const path_to_sd = `//${base_url}/league/seasons/${season.acronym}/${season_division.acronym}`;
-
-    return path_to_sd;
+    return pathToSeasonDivision;
 }
 
 ---
-{status === 404 &&
+{status === '404' &&
     <Page404></Page404>
 }
-{status === 500 &&
+{status === '500' &&
     <Page500></Page500>
 }
-{status === 503 &&
+{status === '503' &&
     <Page503></Page503>
 }
-{status == 200 &&
+{status == '200' &&
     <Layout title="Season">
         <main class="py-10 sm:container mx-auto text-white">
             <div class="pt-3 pb-10">
                 <h1 class="text-4xl pb-3">{season.name} 
-                    {can_edit &&
+                    {canEdit &&
                         <span class="text-xl pl-5"><a href={`/league/seasons/${season.acronym}/edit`}>(Edit details)</a></span>
                         <span class="text-xl pl-5"><a href={`/league/seasons/${season.acronym}/manage-divisions`}>(Add divisions)</a></span>
                     }
@@ -80,13 +75,13 @@ function convert_sd_link(season_division: DivisionLink) {
                 <div class="flex flex-wrap justify-between max-w-96">
                     <div class="pb-3">
                         <h4 class="text-xl pb-1 pt-2">Regular Season</h4>
-                        <p>Start: {start_date}</p>
-                        <p>End: {end_date}</p>
+                        <p>Start: {startDate}</p>
+                        <p>End: {endDate}</p>
                     </div>
                     <div>
                         <h4 class="text-xl pb-1 pt-2">Finals</h4>
-                        <p>Start: {finals_start}</p>
-                        <p>End: {finals_end}</p>
+                        <p>Start: {finalsStart}</p>
+                        <p>End: {finalsEnd}</p>
                     </div>
                 </div>
                 This page to have an overview of all the divisions in that season.. List of stats, maybe some leaderboards. Full info on each division can be found by clicking on the links below
@@ -98,7 +93,7 @@ function convert_sd_link(season_division: DivisionLink) {
                         {season.divisions.map(division => (
                             <div class="min-w-[33.33%] px-5">
                                 <div class="font-bold bg-osl-blue-700 rounded-md hover:bg-blue-400 transition-colors duration-300 mt-2">
-                                    <a href={convert_sd_link(division)}><p class="py-3 text-center">{division.name}</p></a>
+                                    <a href={convertSeasonDivisionLink(division)}><p class="py-3 text-center">{division.name}</p></a>
                                 </div>
                             </div>
                         ))}

@@ -1,237 +1,305 @@
 ---
 import TeamManageLayout from "../../../../layouts/TeamManageLayout.astro";
-import { isTeamManager, is_team_owner, permsHasOneOf, validateUser } from "../../../../util/authUtils";
-import type { PlayerTeams, Team, TeamManage, User } from "../../../../util/srlmTypes";
-import { leave_team, srlmGet, srlmPut } from "../../../../util/srlmUtils";
+import { isTeamManager, isTeamOwner, permsHasOneOf, validateUser } from "../../../../util/authUtils";
+import type { TeamManage, User } from "../../../../util/srlmTypes";
+import { SRLMAPIError, srlmGet, srlmPut } from "../../../../util/srlmUtils";
 import placeholderImg from "../../../../assets/placeholder.png";
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from "astro";
 import { getTimeStr, writeFile } from "../../../../util/fileUtils";
+import Page400 from '../../../400.astro';
+import Page401 from '../../../401.astro';
+import Page403 from '../../../403.astro';
+import Page404 from '../../../404.astro';
+import Page500 from '../../../500.astro';
+import Page503 from '../../../503.astro';
+
+var status = '200';
+
 
 var { team_id } = Astro.params;
 
 var userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
-    return Astro.redirect('/login')
+    return Astro.redirect('/login');
 }
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
-const userValidate = await validateUser(userToken, perms);
+const userValidate = await validateUser(userToken, perms).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (userValidate === '503') {
-    return Astro.redirect('/503')
-}
+const userIsElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
+const userIsOwner = isTeamOwner(userValidate, +team_id!);
+const userIsManager = isTeamManager(userValidate, [+team_id!]);
 
-const user_is_elevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
-const user_is_owner = is_team_owner(userValidate, +team_id);
-const userIsManager = isTeamManager(userValidate, [+team_id]);
+const team: TeamManage = await srlmGet(`/teams/${team_id}/manage`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-const team: TeamManage = await srlmGet(`/teams/${team_id}/manage`);
-
-const user: User = await srlmGet(`/users/${userValidate.user}`, userToken);
-var player_team: Team;
-if (user.player) {
-    const resp: PlayerTeams = await srlmGet(`/players/${user.player}/teams?current=true&cached=False`);
-    if (resp) {player_team = resp.current_team};
-}
+const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 var userIsPlayer = false;
-var user_has_team = false;
-if (player_team) {
-    userIsPlayer = (player_team.id === team.id);
-    user_has_team = true;
+var userHasTeam = false;
+if (user?.player.current_team) {
+    userIsPlayer = (user.player.current_team.id === team.id);
+    userHasTeam = true;
 }
 
-if (!userIsPlayer && !user_is_elevated) {
-    return Astro.redirect(`/league/teams/${team.id}`);
+if (!userIsPlayer && !userIsElevated) {
+    status = '403';
 }
 
-var errors = null;
+var errors: {[key:string]:string} = {};
 
 if (Astro.request.method === "POST") {
-    const form_data = await Astro.request.formData();
-    const action = form_data.get('action')?.toString();
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
 
-    var team_update_data = {}
+    var teamUpdateData:{[key:string]:any} = {}
                                   
     switch (action) {
         case 'upload':
-            const file = form_data.get('file') as File;
+            const file = formData.get('file') as File;
             const fileType = file.type.replace('image/', '.');
             const dbFilepath = `${getTimeStr()}${team.id}${fileType}`;
             const destFilepath = `/public/upload/team-logos/${dbFilepath}`;
             await writeFile(destFilepath, file);
-            team_update_data['logo'] = dbFilepath;
+            teamUpdateData['logo'] = dbFilepath;
             break;
         case 'remove':
-            team_update_data['logo'] = null;
+            teamUpdateData['logo'] = null;
             break;
         case 'update':
-            var name = form_data.get('name').toString();
-            var acronym = form_data.get('acronym').toString();
-            var color = form_data.get('color').toString();
-            var founded = form_data.get('founded')?.toString();
+            var name = formData.get('name')?.toString();
+            var acronym = formData.get('acronym')?.toString();
+            var color = formData.get('color')?.toString() || '';
+            var founded = formData.get('founded')?.toString() || '';
 
-            team_update_data['name'] = name;
-            team_update_data['acronym'] = acronym;
-            team_update_data['color'] = color.replace('#', '');
+            teamUpdateData['name'] = name;
+            teamUpdateData['acronym'] = acronym;
+            teamUpdateData['color'] = color.replace('#', '');
             if (founded !== '') {
                 var date = new Date(founded);
-                team_update_data['founded_date'] = date;
+                teamUpdateData['founded_date'] = date;
             }
             break;
     }
 
-    if (Object.keys(team_update_data).length > 0) {
-        const update = await srlmPut(`/teams/${team.id}`, '', team_update_data);
-        if (update) {
-            if (update.status && update.status === 409) {
-                errors = {};
-                update.data.fields.map(err => {
-                    errors[err.field] = err.error;                
-                })
-            } else {
-                return Astro.redirect(`/manage/teams/${team.id}`);
+    if (Object.keys(teamUpdateData).length > 0) {
+        const resp = await srlmPut(`/teams/${team.id}`, '', teamUpdateData).catch(err => {
+            if (err instanceof SRLMAPIError) {
+                if (err.code === '409') {
+                    err.data.fields.map((err:{field:string, error: string}) => {
+                        errors[err.field] = err.error;                
+                    })
+                } else {
+                    status = err.code;
+                }
             }
+            console.error(err);
+        });
+        if (resp) {
+            return Astro.redirect(`/manage/teams/${team.id}`);
         }
     } else {
         return Astro.redirect(`/manage/teams/${team.id}`);
     }
 }
 
-var team_logo = null;
+var teamLogo = null;
 if (team.logo) {
     const images = import.meta.glob<{default: ImageMetadata}>('/public/upload/team-logos/*.{jpeg,jpg,png,gif}')
     try {
-        team_logo = images[`/public/upload/team-logos/${team.logo}`]()
+        teamLogo = images[`/public/upload/team-logos/${team.logo}`]()
     } catch (err) {};
 }
 
 ---
-<TeamManageLayout 
-    title={`Manage Team: ${team.name}`}
-    team={team}
-    page="details"
-    userElevated={user_is_elevated}
-    user_owner={user_is_owner}
-    user_manager={userIsManager}
-    user_player={userIsPlayer}
-    user_has_team={user_has_team}>
-    <div class="flex divide-x-2 divide-gray-500 justify-center">
-        <div class="mx-10 w-52">
-            <Image 
-                class="rounded-full h-40 w-40 text-center text-white mx-auto" 
-                alt={`${team.name} logo`}
-                height={500}
-                width={500}
-                src={team_logo || placeholderImg} />
-                
-            <div class="mt-5 mx-auto flex justify-center">
-                {(user_is_elevated || userIsManager || user_is_owner) &&
-                    <div class="flex">
-                        <button id="show-upload" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-                            Upload
-                        </button>
-                        {team_logo &&
-                            <form method="post">
-                                <input type="text" name="action" value="remove" hidden/>
-                                <button id="remove" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-                                    Remove
-                                </button>
-                            </form>
-                        }
-                    </div>
-                }
-                <div id="upload-popup" style="display:none;" class="fixed flex w-screen h-screen z-50 bg-gray-900 bg-opacity-80 top-0 left-0 right-0 bottom-0">
-                    <div class="mx-auto my-20 bg-gray-700 w-fit h-fit p-10 rounded-md shadow-lg shadow-black">
-                        <Image
-                            src={placeholderImg}
-                            alt=""
-                            class="rounded-full h-60 w-60 text-center text-white mx-auto mb-10"
-                            id="upload-preview"
-                        />
-                        <form method="post" enctype="multipart/form-data">
-                            <input type="text" name="action" value="upload" hidden/>
-                            <input type="file" id="file-upload" name="file" accept=".jpg, .jpeg, .png, .gif" required/><br>
-                            {(user_is_elevated || userIsManager || user_is_owner) &&
-                                <button id="upload" class="mt-5 bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-                                    Upload
-                                </button>
-                                <a id="hide-upload" class="bg-gray-400 text-black font-bold px-2 pb-[2px] pt-[1px] rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2 hover:cursor-pointer">
-                                    Cancel
-                                </a>
+{status === '400' &&
+	<Page400/>
+}
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+    <TeamManageLayout 
+        title={`Manage Team: ${team.name}`}
+        team={team}
+        page="details"
+        userElevated={userIsElevated}
+        userOwner={userIsOwner}
+        userManager={userIsManager}
+        userPlayer={userIsPlayer}
+        userHasTeam={userHasTeam}>
+        <div class="flex divide-x-2 divide-gray-500 justify-center">
+            <div class="mx-10 w-52">
+                <Image 
+                    class="rounded-full h-40 w-40 text-center text-white mx-auto" 
+                    alt={`${team.name} logo`}
+                    height={500}
+                    width={500}
+                    src={teamLogo || placeholderImg} />
+                    
+                <div class="mt-5 mx-auto flex justify-center">
+                    {(userIsElevated || userIsManager || userIsOwner) &&
+                        <div class="flex">
+                            <button id="show-upload" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                Upload
+                            </button>
+                            {teamLogo &&
+                                <form method="post">
+                                    <input type="text" name="action" value="remove" hidden/>
+                                    <button id="remove" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                        Remove
+                                    </button>
+                                </form>
                             }
-                        </form>
+                        </div>
+                    }
+                    <div id="upload-popup" style="display:none;" class="fixed flex w-screen h-screen z-50 bg-gray-900 bg-opacity-80 top-0 left-0 right-0 bottom-0">
+                        <div class="mx-auto my-20 bg-gray-700 w-fit h-fit p-10 rounded-md shadow-lg shadow-black">
+                            <Image
+                                src={placeholderImg}
+                                alt=""
+                                class="rounded-full h-60 w-60 text-center text-white mx-auto mb-10"
+                                id="upload-preview"
+                            />
+                            <form method="post" enctype="multipart/form-data">
+                                <input type="text" name="action" value="upload" hidden/>
+                                <input type="file" id="file-upload" name="file" accept=".jpg, .jpeg, .png, .gif" required/><br>
+                                {(userIsElevated || userIsManager || userIsOwner) &&
+                                    <button id="upload" class="mt-5 bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                        Upload
+                                    </button>
+                                    <a id="hide-upload" class="bg-gray-400 text-black font-bold px-2 pb-[2px] pt-[1px] rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2 hover:cursor-pointer">
+                                        Cancel
+                                    </a>
+                                }
+                            </form>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <script>
-                var placeholder = document.getElementById('upload-preview').getAttribute('src');
-                try {
-                    document.getElementById('remove').onclick = function confirmLeave(e) {
-                        if (!confirm('Are you sure you wish to remove the current logo?'))
-                            e.preventDefault();
-                    };
-                } catch (err) {};
-                document.getElementById('show-upload').onclick = function showUpload() {
-                    document.getElementById('upload-popup').style.display = 'block';
-                }
-                document.getElementById('hide-upload').onclick = function hideUpload() {
-                    document.getElementById('upload-popup').style.display = 'none';
-                    //@ts-ignore
-                    document.getElementById('file-upload').value = '';
-                    document.getElementById('upload-preview').setAttribute('src', placeholder)
-                }
-                const fileInput = document.getElementById('file-upload');
-                const previewLogo = () => {
-                    //@ts-ignore
-                    const file = fileInput.files;
-                    if (file) {
-                        const fileReader = new FileReader();
-                        const preview = document.getElementById('upload-preview');
-
-                        fileReader.onload = event => {
-                            //@ts-ignore
-                            preview.setAttribute('src', event.target.result);
-                        }
-                        fileReader.readAsDataURL(file[0]);
+                <script>
+                    var placeholder = document.getElementById('upload-preview')!.getAttribute('src');
+                    try {
+                        document.getElementById('remove')!.onclick = function confirmLeave(e) {
+                            if (!confirm('Are you sure you wish to remove the current logo?'))
+                                e.preventDefault();
+                        };
+                    } catch (err) {};
+                    document.getElementById('show-upload')!.onclick = function showUpload() {
+                        document.getElementById('upload-popup')!.style.display = 'block';
                     }
-                }
-                fileInput.addEventListener('change', previewLogo);
-            </script>
-        </div>
-        <div class="text-center w-[70%]">
-            <form method="post" class="w-fit mx-auto">
-                <input type="text" name="action" value="update" hidden/>
-                <table>
-                    <input id="user-elevated" style="display:none" value={user_is_elevated}></input>
-                    <input id="user-owner" style="display:none" value={user_is_owner.toString()}></input>
-                    <input id="user-manager" style="display:none" value={userIsManager.toString()}></input>
-                    <tr>
-                        <td class="p-2">Name:</td>
-                        <td class="p-2">
-                            
-                            <input type="text" name="name" id="name" value={team.name} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
-                            {(errors && errors['name']) && (
-                                <br/>
-                                <span class="text-red-600 font-bold">
-                                    {errors['name']}
-                                </span>  
-                            )}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="p-2">Acronym:</td>
-                        <td class="p-2">
-                            <input type="text" name="acronym" id="acronym" value={team.acronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
-                            {(errors && errors['acronym']) && (
-                                <br/>
-                                <span class="text-red-600 font-bold">
-                                    {errors['acronym']}
-                                </span>  
-                            )}
-                        </td>
-                    </tr>
-                    <script>
+                    document.getElementById('hide-upload')!.onclick = function hideUpload() {
+                        document.getElementById('upload-popup')!.style.display = 'none';
+                        //@ts-ignore
+                        document.getElementById('file-upload').value = '';
+                        document.getElementById('upload-preview')!.setAttribute('src', placeholder!)
+                    }
+                    const fileInput = document.getElementById('file-upload');
+                    const previewLogo = () => {
+                        //@ts-ignore
+                        const file = fileInput.files;
+                        if (file) {
+                            const fileReader = new FileReader();
+                            const preview = document.getElementById('upload-preview');
+
+                            fileReader.onload = event => {
+                                //@ts-ignore
+                                preview.setAttribute('src', event.target.result);
+                            }
+                            // for some reason the IDE freaks out if this gets called without 
+                            // assigning it to a const even though it returns void
+                            const none = fileReader.readAsDataURL(file[0]);
+                        }
+                    }
+                    fileInput!.addEventListener('change', previewLogo);
+                </script>
+            </div>
+            <div class="text-center w-[70%]">
+                <form method="post" class="w-fit mx-auto">
+                    <input type="text" name="action" value="update" hidden />
+                    <input id="user-elevated" style="display:none" value={userIsElevated} />
+                    <input id="user-owner" style="display:none" value={userIsOwner.toString()} />
+                    <input id="user-manager" style="display:none" value={userIsManager.toString()} />
+                    <table>
+                        <tr>
+                            <td class="p-2">Name:</td>
+                            <td class="p-2">
+                                
+                                <input type="text" name="name" id="name" value={team.name} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                                {(errors && errors['name']) && (
+                                    <br/>
+                                    <span class="text-red-600 font-bold">
+                                        {errors['name']}
+                                    </span>  
+                                )}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-2">Acronym:</td>
+                            <td class="p-2">
+                                <input type="text" name="acronym" id="acronym" value={team.acronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                                {(errors && errors['acronym']) && (
+                                    <br/>
+                                    <span class="text-red-600 font-bold">
+                                        {errors['acronym']}
+                                    </span>  
+                                )}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-2">Founded:</td>
+                            <td class="p-2">
+                                {/**@ts-ignore*/}
+                                <input type="date" name="founded" id="founded" 
+                                    value={team.founded}
+                                    class="text-black rounded-sm outline outline-2 outline-gray-400" />
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="p-2">Colour:</td>
+                            <td class="p-2">
+                                <input type="color" name="color" id="color" value={`#${team.color.toUpperCase()}`} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="py-4">
+                                {(userIsElevated || userIsOwner || userIsManager) &&
+                                    <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                        Update
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+                <script>
                         //@ts-ignore
                         const userElevated = document.getElementById('user-elevated').value;
                         if (userElevated === 'false') {
@@ -240,70 +308,40 @@ if (team.logo) {
                             //@ts-ignore
                             document.getElementById('acronym').disabled = true;
                         }
+                        const dateInput = document.getElementById('founded');
+                        //@ts-ignore
+                        const userElevated = document.getElementById('user-elevated').value;
+                        //@ts-ignore
+                        const userOwner = document.getElementById('user-owner').value;
+                        //@ts-ignore
+                        const userManager = document.getElementById('user-manager').value;
+                        //@ts-ignore
+                        if (dateInput.value || (userOwner === 'false' && userManager === 'false')) {
+                            //@ts-ignore
+                            dateInput.disabled = true;
+                        }
+                        if (userElevated === 'true') {
+                            //@ts-ignore
+                            dateInput.disabled = false;
+                        }
+                        const colorInput = document.getElementById('color');
+                        //@ts-ignore
+                        const userElevated = document.getElementById('user-elevated').value;
+                        //@ts-ignore
+                        const userOwner = document.getElementById('user-owner').value;
+                        //@ts-ignore
+                        const userManager = document.getElementById('user-manager').value;
+                        //@ts-ignore
+                        if (userOwner === 'false' && userManager === 'false') {
+                            //@ts-ignore
+                            colorInput.disabled = true;
+                        }
+                        if (userElevated === 'true') {
+                            //@ts-ignore
+                            colorInput.disabled = false;
+                        }
                     </script>
-                    <tr>
-                        <td class="p-2">Founded:</td>
-                        <td class="p-2">
-                            {/**@ts-ignore*/}
-                            <input type="date" name="founded" id="founded" 
-                                value={team.founded}
-                                class="text-black rounded-sm outline outline-2 outline-gray-400" />
-                            <script>
-                                const dateInput = document.getElementById('founded');
-                                //@ts-ignore
-                                const userElevated = document.getElementById('user-elevated').value;
-                                //@ts-ignore
-                                const userOwner = document.getElementById('user-owner').value;
-                                //@ts-ignore
-                                const userManager = document.getElementById('user-manager').value;
-                                //@ts-ignore
-                                if (dateInput.value || (userOwner === 'false' && userManager === 'false')) {
-                                    //@ts-ignore
-                                    dateInput.disabled = true;
-                                }
-                                if (userElevated === 'true') {
-                                    //@ts-ignore
-                                    dateInput.disabled = false;
-                                }
-                            </script>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="p-2">Colour:</td>
-                        <td class="p-2">
-                            <input type="color" name="color" id="color" value={`#${team.color.toUpperCase()}`} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
-                            <script>
-                                const colorInput = document.getElementById('color');
-                                //@ts-ignore
-                                const userElevated = document.getElementById('user-elevated').value;
-                                //@ts-ignore
-                                const userOwner = document.getElementById('user-owner').value;
-                                //@ts-ignore
-                                const userManager = document.getElementById('user-manager').value;
-                                //@ts-ignore
-                                if (userOwner === 'false' && userManager === 'false') {
-                                    //@ts-ignore
-                                    colorInput.disabled = true;
-                                }
-                                if (userElevated === 'true') {
-                                    //@ts-ignore
-                                    colorInput.disabled = false;
-                                }
-                            </script>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="py-4">
-                            {(user_is_elevated || user_is_owner || userIsManager) &&
-                                <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-                                    Update
-                                </button>
-                            }
-                        </td>
-                    </tr>
-                </table>
-                
-            </form>
+            </div>
         </div>
-    </div>
-</TeamManageLayout>
+    </TeamManageLayout>
+}

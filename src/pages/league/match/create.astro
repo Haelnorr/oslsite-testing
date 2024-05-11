@@ -2,46 +2,55 @@
 import Layout from "../../../layouts/Layout.astro";
 import { permsHasOneOf, validateUser } from "../../../util/authUtils";
 import type { SeasonDivision } from "../../../util/srlmTypes";
-import { srlmGet, srlmPost } from "../../../util/srlmUtils";
+import { SRLMAPIError, srlmGet, srlmPost } from "../../../util/srlmUtils";
+import Page400 from '../../400.astro';
+import Page401 from '../../401.astro';
+import Page403 from '../../403.astro';
+import Page404 from '../../404.astro';
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
 
 const userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
-    return Astro.redirect('/403');
+    return Astro.redirect('/login');
 }
 const requiredPerms = ['admin', 'leag_coord', 'leag_comm'];
-const userValidate = await validateUser(userToken, requiredPerms);
+const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (userValidate === '503') {
-    return Astro.redirect('/503')
+const userAuthorized = permsHasOneOf(userValidate, requiredPerms);
+
+if (!userAuthorized) {
+    status = '403';
 }
 
-const user_authorized = permsHasOneOf(userValidate, requiredPerms);
-
-if (!user_authorized) {
-    return Astro.redirect('/403');
-}
-
-const season_division_id = Astro.url.searchParams.get('season_division');
+const seasonDivisionID = Astro.url.searchParams.get('season_division');
 
 if (Astro.request.method === "POST") {
     try {
-        const form_data = await Astro.request.formData();
+        const formData = await Astro.request.formData();
 
-        const match_data = {
-            season_division_id: parseInt(season_division_id),
-            round: parseInt(form_data.get('round').toString()),
-            match_week: parseInt(form_data.get('match_week').toString()),
-            home_team_id: parseInt(form_data.get('home_team_id').toString()),
-            away_team_id: parseInt(form_data.get('away_team_id').toString())
+        const matchData = {
+            season_division_id: parseInt(seasonDivisionID!),
+            round: parseInt(formData.get('round')!.toString()),
+            match_week: parseInt(formData.get('match_week')!.toString()),
+            home_team_id: parseInt(formData.get('home_team_id')!.toString()),
+            away_team_id: parseInt(formData.get('away_team_id')!.toString())
         }
 
         
-        const create_match = await srlmPost('/match', '', match_data);
+        const createMatch = await srlmPost('/match', '', matchData);
         
-        if (!create_match) {
+        if (!createMatch) {
             return Astro.redirect('/login?error=loginfailed')
         } else {
-            return Astro.redirect(`../match/${create_match.location.replace('/api/match/', '')}`)
+            return Astro.redirect(`../match/${createMatch.location.replace('/api/match/', '')}`)
         }
 
     } catch (error) {
@@ -51,20 +60,12 @@ if (Astro.request.method === "POST") {
     }
 }
 
-
-var valid_form = true;
-
-if (!season_division_id) {
-    valid_form = false;
-}
-
-const season_division: SeasonDivision = await srlmGet(`/season_division/${season_division_id}`);
-
-if (!season_division) {
-    valid_form = false;
-}
-
-const teams_resp = await srlmGet(`/season_division/${season_division_id}/teams`);
+const season_division: SeasonDivision = await srlmGet(`/season_division/${seasonDivisionID}`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 type Team = {
     id: number,
@@ -73,20 +74,38 @@ type Team = {
     color: string
 }
 
-var teams: Team[];
+const teams: Team[] = await srlmGet(`/season_division/${seasonDivisionID}/teams`).then(resp => resp['teams']).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-if (teams_resp) {
-    teams = teams_resp['teams']
-}
+
 
 ---
-<Layout title="create-match">
-    <main class="py-10">
-        <div class="flex justify-evenly">
-            {!valid_form &&
-                <p class="text-white font-bold">Invalid/missing SeasonDivision ID</p>
-            }
-            {valid_form &&
+{status === '400' &&
+	<Page400/>
+}
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '404' &&
+	<Page404/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+    <Layout title="create-match">
+        <main class="py-10">
+            <div class="flex justify-evenly">
                 <form class="flex gap-5 flex-col w-2/3 lg:w-1/3 text-white" method="post">
                     <h2 class="text-4xl">Create Match</h2>
                     <label>
@@ -152,7 +171,7 @@ if (teams_resp) {
                     </table>
                     
                 </form>
-            }
-        </div>
-    </main>
-</Layout>
+            </div>
+        </main>
+    </Layout>
+}

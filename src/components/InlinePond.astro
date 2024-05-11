@@ -4,20 +4,16 @@ import ListPond from './ListPond.astro';
 type BodyType = {
     type:string,
     decoration?:boolean,
-    items:String[]|ContentType[]
-}
-
-type ItemType = {
-    heading:string,
-    body: BodyType[]|String[]
-}
-
-type ContentType = {
-    items: ItemType[]
+    items:String[]
 }
 
 type Props = {
-    content:ContentType,
+    content:{
+        items: Array<{
+            heading:string,
+            body: Array<any>
+        }>
+    },
     paddingTop?:number
 }
 

@@ -1,15 +1,35 @@
 ---
 import TeamList from "../../../components/TeamList.astro";
 import Layout from "../../../layouts/Layout.astro";
+import { SRLMAPIError, srlmGet } from "../../../util/srlmUtils";
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
+
+await srlmGet('/ready').catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
 const page = Astro.url.searchParams.get('page')!;
-const per_page = Astro.url.searchParams.get('per_page')!;
+const perPage = Astro.url.searchParams.get('per_page')!;
 const order = Astro.url.searchParams.get('order')!;
-const order_by = Astro.url.searchParams.get('order_by')!;
+const orderBy = Astro.url.searchParams.get('order_by')!;
 ---
-<Layout title="Teams">
-    <main class="text-white mt-10 text-center">
-        <h2 class="text-3xl mb-5">Teams</h2>
-        <TeamList page={page} per_page={per_page} order_by={order_by} order={order} manage={false} />
-    </main>
-</Layout>
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+    <Layout title="Teams">
+        <main class="text-white mt-10 text-center">
+            <h2 class="text-3xl mb-5">Teams</h2>
+            <TeamList page={page} per_page={perPage} order_by={orderBy} order={order} manage={false} />
+        </main>
+    </Layout>
+}

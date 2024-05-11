@@ -13,96 +13,94 @@ type Input = {
 type NavItem = {
     label: string,
     dest: string,
-    isDropdown: boolean,
     dropdown?: DropdownItems
 }
 
-var leagueDropdown: DropdownItems = {
-    items: [
-        {
-            label: 'Register',
-            dest: '/league/register'
-        },
-        {
-            label: 'Seasons',
-            dest: '/league'
-        },
-        {
-            label: 'Teams',
-            dest: '/league/teams'
-        },
-        {
-            label: 'Players',
-            dest: '/league/players'
-        }/**, to be implemented in a future version
-        {
-            id: 5,
-            label: 'Stats',
-            dest: 'league/stats'
-        } */
-    ]
-}
+function Navbar(props: Input) {
+    const [leagueDropdownState, SetLeagueDropdownState] = useState(false);
+    const leagueDropdown: DropdownItems = {
+        state:leagueDropdownState,
+        setState:SetLeagueDropdownState,
+        handleDropdown:()=>leagueDropdown.setState(!leagueDropdown.state),
+        items: [
+            {
+                label: 'Register',
+                dest: '/league/register'
+            },
+            {
+                label: 'Seasons',
+                dest: '/league'
+            },
+            {
+                label: 'Teams',
+                dest: '/league/teams'
+            },
+            {
+                label: 'Players',
+                dest: '/league/players'
+            }/**, to be implemented in a future version
+            {
+                id: 5,
+                label: 'Stats',
+                dest: 'league/stats'
+            } */
+        ]
+    }
 
-var profileDropdown: DropdownItems = {
-    items: [
+    const [profileDropdownState, setProfileDropdownState] = useState(false);
+    const profileDropdown: DropdownItems = {
+        state:profileDropdownState,
+        setState:setProfileDropdownState,
+        handleDropdown:()=>profileDropdown.setState(!profileDropdown.state),
+        items: [
+            {
+                label: 'Profile',
+                dest: '/profile'
+            },
+            {
+                label: 'My Team',
+                dest: '/manage/teams'
+            },
+            {
+                label: 'League Management',
+                dest: '/manage/league',
+                requiredLevel: ['admin', 'leag_coord', 'leag_comm']
+            },
+            {
+                label: 'Admin Tools',
+                dest: '/manage/admin',
+                requiredLevel: ['admin', 'leag_comm']
+            },
+            {
+                label: 'Logout',
+                dest: '/logout'
+            }
+        ]
+    }
+
+    const navItems: NavItem[] = [
         {
-            label: 'Profile',
-            dest: '/profile'
+            label: "Home",
+            dest: "/",
         },
         {
-            label: 'My Team',
-            dest: '/manage/teams'
+            label: "League",
+            dest: "/league",
+            dropdown: leagueDropdown
         },
         {
-            label: 'League Management',
-            dest: '/manage/league',
-            requiredLevel: ['admin', 'leag_coord', 'leag_comm']
+            label: "Discord",
+            dest: "https://slapshot.gg/OSL",
         },
         {
-            label: 'Admin Tools',
-            dest: '/manage/admin',
-            requiredLevel: ['admin', 'leag_comm']
-        },
-        {
-            label: 'Logout',
-            dest: '/logout'
+            label: "The Pond",
+            dest: "/the-pond",
         }
     ]
-}
-
-const navItems: NavItem[] = [
-    {
-        label: "Home",
-        dest: "/",
-        isDropdown: false
-    },
-    {
-        label: "League",
-        dest: "/league",
-        isDropdown: true,
-        dropdown: leagueDropdown
-    },
-    {
-        label: "Discord",
-        dest: "https://slapshot.gg/OSL",
-        isDropdown: false
-    },
-    {
-        label: "The Pond",
-        dest: "/the-pond",
-        isDropdown: false
-    }
-]
-
-function Navbar(props: Input) {
 
     const [click, setClick] = useState(false);
     const handleClick = () => setClick(!click);
     const closeMobileMenu = () => setClick(false);
-    [leagueDropdown.state, leagueDropdown.setState] = useState(false);
-    [profileDropdown.state, profileDropdown.setState] = useState(false);
-    leagueDropdown.handleDropdown = () => leagueDropdown.setState(!leagueDropdown.state);
-    profileDropdown.handleDropdown = () => profileDropdown.setState(!profileDropdown.state);
 
     return (
         <>
@@ -129,7 +127,7 @@ function Navbar(props: Input) {
                     {
                         navItems.map(item => (
                             <li className="nav-item mt-1">
-                                {item.isDropdown && 
+                                {item.dropdown && 
                                     <span>
                                         <a onClick={item.dropdown.handleDropdown} className="hover:cursor-pointer">
                                             {item.label}

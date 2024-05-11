@@ -1,14 +1,16 @@
 ---
-import Header from "../components/Header.tsx";
 import Navbar from "../components/Navbar.tsx"
 import { validateUser } from "../util/authUtils";
+import type { UserValidate } from "../util/srlmTypes";
+import { SRLMAPIError } from "../util/srlmUtils";
+
 
 interface Props {
 	title: string
 }
 
 const userToken = Astro.cookies.get('user_token')?.value;
-const userValidate = await validateUser(userToken, ['admin', 'leag_coord', 'leag_comm'])
+const userValidate = await validateUser(userToken, ['admin', 'leag_coord', 'leag_comm']).catch(err => undefined);
 var userPerms = []
 var userLoggedIn = false;
 if (userValidate) {

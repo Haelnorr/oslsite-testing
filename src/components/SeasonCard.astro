@@ -1,18 +1,22 @@
 ---
-import { date_is_none } from "../util/srlmUtils";
+import type { DivisionLink, Season } from "../util/srlmTypes";
+import { dateIsNone } from "../util/srlmUtils";
 
+interface Props {
+    season: Season
+}
 
 const { season } = Astro.props;
 
-const start_date = date_is_none(season.start_date);
-const end_date = date_is_none(season.end_date);
-const finals_start = date_is_none(season.finals_start);
-const finals_end = date_is_none(season.finals_end);
+const startDate = dateIsNone(season.start_date);
+const endDate = dateIsNone(season.end_date);
+const finalsStart = dateIsNone(season.finals_start);
+const finalsEnd = dateIsNone(season.finals_end);
 
-const base_url = Astro.url.host;
+const baseUrl = Astro.url.host;
 
-function convert_sd_link(season_division) {
-    const path_to_sd = `//${base_url}/league/seasons/${season.acronym}/${season_division.acronym}`;
+function convertSeasonDivisionLink(seasonDivision: DivisionLink) {
+    const path_to_sd = `//${baseUrl}/league/seasons/${season.acronym}/${seasonDivision.acronym}`;
 
     return path_to_sd;
 }
@@ -20,20 +24,20 @@ function convert_sd_link(season_division) {
 
 ---
 <div class="pt-3 pb-10">
-    <h1 class="text-4xl pb-3"><a href={`//${base_url}/league/seasons/${season.acronym}`}>{season.name}</a></h1>
+    <h1 class="text-4xl pb-3"><a href={`//${baseUrl}/league/seasons/${season.acronym}`}>{season.name}</a></h1>
     <hr>
     <h4 class="text-xl">Registration: {season.can_register && 'Open' || 'Closed'}</h4>
     <h3 class="text-2xl pt-5">Timeline:</h3>
     <div class="flex flex-wrap justify-between max-w-96">
         <div class="pb-3">
             <h4 class="text-xl pb-1 pt-2">Regular Season</h4>
-            <p>Start: {start_date}</p>
-            <p>End: {end_date}</p>
+            <p>Start: {startDate}</p>
+            <p>End: {endDate}</p>
         </div>
         <div>
             <h4 class="text-xl pb-1 pt-2">Finals</h4>
-            <p>Start: {finals_start}</p>
-            <p>End: {finals_end}</p>
+            <p>Start: {finalsStart}</p>
+            <p>End: {finalsEnd}</p>
         </div>
     </div>
     
@@ -43,7 +47,7 @@ function convert_sd_link(season_division) {
             <div class="flex flex-wrap justify-evenly pt-3">
                 {season.divisions.map(division => (
                     <div class="font-bold bg-osl-blue-700 rounded-md hover:bg-blue-400 transition-colors duration-300 mt-2">
-                        <a href={convert_sd_link(division)}><p class="py-3 px-5">{division.name}</p></a>
+                        <a href={convertSeasonDivisionLink(division)}><p class="py-3 px-5">{division.name}</p></a>
                     </div>
                 ))}
         </div>

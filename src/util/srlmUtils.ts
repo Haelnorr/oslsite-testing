@@ -1,32 +1,56 @@
 import { executionAsyncResource } from "async_hooks";
 import axios, { AxiosError } from "axios";
+import type { Discord, Player, Token } from "./srlmTypes";
 
 const api = {
     uri: import.meta.env.SRLM_API_URI,
     key: import.meta.env.SRLM_API_APP_KEY
 };
 
+export class SRLMAPIError extends Error {
+    constructor(message: string, public code: string, public data: {[key: string]:any}) {
+        super(message);
+        this.name = 'SRLMAPIError';
+    }
+}
+
 // handles response errors from the SRLM API
-// will log the error message from SRLM API to the console along with the headers of the failed request
-// returns error status code in most cases, unless error code was 409, in which case returns entire response
-function handle_err(err: AxiosError) {
-    if (err) {       
+function handleError(err: AxiosError): void {
+    if (err) {
+        var errorMsg: string;
+        var errorCode: string;
+        var errorData: any = {};
         if (err.code === 'ECONNREFUSED') {
-            return '503';
+            errorMsg = 'Connection Refused';
+            errorCode = '503';
         } else if (err.response) {
-            if (err.response.status === 409) {
-                // this will check if status code is 409 (only used for input errors on post/put requests)
-                // and returns the response which contains error messages that can be displayed on the form
-                return err.response;
-            } else {
-                if (err.response.data['messages']) {
-                    console.error(JSON.stringify(err.response.data));
-                } else {
-                    console.error(err.response.data);
-                }
-                return err.response.status;
+            switch (err.response.status) {
+                case 400:
+                    errorMsg = 'Bad Request';
+                    break;
+                case 401:
+                    errorMsg = 'Unauthorized';
+                    break;
+                case 404:
+                    errorMsg = 'Not Found';
+                    break;
+                case 409:
+                    errorMsg = 'Request body data has errors';
+                    break;
+                case 500:
+                    errorMsg = 'Internal Server Error';
+                    break;
+                default:
+                    errorMsg = "Unknown error occured";
             }
+            errorCode = err.response.status.toString();
+            errorData = err.response.data;
+
+        } else {
+            errorMsg = "Unknown error occured";
+            errorCode = '520';
         }
+        throw new SRLMAPIError(errorMsg, errorCode, errorData)
     }
 }
 
@@ -39,7 +63,7 @@ function handle_err(err: AxiosError) {
  * 
  * @returns response.data
  */
-export async function srlmGet(endpoint:string, userToken:string='') {
+export async function srlmGet(endpoint:string, userToken:string=''): Promise<any> {
     const request_url = api['uri'] + endpoint;
     const api_token = api['key'] + userToken;
 
@@ -47,11 +71,11 @@ export async function srlmGet(endpoint:string, userToken:string='') {
         headers: {
             Authorization: `Bearer ${api_token}`
         }
-    }).then((response) => response.data).catch((err) => handle_err(err));
+    }).then((response) => response.data).catch((err) => handleError(err));
 };
 
 // strip a link from the SRLM API of its /api prefix, allowing it to be used for url routing
-export function convert_link(link: string) {
+export function convertLink(link: string): string {
     return link.replace('/api', '')
 }
 
@@ -65,7 +89,7 @@ export function convert_link(link: string) {
  * 
  * @returns response.data
  */
-export async function srlmPost(endpoint: string, userToken:string='', input:{}={}) {
+export async function srlmPost(endpoint: string, userToken:string='', input:{}={}): Promise<any> {
     const request_url = api['uri'] + endpoint;
     const api_token = api['key'] + userToken;
 
@@ -73,7 +97,7 @@ export async function srlmPost(endpoint: string, userToken:string='', input:{}={
         headers: {
             Authorization: `Bearer ${api_token}`
         }
-    }).then((response) => response.data).catch((err) => handle_err(err));
+    }).then((response) => response.data).catch((err) => handleError(err));
 }
 
 /** 
@@ -85,7 +109,7 @@ export async function srlmPost(endpoint: string, userToken:string='', input:{}={
  * 
  * @returns response.data
  */
-export async function srlmDelete(endpoint: string, userToken:string='') {
+export async function srlmDelete(endpoint: string, userToken:string=''): Promise<any> {
     const request_url = api['uri'] + endpoint;
     const api_token = api['key'] + userToken;
 
@@ -93,7 +117,7 @@ export async function srlmDelete(endpoint: string, userToken:string='') {
         headers: {
             Authorization: `Bearer ${api_token}`
         }
-    }).then((response) => response.data).catch((err) => handle_err(err));
+    }).then((response) => response.data).catch((err) => handleError(err));
 }
 
 /** 
@@ -105,7 +129,7 @@ export async function srlmDelete(endpoint: string, userToken:string='') {
  * 
  * @returns response.data
  */
-export async function srlmPut(endpoint: string, userToken:string='', input: {}) {
+export async function srlmPut(endpoint: string, userToken:string='', input: {}): Promise<any> {
     const request_url = api['uri'] + endpoint;
     const api_token = api['key'] + userToken;
 
@@ -113,7 +137,7 @@ export async function srlmPut(endpoint: string, userToken:string='', input: {}) 
         headers: {
             Authorization: `Bearer ${api_token}`
         }
-    }).then((response) => response.data).catch((err) => handle_err(err));
+    }).then((response) => response.data).catch((err) => handleError(err));
 }
 
 
@@ -126,7 +150,7 @@ export async function srlmPut(endpoint: string, userToken:string='', input: {}) 
  * 
  * @returns response.data
  */
-export async function srlm_basic_auth(username: string, password: string) {
+export async function srlmBasicAuth(username: string, password: string): Promise<Token> {
     const request_url = api['uri'] + '/auth/user';
     
     return await axios.post(request_url, {}, {
@@ -134,25 +158,30 @@ export async function srlm_basic_auth(username: string, password: string) {
             username: username,
             password: password
         }
-    }).then((response) => response.data).catch((err) => handle_err(err));
+    }).then((response) => response.data).catch((err) => handleError(err));
 }
 
 
-function display_date(date_str: string) {
+function displayDate(date_str: string): string {
     var date = new Date(date_str)
     return date.toDateString();
 }
 
-export function date_is_none(date_field: any) {
+export function dateIsNone(date_field: any): string {
     if (date_field) {
-        return display_date(date_field);
+        return displayDate(date_field);
     } else {
         return '';
     }
 }
 
+type RGB = {
+    r: number,
+    g: number,
+    b: number
+}
 
-function hexToRgb(hex: string) {
+function hexToRgb(hex: string): RGB|null {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
       r: parseInt(result[1], 16),
@@ -161,36 +190,43 @@ function hexToRgb(hex: string) {
     } : null;
 }
 
-function rgbLuminance(rgb: {b:number, g:number, r:number}) {
+function rgbLuminance(rgb: RGB|null): number {
+    if (!rgb) {
+        return 0.00000000000001
+    }
     return (rgb.r*0.2126 + rgb.g*0.7152 + rgb.b*0.0722);
 }
   
-export function color_calc(color: string) {
+export function colorCalc(color: string): string {
     const rgb = hexToRgb(`#${color}`);
-    const bg_luminance = rgbLuminance(rgb);
     const fg_light = '#f0f0f0';
     const fg_dark = '#101010';
-    const fg_light_luminance = rgbLuminance(hexToRgb(fg_light));
-    const fg_dark_luminance = rgbLuminance(hexToRgb(fg_dark));
-    const contrast_ratio_light = ((fg_light_luminance + 0.05)/(bg_luminance + 0.05));
-    const contrast_ratio_dark = ((bg_luminance + 0.05)/(fg_dark_luminance + 0.05));
+    if (rgb) {
+        const bg_luminance = rgbLuminance(rgb);
+        const fg_light_luminance = rgbLuminance(hexToRgb(fg_light));
+        const fg_dark_luminance = rgbLuminance(hexToRgb(fg_dark));
+        const contrast_ratio_light = ((fg_light_luminance + 0.05)/(bg_luminance + 0.05));
+        const contrast_ratio_dark = ((bg_luminance + 0.05)/(fg_dark_luminance + 0.05));
 
-    if (contrast_ratio_dark > contrast_ratio_light) {
-        return `background-color: #${color}; color: ${fg_dark}`;
+        if (contrast_ratio_dark > contrast_ratio_light) {
+            return `background-color: #${color}; color: ${fg_dark}`;
+        } else {
+            return `background-color: #${color}; font-color: ${fg_light}`;
+        }
     } else {
-        return `background-color: #${color}; font-color: ${fg_light}`;
+        return `background-color: #${color}; color: ${fg_dark}`;
     }
 }
 
-export async function leave_team(player_id: number) {
-    await srlmDelete(`/players/${player_id}/teams`);
+export async function leaveTeam(player_id: number): Promise<any> {
+    return await srlmDelete(`/players/${player_id}/teams`);
 }
 
-export async function join_team(player_id: number, team_id:string) {
+export async function joinTeam(player_id: number, team_id:string): Promise<any> {
     return await srlmPost(`/players/${player_id}/teams`, '', {team:team_id});
 }
 
-export function checkbox_to_bool(form_data: FormData, field: string) {
+export function checkboxToBool(form_data: FormData, field: string): boolean {
     if (form_data.get(field) == 'on') {
         return true;
     } else {

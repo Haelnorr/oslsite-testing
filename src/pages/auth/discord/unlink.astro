@@ -9,7 +9,7 @@ var status = '200';
 
 const userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
-    return Astro.redirect('/login');
+    return Astro.redirect('/auth/login');
 }
 
 const userValidate = await validateUser(userToken).catch(err => {
@@ -20,7 +20,7 @@ const userValidate = await validateUser(userToken).catch(err => {
 });
 
 if (status == '401') {
-    return Astro.redirect('/login?error=sessionexpire');
+    return Astro.redirect('/auth/login?error=sessionexpire');
 }
 
 const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {

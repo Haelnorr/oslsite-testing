@@ -14,7 +14,7 @@ const code = Astro.url.searchParams.get('code');
 var status = '200';
 
 if (!code) {
-    return Astro.redirect('/login?error=discordauth');
+    return Astro.redirect('/auth/login?error=discordauth');
 }
 
 const discordLogin = await getTokens(code);
@@ -75,7 +75,7 @@ if (userToken) {
 const userResponse = await getUser(discordLogin.access_token);
 
 if (!userResponse) {
-    return Astro.redirect('/login?error=discordauth');
+    return Astro.redirect('/auth/login?error=discordauth');
 }
 
 

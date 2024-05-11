@@ -42,7 +42,7 @@ if (Astro.request.method === "POST" && status === "200") {
         const user_auth = await srlmBasicAuth(username, password);
         
         if (!user_auth) {
-            return Astro.redirect('/login?error=loginfailed')
+            return Astro.redirect('/auth/login?error=loginfailed')
         } else {
             setCookies(Astro, user_auth);
             return Astro.redirect('/profile');

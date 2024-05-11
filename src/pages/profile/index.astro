@@ -21,7 +21,7 @@ const randomGreeting = Greetings[Math.floor((Math.random() * Greetings.length))]
 
 const userToken = Astro.cookies.get('user_token')?.value;
 if (!userToken) {
-    return Astro.redirect('/login');
+    return Astro.redirect('/auth/login');
 }
 
 const optional_perms = ['leag_coord', 'leag_comm', 'admin', 'team_manager']
@@ -34,7 +34,7 @@ const userValidate = await validateUser(userToken, optional_perms).catch(err => 
 
 
 if (!userValidate && status === '401') {
-    return Astro.redirect('/login?error=sessionexpire');
+    return Astro.redirect('/auth/login?error=sessionexpire');
 }
 
 const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
@@ -87,7 +87,7 @@ if (user && user.discord) {
 }
 
 if (discordSessionExpired) {
-    return Astro.redirect('/login?error=discordauth');
+    return Astro.redirect('/auth/login?error=discordauth');
 }
 
 const steam_redirect = await steam.getRedirectUrl()
@@ -120,7 +120,7 @@ const steam_redirect = await steam.getRedirectUrl()
                 }
             </div>
             <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
-            <h2 class="text-white text-center"><a href={`/manage/users/${user.id}`}>(Edit details)</a> | <a href="/logout">(Not you?)</a></h2>
+            <h2 class="text-white text-center"><a href={`/manage/users/${user.id}`}>(Edit details)</a> | <a href="/auth/logout">(Not you?)</a></h2>
             <section class="flex flex-wrap justify-between pt-10">           
                 {user.player &&
                     <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">

@@ -73,7 +73,7 @@ function Navbar(props: Input) {
             },
             {
                 label: 'Logout',
-                dest: '/logout'
+                dest: '/auth/logout'
             }
         ]
     }
@@ -168,7 +168,7 @@ function Navbar(props: Input) {
                         </li>
                         ||
                         <li className='nav-item mt-1 mb-1'>
-                            <a href="/login">Login</a>
+                            <a href="/auth/login">Login</a>
                         </li>
                     }
                 </ul>

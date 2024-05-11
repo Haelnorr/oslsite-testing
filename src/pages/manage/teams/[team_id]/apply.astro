@@ -55,7 +55,7 @@ if (!userIsPlayer && !userIsElevated && status == '200') {
     status = '403';
 }
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     const formData = await Astro.request.formData();
     const action = formData.get('action')?.toString();
     const value = formData.get('value')?.toString();

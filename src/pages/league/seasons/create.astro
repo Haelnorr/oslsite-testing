@@ -37,7 +37,7 @@ const matchtypes: Matchtypes = await srlmGet('/match/type').catch(err => {
 
 var errors: {[key:string]: string} = {};
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     const formData = await Astro.request.formData();
     const inputs = {
         name: formData.get('name')?.toString(),

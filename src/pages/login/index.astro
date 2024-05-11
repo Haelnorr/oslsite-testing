@@ -33,7 +33,7 @@ if (error.has) {
     }
 }
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     try {
         const form_data = await Astro.request.formData();
         const username = form_data.get('username')!.toString();

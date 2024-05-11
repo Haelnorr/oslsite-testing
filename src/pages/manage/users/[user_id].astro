@@ -62,7 +62,7 @@ if (!(userAuthorized || userEditingSelf) && status === '200') {
 var errors:{[key:string]:string} = {};
 var postSuccess = true;
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     const formData = await Astro.request.formData();
     if (userEditingSelf) {
         const userInputs = {

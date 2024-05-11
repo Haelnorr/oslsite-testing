@@ -29,7 +29,7 @@ if (!userAuthorized) {
 
 const seasonDivisionID = Astro.url.searchParams.get('season_division');
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     try {
         const formData = await Astro.request.formData();
 

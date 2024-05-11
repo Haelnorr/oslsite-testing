@@ -49,7 +49,7 @@ const playerInvites: Array<TeamInvite> = await srlmGet(`/players/${user?.player?
     }
 });
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     const formData = await Astro.request.formData();
     const action = formData.get('action')?.toString();
     const value = formData.get('value')?.toString();

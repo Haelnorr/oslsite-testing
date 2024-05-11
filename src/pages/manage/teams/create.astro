@@ -58,7 +58,7 @@ var teamName: string = '';
 var teamAcronym: string = '';
 var teamColor: string = '#1F2937';
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     const formData = await Astro.request.formData();
 
     teamName = formData.get('name')!.toString();

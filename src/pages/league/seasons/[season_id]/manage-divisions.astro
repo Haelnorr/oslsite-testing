@@ -37,7 +37,7 @@ const season: Season = await srlmGet(`/seasons/${season_id}?league=osl&cached=Fa
 });
 
 var divisionsFormData: Division[] = [];
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     const formData = await Astro.request.formData();
 
     async function createSeasonDivision(divisionAcronym: string) {

@@ -37,7 +37,7 @@ const season: Season = await srlmGet(`/seasons/${season_id}?league=osl&cached=Fa
 
 var errors: {[key:string]:string} = {};
 
-if (Astro.request.method === "POST") {
+if (Astro.request.method === "POST" && status === "200") {
     const formData = await Astro.request.formData();
     function parseDate(date_field:string) {
         var date = formData.get(date_field)!

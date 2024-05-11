@@ -12,10 +12,7 @@ import Page503 from '../../503.astro';
 var status = '200';
 
 
-const userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login');
-}
+const userToken = Astro.cookies.get('user_token')?.value || '';
 const requiredPerms = ['admin', 'leag_comm', 'leag_coord'];
 const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -44,7 +41,7 @@ const userPermsResp: UserPermissions = await srlmGet(`/users/${user_id}/permissi
 	console.error(err);
 });
 var userPerms:{[key:string]:any} = {};
-userPermsResp.permissions.map(perm => {
+userPermsResp?.permissions.map(perm => {
     if (perm.mods === 'True') {
         userPerms[perm.key] = true;
     } else {
@@ -56,9 +53,9 @@ userPermsResp.permissions.map(perm => {
     }
 })
 
-const userEditingSelf = userValidate?.user == user.id;
+const userEditingSelf = userValidate?.user == user?.id;
 
-if (!(userAuthorized || userEditingSelf)) {
+if (!(userAuthorized || userEditingSelf) && status === '200') {
     status = '403';
 }
 

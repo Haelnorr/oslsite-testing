@@ -14,10 +14,7 @@ var status = '200';
 
 var { team_id } = Astro.params;
 
-var userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login');
-}
+var userToken = Astro.cookies.get('user_token')?.value || '';
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, perms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -37,21 +34,24 @@ const team: TeamManage = await srlmGet(`/teams/${team_id}/manage`).catch(err => 
 	console.error(err);
 });
 
-const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
-    if (err instanceof SRLMAPIError) {
-        status = err.code;
-    }
-	console.error(err);
-});
+var user: User|null = null;
+if (userValidate) {
+    user = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
+}
 
 var userIsPlayer = false;
 var userHasTeam = false;
-if (user?.player.current_team) {
-    userIsPlayer = (user.player.current_team.id === team.id);
+if (user?.player?.current_team) {
+    userIsPlayer = (user.player.current_team.id === team?.id);
     userHasTeam = true;
 }
 
-if (!userIsPlayer && !userIsElevated) {
+if (!userIsPlayer && !userIsElevated && status == '200') {
     status = '403';
 }
 
@@ -126,97 +126,101 @@ function prettyDate(date: string) {
         userManager={userIsManager}
         userPlayer={userIsPlayer}
         userHasTeam={userHasTeam}>
-        <div class="mx-auto w-fit divide-y-2 divide-gray-600">
-            <div class="mb-5">
-                <h3 class="text-xl">Applications</h3>
-                <table class="mt-5 mx-auto">
-                    <thead class="bg-gray-900">
-                        <tr class="divide-x-2 divide-gray-400">
-                            <th class="px-2">Season</th>
-                            <th class="px-2">Status</th>
-                            <th class="px-2">Division</th>
-                            <th class="px-2">Withdraw</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {team.applications.length > 0 &&
-                            team.applications.map((application, index) => (
-                                <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
-                                    <td class="px-2">{application.season.name}</td>
-                                    <td class="px-2">{application.status}</td>
-                                    <td class="px-2">{application.division && application.division.name}</td>
-                                    <td class="px-2 py-1">
-                                        {(application.status === 'Pending' || application.status === 'Accepted') &&
+        {(userIsManager || userIsOwner) &&
+            <div class="mx-auto w-fit divide-y-2 divide-gray-600">
+                <div class="mb-5">
+                    <h3 class="text-xl">Applications</h3>
+                    <table class="mt-5 mx-auto">
+                        <thead class="bg-gray-900">
+                            <tr class="divide-x-2 divide-gray-400">
+                                <th class="px-2">Season</th>
+                                <th class="px-2">Status</th>
+                                <th class="px-2">Division</th>
+                                <th class="px-2">Withdraw</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {team.applications.length > 0 &&
+                                team.applications.map((application, index) => (
+                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                        <td class="px-2">{application.season.name}</td>
+                                        <td class="px-2">{application.status}</td>
+                                        <td class="px-2">{application.division && application.division.name}</td>
+                                        <td class="px-2 py-1">
+                                            {(application.status === 'Pending' || application.status === 'Accepted') &&
+                                                <form method="post">
+                                                    <input type="text" name="action" value="cancel" hidden/>
+                                                    <input type="text" name="value" value={application.id.toString()} hidden/>
+                                                    <button formaction={`/manage/teams/${team.id}/apply`} class="cancel bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                        Cancel
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                )) ||
+                                <tr class="bg-gray-700"><td colspan="100%" class="p-1">No applications to display</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                    <script>
+                        var cancel_buttons = [].slice.call(document.getElementsByClassName('cancel'));
+                        cancel_buttons.forEach(element => {
+                            //@ts-ignore
+                            element!.onclick = function confirmCancel(e) {
+                                if (!confirm('Are you sure you wish to cancel this application?'))
+                                    e.preventDefault();
+                            }
+                        });
+                    </script>
+                </div>
+                <div>
+                    <h3 class="text-xl mt-5">Seasons</h3>
+                    <table class="mt-5 mx-auto">
+                        <thead class="bg-gray-900">
+                            <tr class="divide-x-2 divide-gray-400">
+                                <th class="px-2">Season</th>
+                                <th class="px-2">Start Date</th>
+                                <th class="px-2">Match Type</th>
+                                <th class="px-2">Apply</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {team.open_seasons.length > 0 &&
+                                team.open_seasons.map((season, index) => (
+                                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                        <td class="px-2">{season.name}</td>
+                                        <td class="px-2">{prettyDate(season.start_date)}</td>
+                                        <td class="px-2">{season.match_type}</td>
+                                        <td class="px-2 py-1">
                                             <form method="post">
-                                                <input type="text" name="action" value="cancel" hidden/>
-                                                <input type="text" name="value" value={application.id.toString()} hidden/>
-                                                <button formaction={`/manage/teams/${team.id}/apply`} class="cancel bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
-                                                    Cancel
+                                                <input type="text" name="action" value="apply" hidden/>
+                                                <input type="text" name="value" value={season.id.toString()} hidden/>
+                                                <button formaction={`/manage/teams/${team.id}/apply`} class="apply bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                    Apply
                                                 </button>
                                             </form>
-                                        }
-                                    </td>
-                                </tr>
-                            )) ||
-                            <tr class="bg-gray-700"><td colspan="100%" class="p-1">No applications to display</td></tr>
-                        }
-                    </tbody>
-                </table>
-                <script>
-                    var cancel_buttons = [].slice.call(document.getElementsByClassName('cancel'));
-                    cancel_buttons.forEach(element => {
-                        //@ts-ignore
-                        element!.onclick = function confirmCancel(e) {
-                            if (!confirm('Are you sure you wish to cancel this application?'))
-                                e.preventDefault();
-                        }
-                    });
-                </script>
+                                        </td>
+                                    </tr>
+                                )) ||
+                                <tr class="bg-gray-700"><td colspan="100%" class="p-1">No seasons open for registration</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                    <script>
+                        var apply_buttons = [].slice.call(document.getElementsByClassName('apply'));
+                        apply_buttons.forEach(element => {
+                            //@ts-ignore
+                            element.onclick = function confirmApply(e) {
+                                if (!confirm('Are you sure you wish to apply to this season?'))
+                                    e.preventDefault();
+                            }
+                        });
+                    </script>
+                </div>
             </div>
-            <div>
-                <h3 class="text-xl mt-5">Seasons</h3>
-                <table class="mt-5 mx-auto">
-                    <thead class="bg-gray-900">
-                        <tr class="divide-x-2 divide-gray-400">
-                            <th class="px-2">Season</th>
-                            <th class="px-2">Start Date</th>
-                            <th class="px-2">Match Type</th>
-                            <th class="px-2">Apply</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {team.open_seasons.length > 0 &&
-                            team.open_seasons.map((season, index) => (
-                                <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
-                                    <td class="px-2">{season.name}</td>
-                                    <td class="px-2">{prettyDate(season.start_date)}</td>
-                                    <td class="px-2">{season.match_type}</td>
-                                    <td class="px-2 py-1">
-                                        <form method="post">
-                                            <input type="text" name="action" value="apply" hidden/>
-                                            <input type="text" name="value" value={season.id.toString()} hidden/>
-                                            <button formaction={`/manage/teams/${team.id}/apply`} class="apply bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
-                                                Apply
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            )) ||
-                            <tr class="bg-gray-700"><td colspan="100%" class="p-1">No seasons open for registration</td></tr>
-                        }
-                    </tbody>
-                </table>
-                <script>
-                    var apply_buttons = [].slice.call(document.getElementsByClassName('apply'));
-                    apply_buttons.forEach(element => {
-                        //@ts-ignore
-                        element.onclick = function confirmApply(e) {
-                            if (!confirm('Are you sure you wish to apply to this season?'))
-                                e.preventDefault();
-                        }
-                    });
-                </script>
-            </div>
-        </div>
+            ||
+            <p>You are not the team manager or owner.</p>
+        }
     </TeamManageLayout>
 }

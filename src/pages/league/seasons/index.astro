@@ -104,7 +104,7 @@ function updateQuery(link:string):string {
     return Astro.url.pathname + updatedQuery;
     
 }
-var pageNums = Array.from({length: seasons._meta.total_pages}, (_, i) => i + 1);
+var pageNums = Array.from({length: seasons?._meta.total_pages}, (_, i) => i + 1);
 ---
 {status === '401' &&
 	<Page401/>

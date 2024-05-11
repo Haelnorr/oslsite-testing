@@ -4,7 +4,7 @@ import Greetings from '../../data/greetings.json';
 import { getUser, refreshToken, type DiscordUser } from '../../util/discordUtils';
 import { Image } from 'astro:assets';
 import type { Token, User } from '../../util/srlmTypes';
-import { SRLMAPIError, srlmGet, srlmPost, srlmPut } from '../../util/srlmUtils';
+import { SRLMAPIError, srlmGet, srlmPut } from '../../util/srlmUtils';
 import { permsHasOneOf, setCookies, validateUser } from '../../util/authUtils';
 import { steam } from '../../util/steamUtils';
 import steamLoginImg from '../../assets/steam.png';
@@ -33,11 +33,11 @@ const userValidate = await validateUser(userToken, optional_perms).catch(err => 
 });;
 
 
-if (!userValidate) {
+if (!userValidate && status === '401') {
     return Astro.redirect('/login?error=sessionexpire');
 }
 
-const user: User = await srlmGet(`/users/${userValidate.user}`, userToken).catch(err => {
+const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
     if (err instanceof SRLMAPIError) {
         status = err.code;
         if (err.code === '404') {

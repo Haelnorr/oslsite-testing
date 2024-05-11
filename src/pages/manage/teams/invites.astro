@@ -11,10 +11,7 @@ import Page503 from '../../503.astro';
 
 var status = '200';
 
-var userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login')
-}
+var userToken = Astro.cookies.get('user_token')?.value || '';
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, perms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -29,36 +26,43 @@ const userIsManager = false;
 const userIsPlayer = false;
 const userHasTeam = false;
 
-
-const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
-    if (err instanceof SRLMAPIError) {
-        status = err.code;
-    }
-	console.error(err);
-});
+var user: User|null = null;
+if (userValidate) {
+    user = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
+}
 
 if (user?.player?.current_team) {
     return Astro.redirect('/manage/teams');
 }
 
-const playerInvites: Array<TeamInvite> = await srlmGet(`/players/${user.player?.id}/invites`).then(resp => resp['invites']).catch(err => {
-        if (err.code !== '404') {
-            if (err instanceof SRLMAPIError) {
-                status = err.code;
-            }
-            console.error(err);
+const playerInvites: Array<TeamInvite> = await srlmGet(`/players/${user?.player?.id}/invites`).then(resp => resp['invites']).catch(err => {
+    if (err.code === '200') {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
         }
-    });
+        console.error(err);
+    }
+});
 
 if (Astro.request.method === "POST") {
-    const form_data = await Astro.request.formData();
-    const action = form_data.get('action')?.toString();
-    const value = form_data.get('value')?.toString();
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+    const value = formData.get('value')?.toString();
     
-    const resp = await srlmPost(`/players/${user.player}/invites`, '', {
+    const resp = await srlmPost(`/players/${user!.player.id}/invites`, '', {
         invite_id: value,
         action: action
-    })
+    }).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
     console.log(resp)
     return Astro.redirect('/manage/teams/invites')
 }
@@ -90,7 +94,7 @@ if (Astro.request.method === "POST") {
         userPlayer={userIsPlayer}
         userHasTeam={userHasTeam}>
         <div class="mx-auto w-fit divide-y-2 divide-gray-600">
-            {user.player &&
+            {user!.player &&
                 <div class="mb-5">
                     <h3 class="text-xl">Team Invites</h3>
                     <table class="mt-5 mx-auto">
@@ -141,7 +145,8 @@ if (Astro.request.method === "POST") {
                     </script>
                 </div>
                 ||
-                'You do not have a linked Slapshot profile. Please link your steam account.'
+                <p>You do not have a linked Slapshot profile.
+                <br>Please link your steam account.</p>
             }
         </div>
     </TeamManageLayout>

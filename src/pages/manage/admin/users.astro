@@ -21,19 +21,18 @@ const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
 	console.error(err);
 });
 
+const userAuthorized = permsHasOneOf(userValidate, requiredPerms);
 
-const user_authorized = permsHasOneOf(userValidate, requiredPerms);
-
-if (!user_authorized) {
+if (!userAuthorized && status === '200') {
     status = '403';
 }
 
 var page: string = Astro.url.searchParams.get('page')! || '1';
-var per_page: string = Astro.url.searchParams.get('per_page')! || '30';
+var perPage: string = Astro.url.searchParams.get('per_page')! || '30';
 if (isNaN(+page)) {page='1'}
-if (isNaN(+per_page)) {per_page='30'}
+if (isNaN(+perPage)) {perPage='30'}
 
-const users: UserCollection = await srlmGet(`/users?page=${page}&per_page=${per_page}`).catch(err => {
+const users: UserCollection = await srlmGet(`/users?page=${page}&per_page=${perPage}&cached=false`).catch(err => {
     if (err instanceof SRLMAPIError) {
         status = err.code;
     }
@@ -86,10 +85,10 @@ const users: UserCollection = await srlmGet(`/users?page=${page}&per_page=${per_
                 </table>
                 <p>
                     {users._links.prev &&
-                        <a href={`/manage/users?page=${(+page - 1)}&per_page=${per_page}`}>Prev</a>
+                        <a href={`/manage/users?page=${(+page - 1)}&per_page=${perPage}`}>Prev</a>
                     }
                     {users._links.next &&
-                        <a href={`/manage/users?page=${(+page + 1)}&per_page=${per_page}`}>Next</a>
+                        <a href={`/manage/users?page=${(+page + 1)}&per_page=${perPage}`}>Next</a>
                     }
                 </p>
             </div>

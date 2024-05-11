@@ -18,7 +18,11 @@ const userToken = Astro.cookies.get('user_token')?.value || '';
 const requiredPerms = ['admin', 'leag_coord', 'leag_comm', 'team_manager'];
 const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
     if (err instanceof SRLMAPIError) {
-        status = err.code;
+        if (err.code !== '401') {
+            status = err.code;
+        }
+    } else {
+        status = '500';
     }
 	console.error(err);
 });

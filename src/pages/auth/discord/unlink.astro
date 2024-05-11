@@ -19,7 +19,7 @@ const userValidate = await validateUser(userToken).catch(err => {
 	console.error(err);
 });
 
-if (!userValidate) {
+if (status == '401') {
     return Astro.redirect('/login?error=sessionexpire');
 }
 
@@ -30,7 +30,7 @@ const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catc
 	console.error(err);
 });
 
-await srlmDelete(`/users/${user.id}/discord`, userToken).catch(err => {
+await srlmDelete(`/users/${user?.id}/discord`, userToken).catch(err => {
     if (err instanceof SRLMAPIError) {
         status = err.code;
     }

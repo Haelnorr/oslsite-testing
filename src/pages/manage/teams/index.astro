@@ -9,10 +9,7 @@ import type { User } from "../../../util/srlmTypes";
 import { SRLMAPIError, srlmGet } from "../../../util/srlmUtils";
 
 var status = '200';
-var userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login');
-}
+var userToken = Astro.cookies.get('user_token')?.value || '';
 const elevated_perms = ['admin', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, elevated_perms).catch(err => {
     if (err instanceof SRLMAPIError) {

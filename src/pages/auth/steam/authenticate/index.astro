@@ -2,6 +2,7 @@
 import { validateUser } from "../../../../util/authUtils";
 import { SRLMAPIError, srlmPost } from "../../../../util/srlmUtils";
 import { steam } from "../../../../util/steamUtils";
+import Page400 from '../../../400.astro';
 import Page401 from '../../../401.astro';
 import Page403 from '../../../403.astro';
 import Page404 from '../../../404.astro';
@@ -11,27 +12,36 @@ import Page503 from '../../../503.astro';
 var status = '200';
 try {
 
-    const steam_resp = await steam.authenticate(Astro.request)
+    const steamResp = await steam.authenticate(Astro.request)
 
     const userToken = Astro.cookies.get('user_token')?.value;
 
-    const user = await validateUser(userToken);
+    const user = await validateUser(userToken).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
 
     if (user) {
-        const resp = await srlmPost(`/users/${user.user}/steam`, '', {steam_id: steam_resp.steamid}).catch(err => {
+        const resp = await srlmPost(`/users/${user.user}/steam`, '', {steam_id: steamResp.steamid}).catch(err => {
             if (err instanceof SRLMAPIError) {
                 status = err.code;
             }
             console.error(err);
         });
+        if (resp) {
+            return Astro.redirect(`//${Astro.url.host}/profile`);
+        }
     }
-
-    return Astro.redirect(`//${Astro.url.host}/profile`)
-
 } catch (error) {
-    console.error(error)
+    console.error(error);
+    status = '500';
 }
 ---
+{status === '400' &&
+	<Page400/>
+}
 {status === '401' &&
 	<Page401/>
 }

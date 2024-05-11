@@ -94,7 +94,6 @@ function getPageTitle(page: string) {
                         }
                         <hr><hr><hr>
                     </div>
-                    
                 }
                 {!userHasTeam &&
                     <div style="margin-bottom: -8px;">
@@ -104,7 +103,7 @@ function getPageTitle(page: string) {
                         <a href={`/manage/teams/create`} class={`${(page === 'create') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
                             Create Team
                         </a>
-                        <hr><hr><hr>
+                        <hr/><hr/><hr/>
                     </div>
                 }
                 {userElevated &&
@@ -112,7 +111,7 @@ function getPageTitle(page: string) {
                         <a href={`/manage/teams/list`} class={`${(page === 'list') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold mt-2`}>
                             List All Teams
                         </a>
-                        <hr><hr><hr>
+                        <hr/><hr/><hr/>
                     </div>
                 }
                 <div>

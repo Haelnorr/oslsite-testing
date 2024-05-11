@@ -12,10 +12,7 @@ import Page503 from '../../../503.astro';
 
 var status = '200';
 
-const userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login');
-}
+const userToken = Astro.cookies.get('user_token')?.value || '';
 const requiredPerms = ['admin', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -25,7 +22,7 @@ const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
 });
 const userAuthorized = permsHasOneOf(userValidate, requiredPerms);
 
-if (!userAuthorized) {
+if (!userAuthorized && status == '200') {
     status = '403';
 }
 

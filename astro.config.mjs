@@ -11,5 +11,8 @@ export default defineConfig({
   },
   integrations: [react(), tailwind()],
   output: "server",
-  adapter: netlify()
+  adapter: netlify(),
+  devToolbar: {
+    enabled:false
+  }
 });

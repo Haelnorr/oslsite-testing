@@ -12,10 +12,7 @@ import Page503 from '../../503.astro';
 
 var status = '200';
 
-const userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login');
-}
+const userToken = Astro.cookies.get('user_token')?.value || '';
 const requiredPerms = ['admin', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, requiredPerms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -45,22 +42,26 @@ if (Astro.request.method === "POST") {
         }
 
         
-        const createMatch = await srlmPost('/match', '', matchData);
+        const createMatch = await srlmPost('/match', '', matchData).catch(err => {
+            if (err instanceof SRLMAPIError) {
+                status = err.code;
+            }
+            console.error(err);
+        });
         
-        if (!createMatch) {
-            return Astro.redirect('/login?error=loginfailed')
-        } else {
+        if (createMatch) {
             return Astro.redirect(`../match/${createMatch.location.replace('/api/match/', '')}`)
         }
 
     } catch (error) {
         if (error instanceof Error) {
             console.error(error.message);
+            status = '500';
         }
     }
 }
 
-const season_division: SeasonDivision = await srlmGet(`/season_division/${seasonDivisionID}`).catch(err => {
+const seasonDivision: SeasonDivision = await srlmGet(`/season_division/${seasonDivisionID}`).catch(err => {
     if (err instanceof SRLMAPIError) {
         status = err.code;
     }
@@ -109,7 +110,7 @@ const teams: Team[] = await srlmGet(`/season_division/${seasonDivisionID}/teams`
                 <form class="flex gap-5 flex-col w-2/3 lg:w-1/3 text-white" method="post">
                     <h2 class="text-4xl">Create Match</h2>
                     <label>
-                        <b>Season:</b> {season_division.season.name} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Division:</b> {season_division.division.name}
+                        <b>Season:</b> {seasonDivision.season.name} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Division:</b> {seasonDivision.division.name}
                     </label>
                     <table>
                         <tr>

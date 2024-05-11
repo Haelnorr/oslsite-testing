@@ -125,8 +125,8 @@ function Navbar(props: Input) {
                 </div>
                 <ul className={`${click ? 'nav-menu active' : 'nav-menu'} align-middle`}>
                     {
-                        navItems.map(item => (
-                            <li className="nav-item mt-1">
+                        navItems.map((item, index) => (
+                            <li className="nav-item mt-1" key={index+1}>
                                 {item.dropdown && 
                                     <span>
                                         <a onClick={item.dropdown.handleDropdown} className="hover:cursor-pointer">
@@ -154,7 +154,7 @@ function Navbar(props: Input) {
                         ))
                     }
                     {props.userLoggedIn &&
-                        <li className="nav-item ml-[-10px]">
+                        <li className="nav-item ml-[-10px]" key={navItems.length+1}>
                             <a onClick={profileDropdown.handleDropdown} className="hover:cursor-pointer">
                                 <img className="h-8 text-white font-bold text-base profile-icon"
                                 src={ProfileIcon.src} 

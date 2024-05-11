@@ -19,10 +19,7 @@ var status = '200';
 
 var { team_id } = Astro.params;
 
-var userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login');
-}
+var userToken = Astro.cookies.get('user_token')?.value || '';
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, perms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -42,21 +39,24 @@ const team: TeamManage = await srlmGet(`/teams/${team_id}/manage`).catch(err => 
 	console.error(err);
 });
 
-const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
-    if (err instanceof SRLMAPIError) {
-        status = err.code;
-    }
-	console.error(err);
-});
+var user: User|null = null;
+if (userValidate) {
+    user = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
+}
 
 var userIsPlayer = false;
 var userHasTeam = false;
-if (user?.player.current_team) {
-    userIsPlayer = (user.player.current_team.id === team.id);
+if (user?.player?.current_team) {
+    userIsPlayer = (user.player.current_team.id === team?.id);
     userHasTeam = true;
 }
 
-if (!userIsPlayer && !userIsElevated) {
+if (!userIsPlayer && !userIsElevated && status === '200') {
     status = '403';
 }
 
@@ -118,7 +118,7 @@ if (Astro.request.method === "POST") {
 }
 
 var teamLogo = null;
-if (team.logo) {
+if (team?.logo) {
     const images = import.meta.glob<{default: ImageMetadata}>('/public/upload/team-logos/*.{jpeg,jpg,png,gif}')
     try {
         teamLogo = images[`/public/upload/team-logos/${team.logo}`]()
@@ -203,22 +203,33 @@ if (team.logo) {
                     </div>
                 </div>
                 <script>
-                    var placeholder = document.getElementById('upload-preview')!.getAttribute('src');
+                    //@ts-ignore
+                    var placeholder = document.getElementById('upload-preview').getAttribute('src');
                     try {
-                        document.getElementById('remove')!.onclick = function confirmLeave(e) {
+                        //@ts-ignore
+                        document.getElementById('remove').onclick = function confirmLeave(e) {
                             if (!confirm('Are you sure you wish to remove the current logo?'))
                                 e.preventDefault();
                         };
                     } catch (err) {};
-                    document.getElementById('show-upload')!.onclick = function showUpload() {
-                        document.getElementById('upload-popup')!.style.display = 'block';
-                    }
-                    document.getElementById('hide-upload')!.onclick = function hideUpload() {
-                        document.getElementById('upload-popup')!.style.display = 'none';
+                    try {
                         //@ts-ignore
-                        document.getElementById('file-upload').value = '';
-                        document.getElementById('upload-preview')!.setAttribute('src', placeholder!)
-                    }
+                        document.getElementById('show-upload').onclick = function showUpload() {
+                            //@ts-ignore
+                            document.getElementById('upload-popup').style.display = 'block';
+                        }
+                    } catch (err) {};
+                    try {
+                        //@ts-ignore
+                        document.getElementById('hide-upload').onclick = function hideUpload() {
+                            //@ts-ignore
+                            document.getElementById('upload-popup').style.display = 'none';
+                            //@ts-ignore
+                            document.getElementById('file-upload').value = '';
+                            //@ts-ignore
+                            document.getElementById('upload-preview').setAttribute('src', placeholder)
+                        }
+                    } catch (err) {};
                     const fileInput = document.getElementById('file-upload');
                     const previewLogo = () => {
                         //@ts-ignore
@@ -236,7 +247,8 @@ if (team.logo) {
                             const none = fileReader.readAsDataURL(file[0]);
                         }
                     }
-                    fileInput!.addEventListener('change', previewLogo);
+                    //@ts-ignore
+                    fileInput.addEventListener('change', previewLogo);
                 </script>
             </div>
             <div class="text-center w-[70%]">
@@ -302,21 +314,21 @@ if (team.logo) {
                 <script>
                         //@ts-ignore
                         const userElevated = document.getElementById('user-elevated').value;
+                        const dateInput = document.getElementById('founded');
+                        //@ts-ignore
+                        const userOwner = document.getElementById('user-owner').value;
+                        //@ts-ignore
+                        const userManager = document.getElementById('user-manager').value;
+                        const colorInput = document.getElementById('color');
+                        console.log(userManager + ' test')
                         if (userElevated === 'false') {
                             //@ts-ignore
                             document.getElementById('name').disabled = true;
                             //@ts-ignore
                             document.getElementById('acronym').disabled = true;
                         }
-                        const dateInput = document.getElementById('founded');
                         //@ts-ignore
-                        const userElevated = document.getElementById('user-elevated').value;
-                        //@ts-ignore
-                        const userOwner = document.getElementById('user-owner').value;
-                        //@ts-ignore
-                        const userManager = document.getElementById('user-manager').value;
-                        //@ts-ignore
-                        if (dateInput.value || (userOwner === 'false' && userManager === 'false')) {
+                        if (dateInput.value || (userOwner === 'false' && userManager.value === 'false')) {
                             //@ts-ignore
                             dateInput.disabled = true;
                         }
@@ -324,14 +336,6 @@ if (team.logo) {
                             //@ts-ignore
                             dateInput.disabled = false;
                         }
-                        const colorInput = document.getElementById('color');
-                        //@ts-ignore
-                        const userElevated = document.getElementById('user-elevated').value;
-                        //@ts-ignore
-                        const userOwner = document.getElementById('user-owner').value;
-                        //@ts-ignore
-                        const userManager = document.getElementById('user-manager').value;
-                        //@ts-ignore
                         if (userOwner === 'false' && userManager === 'false') {
                             //@ts-ignore
                             colorInput.disabled = true;

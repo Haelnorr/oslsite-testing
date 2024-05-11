@@ -30,7 +30,12 @@ if (userTokenStr) {
     });;
 
     if (userValidate) {
-        const user: User = await srlmGet(`/users/${userValidate.user}`, userTokenStr);
+        const user: User = await srlmGet(`/users/${userValidate.user}`, userTokenStr).catch(err => {
+            if (err instanceof SRLMAPIError) {
+                status = err.code;
+            }
+            console.error(err);
+        });
         const discordUser = await getUser(discordLogin.access_token);
 
         const discordLink = {
@@ -39,33 +44,44 @@ if (userTokenStr) {
             refresh_token: discordLogin.refresh_token,
             expires_in: discordLogin.expires_in
         }
+        var resp;
         if (!user.discord) {
-            await srlmPost(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
+            resp = await srlmPost(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
                 console.error(err.message);
             });
         } else {
-            await srlmPut(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
+            resp = await srlmPut(`/users/${user.id}/discord`, userTokenStr, discordLink).catch(err => {
                 console.error(err.message);
                 console.error(err.data)
             })
         }
-        
-        return Astro.redirect('/profile')
+        if (resp) {
+            return Astro.redirect('/profile')
+        }
     }
 }
 
-const userToken: Token = await srlmPost('/auth/discord', '', discordLogin);
+const userToken: Token = await srlmPost('/auth/discord', '', discordLogin).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    }
+	console.error(err);
+});
 
-setCookies(Astro, userToken);
+if (userToken) {
+    setCookies(Astro, userToken);
+}
 
 const userResponse = await getUser(discordLogin.access_token);
-console.log(userResponse)
 
 if (!userResponse) {
     return Astro.redirect('/login?error=discordauth');
 }
 
-return Astro.redirect('/profile');
+
+if (status === '200') {
+    return Astro.redirect('/profile');
+}
 
 ---
 {status === '401' &&

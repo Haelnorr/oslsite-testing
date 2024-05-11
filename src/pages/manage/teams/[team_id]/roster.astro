@@ -13,10 +13,7 @@ var status = '200';
 
 var { team_id } = Astro.params;
 
-var userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login')
-}
+var userToken = Astro.cookies.get('user_token')?.value || '';
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, perms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -28,25 +25,33 @@ const userValidate = await validateUser(userToken, perms).catch(err => {
 const userIsElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
 const userIsManager = isTeamManager(userValidate, [+team_id!]);
 
-const team: TeamManage = await srlmGet(`/teams/${team_id}/manage?cached=false`);
-const userIsOwner = isTeamOwner(userValidate, team.id);
-
-const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+const team: TeamManage = await srlmGet(`/teams/${team_id}/manage?cached=false`).catch(err => {
     if (err instanceof SRLMAPIError) {
         status = err.code;
     }
 	console.error(err);
 });
+const userIsOwner = isTeamOwner(userValidate, team?.id);
+
+var user: User|null = null;
+if (userValidate) {
+    user = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
+}
 
 var userIsPlayer = false;
 var userHasTeam = false;
-if (user.player.current_team) {
-    userIsPlayer = (user.player.current_team.id === team.id);
+if (user?.player?.current_team) {
+    userIsPlayer = (user.player.current_team.id === team?.id);
     userHasTeam = true;
 }
 
-if (!userIsPlayer && !userIsElevated) {
-    return Astro.redirect(`/league/teams/${team.id}`);
+if (!userIsPlayer && !userIsElevated && status == '200') {
+    status = '403';
 }
 
 if (Astro.request.method === "POST") {
@@ -59,7 +64,7 @@ if (Astro.request.method === "POST") {
 
     switch (action) {
         case 'leave-team':
-            await leaveTeam(user.player.id).catch(err => {
+            await leaveTeam(user!.player.id).catch(err => {
                 if (err instanceof SRLMAPIError) {
                     status = err.code;
                 }
@@ -68,7 +73,7 @@ if (Astro.request.method === "POST") {
             redirect = '/manage/teams';
             break;
         case 'rejoin-team':
-            await joinTeam(user.player.id, team.id.toString()).catch(err => {
+            await joinTeam(user!.player.id, team.id.toString()).catch(err => {
                 if (err instanceof SRLMAPIError) {
                     status = err.code;
                 }
@@ -184,7 +189,7 @@ if (Astro.request.method === "POST") {
                                     }
                                 </td>
                                 <td class="px-2">
-                                    {((!player.manager || userIsOwner ) && player.user_id !== user.id && (userIsElevated || userIsManager || userIsOwner)) &&
+                                    {((!player.manager || userIsOwner ) && player.user_id !== user!.id && (userIsElevated || userIsManager || userIsOwner)) &&
                                         <form method="post">
                                             <input type="text" name="action" value="kick" hidden/>
                                             <input type="text" name="value" value={player.id.toString()} hidden/>

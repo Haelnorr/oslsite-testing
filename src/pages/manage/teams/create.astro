@@ -12,10 +12,7 @@ import Page503 from '../../503.astro';
 
 var status = '200';
 
-var userToken = Astro.cookies.get('user_token')?.value;
-if (!userToken) {
-    return Astro.redirect('/login')
-}
+var userToken = Astro.cookies.get('user_token')?.value || '';
 const perms = ['admin', 'team_owner', 'team_manager', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, perms).catch(err => {
     if (err instanceof SRLMAPIError) {
@@ -28,23 +25,27 @@ const userIsElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag
 var userIsOwner = false;
 var userIsManager = false;
 
-
-const user: User = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
-    if (err instanceof SRLMAPIError) {
-        status = err.code;
-    }
-	console.error(err);
-});
-if (!user.player) {
-    return Astro.redirect('/profile')
+var user: User|null = null;
+if (userValidate) {
+    user = await srlmGet(`/users/${userValidate?.user}`, userToken).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
 }
 
 var team: TeamManage|null = null;
 var userIsPlayer = false;
 var userHasTeam = false;
 
-if (user.player.current_team) {
-    team = await srlmGet(`/teams/${user.player.current_team.id}/manage`);
+if (user?.player?.current_team) {
+    team = await srlmGet(`/teams/${user.player.current_team.id}/manage`).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
     userIsPlayer = (user.player.current_team.id === team!.id);
     userHasTeam = true;
     userIsManager = isTeamManager(userValidate, [team!.id]);
@@ -118,61 +119,66 @@ if (Astro.request.method === "POST") {
         userManager={userIsManager}
         userPlayer={userIsPlayer}
         userHasTeam={userHasTeam}>
-        <div>
-            {!userHasTeam &&
-                <form method="post" class="w-fit mx-auto">
-                    <table>
-                        <tr>
-                            <td class="p-2">Name:</td>
-                            <td class="p-2">
-                                
-                                <input type="text" name="name" id="name" value={teamName} maxlength="64" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
-                                {(errors && errors['name']) && (
-                                    <br/>
-                                    <span class="text-red-600 font-bold">
-                                        {errors['name']}
-                                    </span>  
-                                )}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="p-2">Acronym:</td>
-                            <td class="p-2">
-                                <input type="text" name="acronym" id="acronym" maxlength="5" value={teamAcronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
-                                {(errors && errors['acronym']) && (
-                                    <br/>
-                                    <span class="text-red-600 font-bold">
-                                        {errors['acronym']}
-                                    </span>  
-                                )}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="p-2">Colour:</td>
-                            <td class="p-2">
-                                <input type="color" name="color" id="color" value={teamColor} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
-                            </td>
-                        </tr>
-                        {userIsElevated &&
+        {user!.player &&
+            <div>
+                {!userHasTeam &&
+                    <form method="post" class="w-fit mx-auto">
+                        <table>
                             <tr>
-
+                                <td class="p-2">Name:</td>
+                                <td class="p-2">
+                                    
+                                    <input type="text" name="name" id="name" value={teamName} maxlength="64" class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                                    {(errors && errors['name']) && (
+                                        <br/>
+                                        <span class="text-red-600 font-bold">
+                                            {errors['name']}
+                                        </span>  
+                                    )}
+                                </td>
                             </tr>
-                            <tr id="set-owner">
-
+                            <tr>
+                                <td class="p-2">Acronym:</td>
+                                <td class="p-2">
+                                    <input type="text" name="acronym" id="acronym" maxlength="5" value={teamAcronym} class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" required/>
+                                    {(errors && errors['acronym']) && (
+                                        <br/>
+                                        <span class="text-red-600 font-bold">
+                                            {errors['acronym']}
+                                        </span>  
+                                    )}
+                                </td>
                             </tr>
-                        }
-                        <tr>
-                            <td colspan="2" class="py-4">
-                                <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-                                    Create
-                                </button>
-                            </td>
-                        </tr>
-                    </table>
-                </form>
-                ||
-                'Leave your current team to create a new one'
-            }
-        </div>
+                            <tr>
+                                <td class="p-2">Colour:</td>
+                                <td class="p-2">
+                                    <input type="color" name="color" id="color" value={teamColor} required class="text-black indent-2 rounded-sm outline outline-2 outline-gray-400" />
+                                </td>
+                            </tr>
+                            {userIsElevated &&
+                                <tr>
+
+                                </tr>
+                                <tr id="set-owner">
+
+                                </tr>
+                            }
+                            <tr>
+                                <td colspan="2" class="py-4">
+                                    <button id="update" class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                                        Create
+                                    </button>
+                                </td>
+                            </tr>
+                        </table>
+                    </form>
+                    ||
+                    'Leave your current team to create a new one'
+                }
+            </div>
+            ||
+            <p>You do not have a linked Slapshot profile.
+            <br>Please link your steam account.</p>
+        }
     </TeamManageLayout>
 }

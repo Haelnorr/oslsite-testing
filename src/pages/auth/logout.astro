@@ -1,6 +1,10 @@
 ---
-Astro.cookies.delete('user_token')
-Astro.cookies.delete('token_expiry')
+import { setCookies } from "../../util/authUtils";
+
+setCookies(Astro, {
+    token: '',
+    expires: ''
+});
 
 return Astro.redirect('/auth/login')
 ---

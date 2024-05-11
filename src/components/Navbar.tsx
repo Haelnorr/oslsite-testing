@@ -167,7 +167,7 @@ function Navbar(props: Input) {
                             }
                         </li>
                         ||
-                        <li className='nav-item mt-1'>
+                        <li className='nav-item mt-1 mb-1'>
                             <a href="/login">Login</a>
                         </li>
                     }

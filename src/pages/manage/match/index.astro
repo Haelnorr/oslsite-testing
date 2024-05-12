@@ -1,5 +1,5 @@
 ---
-import ManageLayout from '../../../layouts/ManageLayout.astro';
+import MatchManageLayout from '../../../layouts/MatchManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
 import { SRLMAPIError } from '../../../util/srlmUtils';
 import Page401 from '../../401.astro';
@@ -10,7 +10,7 @@ import Page503 from '../../503.astro';
 var status = '200';
 
 const userToken = Astro.cookies.get('user_token')?.value || '';
-const permsList = ['admin', 'leag_coord', 'leag_comm', 'team_manager'];
+const permsList = ['admin', 'leag_coord', 'leag_comm'];
 const userValidate = await validateUser(userToken, permsList).catch(err => {
     if (err instanceof SRLMAPIError) {
         status = err.code;
@@ -20,7 +20,7 @@ const userValidate = await validateUser(userToken, permsList).catch(err => {
 	console.error(err);
 });
 
-const userElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
+const userElevated = permsHasOneOf(userValidate, permsList);
 if (!userElevated && status === '200') {
     status = '403';
 }
@@ -39,7 +39,7 @@ if (!userElevated && status === '200') {
 	<Page503/>
 }
 {status === '200' &&
-	<ManageLayout title="Match Reviews" userValidate={userValidate!}>
+	<MatchManageLayout title="Manage Matches" page="list" userValidate={userValidate!}>
 		
-	</ManageLayout>
+	</MatchManageLayout>
 }

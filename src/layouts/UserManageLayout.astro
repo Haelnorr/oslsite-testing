@@ -1,0 +1,51 @@
+---
+import ManageLayout from "./ManageLayout.astro";
+import type { TeamManage, UserValidate } from "../util/srlmTypes";
+import { colorCalc } from "../util/srlmUtils";
+import { isTeamManager, isTeamOwner, permsHasOneOf } from "../util/authUtils";
+
+interface Props {
+	title: string,
+    page: string,
+    userValidate: UserValidate
+}
+
+const { title, page, userValidate } = Astro.props;
+
+function getPageTitle(page: string) {
+    switch(page) {
+        case 'list':
+            return 'List Users';
+        case 'edit':
+            return 'Manage User Permissions';
+        default:
+            return
+    }
+}
+
+---
+<ManageLayout title={title} userValidate={userValidate}>
+    <main class="py-10 sm:container mx-auto text-white text-center z-10">
+        <div class="rounded-md relative shadow-md shadow-black mx-auto bg-gray-800 min-h-[40rem] z-10">
+            <div class="w-52 bg-gray-700 absolute min-h-full rounded-l-md shadow-[rgba(0,0,15,0.5)_10px_5px_4px_0px]">
+                <h4 class="font-bold py-3 rounded-tl-md text-xl">
+                    Manage Users
+                </h4>
+                <hr/>
+                <div>
+                    <a href="/manage/users" class={`${(page === 'list') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                        List Users
+                    </a>
+                </div>
+            </div>
+            <div class="pl-52 divide-y-2 divide-gray-600">
+                <h2 class="text-3xl py-5">
+                    {getPageTitle(page)}
+                </h2>
+                <div class="p-5">
+                    <slot />
+                </div>
+            </div>
+        </div>
+    </main>
+</ManageLayout>

@@ -16,7 +16,15 @@ type NavItem = {
     dropdown?: DropdownItems
 }
 
+function userCanAccess(requiredLevel: Array<string>, userPerms: Array<string>): boolean {
+    if (requiredLevel.some(perm => userPerms.includes(perm))) {
+        return true;
+    }
+    return false;
+}
+
 function Navbar(props: Input) {
+    const userPerms = props.userPerms;
     const [leagueDropdownState, SetLeagueDropdownState] = useState(false);
     const leagueDropdown: DropdownItems = {
         state:leagueDropdownState,
@@ -25,24 +33,28 @@ function Navbar(props: Input) {
         items: [
             {
                 label: 'Register',
-                dest: '/league/register'
+                dest: '/league/register',
+                show: true
             },
             {
                 label: 'Seasons',
-                dest: '/league'
+                dest: '/league',
+                show: true
             },
             {
                 label: 'Teams',
-                dest: '/league/teams'
+                dest: '/league/teams',
+                show: true
             },
             {
                 label: 'Players',
-                dest: '/league/players'
+                dest: '/league/players',
+                show: true
             }/**, to be implemented in a future version
             {
-                id: 5,
                 label: 'Stats',
-                dest: 'league/stats'
+                dest: 'league/stats',
+                show: true
             } */
         ]
     }
@@ -55,25 +67,23 @@ function Navbar(props: Input) {
         items: [
             {
                 label: 'Profile',
-                dest: '/profile'
+                dest: '/profile',
+                show: true
             },
             {
                 label: 'My Team',
-                dest: '/manage/teams'
+                dest: '/manage/teams',
+                show: true
             },
             {
-                label: 'League Management',
-                dest: '/manage/league',
-                requiredLevel: ['admin', 'leag_coord', 'leag_comm']
-            },
-            {
-                label: 'Admin Tools',
-                dest: '/manage/admin',
-                requiredLevel: ['admin', 'leag_comm']
+                label: 'Management Tools',
+                dest: '/manage/match-reviews',
+                show: userCanAccess(['admin', 'leag_coord', 'leag_comm'], props.userPerms)
             },
             {
                 label: 'Logout',
-                dest: '/auth/logout'
+                dest: '/auth/logout',
+                show: true
             }
         ]
     }

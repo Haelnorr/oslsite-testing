@@ -1,5 +1,5 @@
 ---
-import Layout from '../../../layouts/Layout.astro';
+import ManageLayout from '../../../layouts/ManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
 import { SRLMAPIError } from '../../../util/srlmUtils';
 import Page401 from '../../401.astro';
@@ -39,7 +39,7 @@ if (!userElevated && status === '200') {
 	<Page503/>
 }
 {status === '200' &&
-	<Layout title="">
+	<ManageLayout title="Match Reviews" userValidate={userValidate!}>
 		
-	</Layout>
+	</ManageLayout>
 }

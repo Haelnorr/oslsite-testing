@@ -1,0 +1,74 @@
+---
+import Layout from "./Layout.astro";
+import type { UserValidate } from "../util/srlmTypes";
+import { permsHasOneOf } from "../util/authUtils";
+
+interface Props {
+	title: string,
+    userValidate: UserValidate
+}
+
+const { title, userValidate } = Astro.props;
+
+const userIsAdmin = permsHasOneOf(userValidate, ['admin']);
+const userIsLeagComm = permsHasOneOf(userValidate, ['leag_comm']);
+const userIsLeagCoord = permsHasOneOf(userValidate, ['leag_coord'])
+
+const links: Array<{label:string, dest:string, show:boolean}> = [
+    {
+        label: 'Users',
+        dest: '/manage/users',
+        show: userIsAdmin || userIsLeagComm
+    },
+    {
+        label: 'Permissions',
+        dest: '/manage/permissions',
+        show: userIsAdmin
+    },
+    {
+        label: 'Match Reviews',
+        dest: '/manage/match-reviews',
+        show: true
+    },
+    {
+        label: 'Seasons',
+        dest: '/manage/seasons',
+        show: userIsAdmin || userIsLeagComm
+    },
+    {
+        label: 'Players',
+        dest: '/manage/players',
+        show: true
+    },
+    {
+        label: 'Teams',
+        dest: '/manage/teams/list',
+        show: true
+    }
+]
+
+---
+<Layout title={title}>
+    {(userIsAdmin || userIsLeagComm || userIsLeagCoord) &&
+        <div class="bg-gray-600 z-0 mt-[-20px]">
+            <div class="w-screen h-5 shadow-black shadow-[rgba(0,0,15,0.5)_0px_7px_5px_-2px] bg-gradient-to-r from-osl-blue-700 via-blue-400 to-osl-blue-700"></div>
+            <ul class="flex justify-center h-[40px]">
+                {
+                    links.map(link =>{
+                        if (link.show) {
+                            return (
+                                <li class="hover:bg-gray-500">
+                                    <a href={link.dest}
+                                        class="px-4 py-2 block font-bold text-white">
+                                        {link.label}
+                                    </a>
+                                </li>
+                            )
+                        }
+                    })
+                }
+            </ul>
+        </div>
+    }
+    <slot/>
+</Layout>

@@ -29,7 +29,7 @@ if (!userElevated && status === '200') {
     status = '403';
 }
 
-var errors: {[key:string]:string} = {}; // ONLY REQUIRED IF POSTING/PUTTING TO SRLMAPI
+var errors: {[key:string]:string} = {}; // ONLY REQUIRED IF POSTING/PUTTING TO SRLMAPI AND FIELD ERRORS NEED TO BE DISPLAYED IN FORM
 
 if (Astro.request.method === "POST" && status === "200") {
 	const formData = await Astro.request.formData();

@@ -120,7 +120,7 @@ const steam_redirect = await steam.getRedirectUrl()
                 }
             </div>
             <h1 class="text-white font-bold text-2xl text-center">{randomGreeting}, {user.username}</h1>
-            <h2 class="text-white text-center"><a href={`/manage/users/${user.id}`}>(Edit details)</a> | <a href="/auth/logout">(Not you?)</a></h2>
+            <h2 class="text-white text-center"><a href={`/manage/users/${user.id}`}>(Edit details)</a>
             <section class="flex flex-wrap justify-between pt-10">           
                 {user.player &&
                     <div class="bg-red-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black w-56 h-fit">
@@ -229,31 +229,6 @@ const steam_redirect = await steam.getRedirectUrl()
                         <h3 class="text-white text-lg font-bold pb-2">Twitch</h3>
                         <hr/>
                         <p class="text-white py-2 font-bold w-48">To access streamer functions, link your twitch account</p>
-                    </div>
-                }
-                {permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']) &&
-                    <div class="bg-green-700 bg-opacity-70 rounded-md p-3 shadow-md shadow-black">
-                        <h3 class="text-white text-lg font-bold pb-2">Moderator Overview</h3>
-                        <hr/>
-                        <p class="text-white py-2 font-bold">Admin Tools:</p>
-                        <ul>
-                            <li class="text-white py-2">- <a href="/manage/admin/users" class="underline">Manage Users</a></li>
-                            {permsHasOneOf(userValidate, ['admin']) &&
-                                <li class="text-white py-2">- <a class="underline">Manage Permissions</a></li>
-                            }
-                        </ul>
-                        <p class="text-white py-2 font-bold">League Tools:</p>
-                        <ul>
-                            <li class="text-white py-2">- <a class="underline">Manage Players</a></li>
-                            <li class="text-white py-2">- <a class="underline" href="/manage/teams/list">Manage Teams</a></li>
-                            <li class="text-white py-2">- <a class="underline">Registrations</a></li>
-                            {permsHasOneOf(userValidate, ['admin', 'leag_comm']) &&
-                                <li class="text-white py-2">- <a class="underline" href="/league/seasons/create">New Season</a></li>
-                                <li class="text-white py-2">- <a class="underline" href="/manage/seasons/">Manage Seasons</a></li>
-                            }
-                            <li class="text-white py-2">- <a class="underline">Match Reviews</a></li>
-                        </ul>
-                        <hr/>
                     </div>
                 }
             </section>

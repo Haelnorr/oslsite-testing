@@ -1,8 +1,6 @@
 ---
 import Navbar from "../components/Navbar.tsx"
 import { validateUser } from "../util/authUtils";
-import type { UserValidate } from "../util/srlmTypes";
-import { SRLMAPIError } from "../util/srlmUtils";
 
 
 interface Props {
@@ -11,16 +9,16 @@ interface Props {
 
 const userToken = Astro.cookies.get('user_token')?.value;
 const userValidate = await validateUser(userToken, ['admin', 'leag_coord', 'leag_comm']).catch(err => undefined);
-var userPerms = []
+var userPerms:Array<string> = []
 var userLoggedIn = false;
 if (userValidate) {
 	if (userValidate.user) {
 		userLoggedIn = true;
-		for (const [key, value] of Object.entries(userValidate.has_perms)) {
-			if (value) {
-				userPerms.push(key.toString());
+		userValidate.has_perms.map(perm => {
+			if (perm[1] === 'True') {
+				userPerms.push(perm[0]);
 			}
-		}
+		})
 	}
 }
 

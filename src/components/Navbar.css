@@ -18,6 +18,7 @@
     --tw-shadow-color: #000;
     --tw-shadow: var(--tw-shadow-colored);
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+    z-index: 1;
 }
 
 .menu-icon {

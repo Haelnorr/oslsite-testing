@@ -1,0 +1,68 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { permsHasOneOf, validateUser } from '../../../util/authUtils';
+import { SRLMAPIError } from '../../../util/srlmUtils';
+import Page400 from '../../400.astro';
+import Page401 from '../../401.astro';
+import Page403 from '../../403.astro';
+import Page500 from '../../500.astro';
+import Page503 from '../../503.astro';
+
+var status = '200';
+
+const userToken = Astro.cookies.get('user_token')?.value || '';
+const permsList = ['admin', 'leag_coord', 'leag_comm', 'team_manager'];
+const userValidate = await validateUser(userToken, permsList).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    } else {
+        status = '500';
+    }
+	console.error(err);
+});
+
+const userElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
+if (!userElevated && status === '200') {
+    status = '403';
+}
+
+if (Astro.request.method === "POST" && status === "200") {
+	const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+    const value = formData.get('value')?.toString();
+	
+    var resp = null;
+    switch (action) {
+        case 'accept':
+            break;
+        case 'reject':
+            break;
+        case 'complete':
+            break;
+    }
+    if (resp) {
+        return Astro.redirect('/manage/seasons/applications')
+    }
+}
+
+---
+{status === '400' &&
+	<Page400/>
+}
+{status === '401' &&
+	<Page401/>
+}
+{status === '403' &&
+	<Page403/>
+}
+{status === '500' &&
+	<Page500/>
+}
+{status === '503' &&
+	<Page503/>
+}
+{status === '200' &&
+	<Layout title="">
+		
+	</Layout>
+}

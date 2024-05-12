@@ -2,7 +2,6 @@
 import SeasonManageLayout from '../../../layouts/SeasonManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
 import { SRLMAPIError } from '../../../util/srlmUtils';
-import Page400 from '../../400.astro';
 import Page401 from '../../401.astro';
 import Page403 from '../../403.astro';
 import Page500 from '../../500.astro';
@@ -26,29 +25,7 @@ if (!userElevated && status === '200') {
     status = '403';
 }
 
-if (Astro.request.method === "POST" && status === "200") {
-	const formData = await Astro.request.formData();
-    const action = formData.get('action')?.toString();
-    const value = formData.get('value')?.toString();
-	
-    var resp = null;
-    switch (action) {
-        case 'accept':
-            break;
-        case 'reject':
-            break;
-        case 'complete':
-            break;
-    }
-    if (resp) {
-        return Astro.redirect('/manage/seasons/applications')
-    }
-}
-
 ---
-{status === '400' &&
-	<Page400/>
-}
 {status === '401' &&
 	<Page401/>
 }
@@ -62,7 +39,7 @@ if (Astro.request.method === "POST" && status === "200") {
 	<Page503/>
 }
 {status === '200' &&
-	<SeasonManageLayout title="Season Applications" page="applications" userValidate={userValidate!}>
+	<SeasonManageLayout title="Manage Seasons" page="list" userValidate={userValidate!}>
 		
 	</SeasonManageLayout>
 }

@@ -77,7 +77,7 @@ function Navbar(props: Input) {
             },
             {
                 label: 'Management Tools',
-                dest: '/manage/match-reviews',
+                dest: '/manage',
                 show: userCanAccess(['admin', 'leag_coord', 'leag_comm'], props.userPerms)
             },
             {

@@ -1,5 +1,5 @@
 ---
-import Layout from "../../../../layouts/Layout.astro";
+import SeasonManageLayout from "../../../../layouts/SeasonManageLayout.astro";
 import { permsHasOneOf, validateUser } from "../../../../util/authUtils";
 import type { Division, DivisionCollection, Season } from "../../../../util/srlmTypes";
 import { SRLMAPIError, srlmGet, srlmPost } from "../../../../util/srlmUtils";
@@ -101,24 +101,22 @@ if (Astro.request.method === "POST" && status === "200") {
 	<Page503/>
 }
 {status === '200' &&
-    <Layout title="Manage Divisions">
-        <main class="py-10 sm:container mx-auto text-white">
-            <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
-                <h2 class="text-2xl">Add divisions: {season.name}</h2>
-                <form class="mt-5" method="post">
-                    {divisionsFormData.length > 0 &&
-                        divisionsFormData.map(division => (
-                            <p class="py-1 max-w-80 mx-auto h-8">
-                                <label class="pl-14">{division.name}</label>
-                                <input class="float-right mr-16 mt-1" name={division.acronym} type="checkbox" checked={division.in_season} disabled={division.in_season}/>
-                            </p>
-                        ))
-                    }
-                    <button class="mt-5 bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-52">
-                        Update
-                    </button>
-                </form>
-            </div>
-        </main>
-    </Layout>
+    <SeasonManageLayout title="Manage Divisions" page="divisions" userValidate={userValidate!}>
+        <div class="pt-3 pb-10 mx-auto max-w-96 text-center">
+            <h2 class="text-2xl">{season.name}</h2>
+            <form class="mt-5" method="post">
+                {divisionsFormData.length > 0 &&
+                    divisionsFormData.map(division => (
+                        <p class="py-1 max-w-80 mx-auto h-8">
+                            <label class="pl-14">{division.name}</label>
+                            <input class="float-right mr-16 mt-1" name={division.acronym} type="checkbox" checked={division.in_season} disabled={division.in_season}/>
+                        </p>
+                    ))
+                }
+                <button class="mt-5 bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-52">
+                    Update
+                </button>
+            </form>
+        </div>
+    </SeasonManageLayout>
 }

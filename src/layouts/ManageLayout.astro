@@ -21,25 +21,20 @@ const links: Array<{label:string, dest:string, show:boolean}> = [
         show: userIsAdmin || userIsLeagComm
     },
     {
-        label: 'Permissions',
-        dest: '/manage/permissions',
-        show: userIsAdmin
-    },
-    {
-        label: 'Match Reviews',
-        dest: '/manage/match-reviews',
+        label: 'Matches',
+        dest: '/manage/match',
         show: true
     },
     {
         label: 'Seasons',
         dest: '/manage/seasons',
         show: userIsAdmin || userIsLeagComm
-    },
+    },/**
     {
         label: 'Players',
         dest: '/manage/players',
         show: true
-    },
+    }, */
     {
         label: 'Teams',
         dest: '/manage/teams/list',

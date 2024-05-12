@@ -77,11 +77,9 @@ const order_by = Astro.url.searchParams.get('order_by')!;
         title={`Manage Teams`}
         team={team!}
         page="owned"
-        userElevated={userIsElevated}
-        userOwner={userIsOwner}
-        userManager={userIsManager}
         userPlayer={userIsPlayer}
-        userHasTeam={userHasTeam}>
+        userHasTeam={userHasTeam}
+        userValidate={userValidate!}>
         <TeamList page={page} per_page={per_page} owner={user!.id.toString()} order_by={order_by} order={order} manage={true}>
 
         </TeamList>

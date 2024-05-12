@@ -114,11 +114,9 @@ if (Astro.request.method === "POST" && status === "200") {
         title={`Create Team`}
         team={team}
         page="create"
-        userElevated={userIsElevated}
-        userOwner={userIsOwner}
-        userManager={userIsManager}
         userPlayer={userIsPlayer}
-        userHasTeam={userHasTeam}>
+        userHasTeam={userHasTeam}
+        userValidate={userValidate!}>
         {user!.player &&
             <div>
                 {!userHasTeam &&

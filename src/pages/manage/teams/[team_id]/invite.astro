@@ -119,11 +119,9 @@ if (search) {
         title={`Manage Team: ${team.name}`}
         team={team}
         page="invite"
-        userElevated={userIsElevated}
-        userOwner={userIsOwner}
-        userManager={userIsManager}
         userPlayer={userIsPlayer}
-        userHasTeam={userHasTeam}>
+        userHasTeam={userHasTeam}
+        userValidate={userValidate!}>
         <div class="divide-y divide-gray-600">
             {(userIsManager || userIsOwner) &&
                 <div>

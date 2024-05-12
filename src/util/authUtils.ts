@@ -50,15 +50,17 @@ export function permsHasOneOf(user: void|UserValidate, perms: Array<string>): bo
     return hasPerm;
 }
 
-export function isTeamManager(user: UserValidate|void, teams: Array<number>): boolean {
+export function isTeamManager(user: UserValidate|void, teams: Array<number|undefined>): boolean {
     var isManager = false;
     if(!user) {
         return false;
     }
     if (user.perms['team_manager']) {
-        teams.forEach((team: number) => {
-            if (team === parseInt(user.perms['team_manager'])) {
-                isManager = true;
+        teams.forEach((team) => {
+            if (team) {
+                if (team === parseInt(user.perms['team_manager'])) {
+                    isManager = true;
+                }
             }
         })
     }
@@ -66,9 +68,9 @@ export function isTeamManager(user: UserValidate|void, teams: Array<number>): bo
     
 }
 
-export function isTeamOwner(user: UserValidate|void, team_id: number): boolean {
+export function isTeamOwner(user: UserValidate|void, team_id: number|undefined): boolean {
     var isOwner = false;
-    if(!user) {
+    if(!user || !team_id) {
         return false;
     }
     if (user.perms['team_owner']) {
@@ -81,7 +83,6 @@ export function isTeamOwner(user: UserValidate|void, team_id: number): boolean {
         })
     }
     return isOwner;
-    
 }
 
 export function setCookies(Astro: Readonly<AstroGlobal<Record<string, any>, AstroComponentFactory, Record<string, any>>>, userToken: Token): void {

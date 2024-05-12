@@ -121,11 +121,9 @@ function prettyDate(date: string) {
         title={`Manage Team: ${team.name}`}
         team={team}
         page="apply"
-        userElevated={userIsElevated}
-        userOwner={userIsOwner}
-        userManager={userIsManager}
         userPlayer={userIsPlayer}
-        userHasTeam={userHasTeam}>
+        userHasTeam={userHasTeam}
+        userValidate={userValidate!}>
         {(userIsManager || userIsOwner) &&
             <div class="mx-auto w-fit divide-y-2 divide-gray-600">
                 <div class="mb-5">

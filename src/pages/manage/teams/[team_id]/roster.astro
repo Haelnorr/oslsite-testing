@@ -134,11 +134,9 @@ if (Astro.request.method === "POST" && status === "200") {
         title={`Manage Team: ${team.name}`}
         team={team}
         page="roster"
-        userElevated={userIsElevated}
-        userOwner={userIsOwner}
-        userManager={userIsManager}
         userPlayer={userIsPlayer}
-        userHasTeam={userHasTeam}>
+        userHasTeam={userHasTeam}
+        userValidate={userValidate!}>
             <h3 class="text-3xl pb-5">Players:</h3>
             <div class="bg-gray-700 bg-opacity-30 rounded-md p-3 h-fit mb-10 w-fit mx-auto">
                 <table class="divide-y-2 divide-gray-500">

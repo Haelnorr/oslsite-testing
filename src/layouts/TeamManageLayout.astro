@@ -1,20 +1,23 @@
 ---
-import Layout from "./Layout.astro";
-import type { TeamManage } from "../util/srlmTypes";
+import ManageLayout from "./ManageLayout.astro";
+import type { TeamManage, UserValidate } from "../util/srlmTypes";
 import { colorCalc } from "../util/srlmUtils";
+import { isTeamManager, isTeamOwner, permsHasOneOf } from "../util/authUtils";
 
 interface Props {
 	title: string,
     team: TeamManage|null,
     page: string,
-    userElevated: boolean,
-    userOwner: boolean,
-    userManager: boolean,
     userPlayer: boolean
     userHasTeam: boolean,
+    userValidate: UserValidate
 }
 
-const { title, team, page, userElevated, userOwner, userManager, userPlayer, userHasTeam } = Astro.props;
+const { title, team, page, userPlayer, userHasTeam, userValidate } = Astro.props;
+
+const userElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
+const userOwner = isTeamOwner(userValidate, team?.id);
+const userManager = isTeamManager(userValidate, [team?.id]);
 
 function getPageTitle(page: string) {
     switch(page) {
@@ -40,7 +43,7 @@ function getPageTitle(page: string) {
 }
 
 ---
-<Layout title={title}>
+<ManageLayout title={title} userValidate={userValidate}>
     <main class="py-10 sm:container mx-auto text-white text-center z-10">
         <div class="rounded-md relative shadow-md shadow-black mx-auto bg-gray-800 min-h-[40rem] z-10">
             <div class="w-52 bg-gray-700 absolute min-h-full rounded-l-md shadow-[rgba(0,0,15,0.5)_10px_5px_4px_0px]">
@@ -131,4 +134,4 @@ function getPageTitle(page: string) {
             </div>
         </div>
     </main>
-</Layout>
+</ManageLayout>

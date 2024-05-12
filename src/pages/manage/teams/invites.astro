@@ -88,11 +88,9 @@ if (Astro.request.method === "POST" && status === "200") {
         title={`My Team Invites`}
         team={null}
         page="invites"
-        userElevated={userIsElevated}
-        userOwner={userIsOwner}
-        userManager={userIsManager}
         userPlayer={userIsPlayer}
-        userHasTeam={userHasTeam}>
+        userHasTeam={userHasTeam}
+        userValidate={userValidate!}>
         <div class="mx-auto w-fit divide-y-2 divide-gray-600">
             {user!.player &&
                 <div class="mb-5">

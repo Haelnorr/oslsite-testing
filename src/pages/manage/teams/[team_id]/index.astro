@@ -149,11 +149,9 @@ if (team?.logo) {
         title={`Manage Team: ${team.name}`}
         team={team}
         page="details"
-        userElevated={userIsElevated}
-        userOwner={userIsOwner}
-        userManager={userIsManager}
         userPlayer={userIsPlayer}
-        userHasTeam={userHasTeam}>
+        userHasTeam={userHasTeam}
+        userValidate={userValidate!}>
         <div class="flex divide-x-2 divide-gray-500 justify-center">
             <div class="mx-10 w-52">
                 <Image 

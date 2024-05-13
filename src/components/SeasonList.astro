@@ -1,0 +1,278 @@
+---
+import ViewTransitions from "astro/components/ViewTransitions.astro";
+import type { SeasonCollection } from "../util/srlmTypes";
+import { SRLMAPIError, srlmGet } from "../util/srlmUtils";
+
+interface Props {
+    page: string,
+    perPage: string,
+    startDate: string,
+    endDate: string,
+    order: string,
+    orderBy: string,
+    manage: boolean
+}
+
+var { page, perPage, startDate, endDate, order, orderBy, manage } = Astro.props;
+
+const dateRegex: RegExp = /^[0-9]{4}\-[0-9]{2}\-[0-9]{2}?$/;
+
+if (isNaN(+page)) {page='1'}
+if (isNaN(+perPage)) {perPage='10'}
+if (!dateRegex.test(startDate)) {startDate = ''}
+if (!dateRegex.test(endDate)) {endDate = ''}
+if (order != 'desc' && order != 'asc') {order = 'desc'}
+if (orderBy != 'id' &&
+    orderBy != 'start_date' &&
+    orderBy != 'end_date' &&
+    orderBy != 'finals_start' &&
+    orderBy != 'finals_end' &&
+    orderBy != 'name' &&
+    orderBy != 'league') {orderBy = 'id'}
+
+var query = `league=osl&page=${page}&per_page=${perPage}&order=${order}&order_by=${orderBy}&cached=false`;
+if (startDate) {
+    query = query + `&start_date=${startDate}`;
+}
+if (endDate) {
+    query = query + `&end_date=${endDate}`;
+}
+
+const seasons: SeasonCollection = await srlmGet(`/seasons?${query}`).catch(err => {
+	console.error(err);
+});
+
+function queryToDict(query:string):{[key:string]:string} {
+    var paramsList = query.replace('?', '').split('&');
+
+    var params:{[key:string]:string} = {};
+
+    paramsList.forEach(splitParam);
+
+    function splitParam(param: string) {
+        const keypair = param.split('=');
+        params[keypair[0]] = keypair[1];
+    }
+
+
+    return params;
+}
+
+function updateQuery(link:string):string {
+    var oldQuery = queryToDict(Astro.url.search);
+    if (!Astro.url.search) {
+        oldQuery = {}
+    }
+    
+    var newQuery = queryToDict(link.replace('/api/seasons', ''));
+
+    if (Object.keys(newQuery).includes('order_by')) {
+        if (newQuery['order_by'] === oldQuery['order_by'] || newQuery['order_by'] === orderBy){
+            switch (order) {
+                case 'asc':
+                    newQuery['order'] = 'desc';
+                    break;
+                case 'desc':
+                    newQuery['order'] = 'asc';
+                    break;
+            }
+        } else {
+            newQuery['order'] = 'asc';
+        }
+    }
+
+    const updatedParams = {
+        ...oldQuery, 
+        ...newQuery
+    }
+
+    var updatedQuery = '?';
+
+    for (let key in updatedParams) {
+        if (updatedQuery != '?') {updatedQuery = updatedQuery + '&'}
+        updatedQuery = updatedQuery + `${key}=${updatedParams[key]}`
+    }
+    return Astro.url.pathname + updatedQuery;
+    
+}
+
+function getPageNums(seasons: SeasonCollection) {
+    const totalPages = seasons._meta.total_pages;
+    var pageNums: Array<number> = [];
+    if (totalPages > 8) {
+        const currentPage = seasons._meta.page;
+        if (currentPage > 4) {
+            pageNums.push(-2);
+        }
+        for (var i=currentPage-3;i<currentPage+4;i++) {
+            if (i > 0 && i <= seasons._meta.total_pages) {
+                pageNums.push(i);
+            }
+        }
+        if (currentPage < totalPages -3) {
+            pageNums.push(-1);
+        }
+    } else {
+        pageNums = Array.from({length: seasons._meta.total_pages}, (_, i) => i + 1);
+    }
+    return pageNums;
+}
+
+const pageNums = getPageNums(seasons);
+
+---
+<ViewTransitions></ViewTransitions>
+
+<div class="mx-auto w-fit max-w-full overflow-x-auto">
+    <table>
+        <thead class="bg-gray-900">
+            <tr class="divide-x-2 divide-gray-400">
+                <th class="px-3">
+                    <a href={updateQuery('order_by=id')} class="hover:underline">
+                        ID
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a href={updateQuery('order_by=name')} class="hover:underline">
+                        Name
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a href={updateQuery('order_by=acronym')} class="hover:underline">
+                        Acronym
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a href={updateQuery('order_by=start_date')} class="hover:underline">
+                        Start Date
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a href={updateQuery('order_by=end_date')} class="hover:underline">
+                        End Date
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a href={updateQuery('order_by=finals_start')} class="hover:underline">
+                        Finals Start
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a href={updateQuery('order_by=finals_end')} class="hover:underline">
+                        Finals End
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a>
+                        Registration
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a>
+                        Match Type
+                    </a>
+                </th>
+                <th class="px-3">
+                    <a>
+                        Divisions
+                    </a>
+                </th> 
+                {manage &&
+                    <th colspan="2" class="px-3">Actions</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            {
+                seasons.items.map((season, index) => (
+                    <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                        <td class="px-3">
+                            <a href={`/league/seasons/${season.acronym}`} class="hover:underline">
+                                {season.id}
+                            </a>
+                        </td>
+                        <td class="px-3">
+                            <a href={`/league/seasons/${season.acronym}`} class="hover:underline">
+                                {season.name}
+                            </a>
+                        </td>
+                        <td class="px-3">{season.acronym}</td>
+                        <td class="px-3">{season.start_date}</td>
+                        <td class="px-3">{season.end_date}</td>
+                        <td class="px-3">{season.finals_start}</td>
+                        <td class="px-3">{season.finals_end}</td>
+                        <td class="px-3">{season.can_register && 'Open' || 'Closed'}</td>
+                        <td class="px-3">{season.match_type}</td>
+                        <td class="px-3">
+                            {
+                                season.divisions.map(division => (
+                                    <a href={`/league/seasons/${season.acronym}/${division.acronym}`} class="hover:underline">
+                                        {division.name}
+                                    </a><br/>
+                                ))
+                            }
+                        </td>
+                        {manage &&
+                            <td class="px-3">
+                                <a href={`/manage/seasons/${season.acronym}`} class="hover:underline">
+                                    Edit
+                                </a>
+                            </td>
+                            <td class="px-3">
+                                <a href={`/manage/seasons/${season.acronym}/add-divisions`} class="hover:underline">
+                                    Add divisions
+                                </a>
+                            </td>
+                        }
+                    </tr>
+                ))
+            }
+        </tbody>
+    </table>
+    <div class="mt-3 flex justify-center">
+        <div class="w-14 h-6">
+            {seasons._links.prev &&
+                <a href={updateQuery(seasons._links.prev)}
+                    class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                    Prev
+                </a>
+            }
+        </div>
+        <div class="mx-3 w-fit">
+            {
+                pageNums.map(page => (
+                    <span>
+                        {(page != seasons._meta.page) &&
+                            <span>
+                                {page === -2 &&
+                                    <a href={updateQuery(`page=1`)} class="hover:underline px-1 hover:cursor-pointer font-bold">1</a>
+                                    <span>. . .</span>
+                                }
+                                {page > 0 &&
+                                    <a href={updateQuery(`page=${page}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">{page}</a>
+                                }
+                                {page === -1 &&
+                                    <span>. . .</span>
+                                    <a href={updateQuery(`page=${seasons._meta.total_pages}`)} class="hover:underline px-1 hover:cursor-pointer font-bold">
+                                        {seasons._meta.total_pages}
+                                    </a>
+                                }
+                            </span>
+                            
+                            ||
+                            <a class="px-1">{page}</a>
+                        }
+                    </span>
+                ))
+            }
+        </div>
+        <div class="w-14 h-6">
+            {seasons._links.next &&
+                <a href={updateQuery(seasons._links.next)}
+                    class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+                    Next
+                </a>
+            }
+        </div>
+    </div>
+</div>

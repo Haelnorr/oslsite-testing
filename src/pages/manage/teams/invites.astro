@@ -132,11 +132,19 @@ if (Astro.request.method === "POST" && status === "200") {
                         </tbody>
                     </table>
                     <script>
-                        var cancel_buttons = [].slice.call(document.getElementsByClassName('cancel'));
-                        cancel_buttons.forEach(element => {
+                        var acceptButtons = [].slice.call(document.getElementsByClassName('accept'));
+                        acceptButtons.forEach(element => {
+                            //@ts-ignore
+                            element.onclick = function confirmAccept(e) {
+                                if (!confirm('Are you sure you wish to accept this invite?'))
+                                    e.preventDefault();
+                            }
+                        });
+                        var rejectButtons = [].slice.call(document.getElementsByClassName('reject'));
+                        rejectButtons.forEach(element => {
                             //@ts-ignore
                             element.onclick = function confirmCancel(e) {
-                                if (!confirm('Are you sure you wish to cancel this application?'))
+                                if (!confirm('Are you sure you wish to reject this invite?'))
                                     e.preventDefault();
                             }
                         });

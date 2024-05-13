@@ -331,6 +331,7 @@ export type Team = {
     name: string,
     acronym: string,
     color: string,
+    active_players: number,
     owner?: string,
     managers?: Array<string>,
     dates: {
@@ -496,6 +497,10 @@ export type SeasonApplication = {
     player: Player,
     season: Season,
     division: Division,
+    divisions?: Array<{
+        id: number,
+        name: string
+    }>
     status: string,
     type: string
 }
@@ -548,4 +553,9 @@ export type Matchtypes = {
 export type FreeAgentData = {
     open_seasons: Array<Season>,
     applications: Array<SeasonApplication>
+}
+
+export type SeasonApplicationList = {
+    team_applications: Array<SeasonApplication>,
+    free_agent_applications: Array<SeasonApplication>
 }

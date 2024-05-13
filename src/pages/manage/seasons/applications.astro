@@ -1,7 +1,8 @@
 ---
 import SeasonManageLayout from '../../../layouts/SeasonManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
-import { SRLMAPIError } from '../../../util/srlmUtils';
+import type { SeasonApplicationList } from '../../../util/srlmTypes';
+import { SRLMAPIError, srlmGet, srlmPost } from '../../../util/srlmUtils';
 import Page400 from '../../400.astro';
 import Page401 from '../../401.astro';
 import Page403 from '../../403.astro';
@@ -28,22 +29,41 @@ if (!userElevated && status === '200') {
 
 if (Astro.request.method === "POST" && status === "200") {
 	const formData = await Astro.request.formData();
-    const action = formData.get('action')?.toString();
-    const value = formData.get('value')?.toString();
+    const action = formData.get('action')!.toString();
+    const value = formData.get('value')!.toString();
+    const division_id = formData.get('division')?.toString() || undefined;
 	
-    var resp = null;
-    switch (action) {
-        case 'accept':
-            break;
-        case 'reject':
-            break;
-        case 'complete':
-            break;
+    var appInput:{application_id:number, action:string, division_id?:number} = {
+        application_id: +value,
+        action: action
+    };
+    if (division_id) {
+        appInput.division_id = +division_id;
     }
+    const resp = await srlmPost('/seasons/apply', '',  appInput).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        } else {
+            status = '500';
+        }
+        console.error(err);
+    });
+
     if (resp) {
         return Astro.redirect('/manage/seasons/applications')
     }
 }
+
+const applications: SeasonApplicationList = await srlmGet('/seasons/applications').catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    } else {
+        status = '500';
+    }
+    console.error(err);
+});
+
+console.log(applications)
 
 ---
 {status === '400' &&
@@ -63,6 +83,195 @@ if (Astro.request.method === "POST" && status === "200") {
 }
 {status === '200' &&
 	<SeasonManageLayout title="Season Applications" page="applications" userValidate={userValidate!}>
-		
+		<div class="divide-y-2 divide-gray-400">
+            <div class="w-fit mx-auto">
+                <h4 class="text-xl">Team Applications</h4>
+                <table class="mt-5">
+                    <thead class="bg-gray-900">
+                        <tr class="divide-x-2 divide-gray-400">
+                            <th class="px-2">Team</th>
+                            <th class="px-2">Active Players</th>
+                            <th class="px-2">Season</th>
+                            <th class="px-2">Status</th>
+                            <th class="px-2" colspan="2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            applications.team_applications.map((teamApp, index) => (
+                                <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                    <td class="px-2">{teamApp.team.name}</td>
+                                    <td class="px-2">{teamApp.team.active_players}</td>
+                                    <td class="px-2">{teamApp.season.name}</td>
+                                    <td class="px-2">{teamApp.status}</td>
+                                    {teamApp.status === 'Pending' &&
+                                        <td class="px-2 py-1">
+                                            <form method="post">
+                                                <input type="text" name="action" value="accept" hidden />
+                                                <input type="text" name="value" value={teamApp.id.toString()} hidden/>
+                                                <button formaction={`/manage/seasons/applications`} class="accept bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                    Accept
+                                                </button>
+                                            </form>
+                                        </td>
+                                    }
+                                    {teamApp.status === 'Accepted' &&
+                                        <td class="px-2 py-1">
+                                            <div class="relative" onmouseleave={`hideAssignPopup(${teamApp.id.toString()})`}>
+                                                <a onclick={`showAssignPopup(${teamApp.id.toString()})`} class="assign-popup-show bg-gray-400 text-black font-bold px-2 pb-[2px] rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 hover:cursor-pointer">Assign Division</a>
+                                                <div class="absolute w-60 left-[-10px] pl-2 h-36" style="display:none;" id={`assign-popup-${teamApp.id.toString()}`}>
+                                                    <form method="post" class="bg-gray-700 p-2 text-blackleft-[-5px] border-gray-400 border-2 shadow-md shadow-black mt-1 w-56 h-fit">
+                                                        <input type="text" name="action" value="assign" hidden />
+                                                        <input type="text" name="value" value={teamApp.id.toString()} hidden/>
+                                                        <select name="division" class="text-black" required>
+                                                            <option selected disabled value="">Select Division</option>
+                                                            {
+                                                                teamApp.divisions!.map((division) => (
+                                                                    <option value={division.id}>{division.name}</option>
+                                                                ))
+                                                            }
+                                                        </select>
+                                                        <button formaction={`/manage/seasons/applications`} class="assign bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mt-2">
+                                                            Assign
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    }
+                                    <td class="px-2 py-1">
+                                        <form method="post">
+                                            <input type="text" name="action" value="reject" hidden />
+                                            <input type="text" name="value" value={teamApp.id.toString()} hidden/>
+                                            <button formaction={`/manage/seasons/applications`} class="reject bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            ))
+                        }
+                        {applications.team_applications.length === 0 &&
+                            <tr class="bg-gray-600">
+                                <td colspan="100%" class="px-2 py-1">No team applications to show</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="w-fit mx-auto mt-5">
+                <h4 class="text-xl mt-5">Free Agent Applications</h4>
+                <table class="mt-5">
+                    <thead class="bg-gray-900">
+                        <tr class="divide-x-2 divide-gray-400">
+                            <th class="px-2">Player</th>
+                            <th class="px-2">Rookie</th>
+                            <th class="px-2">Season</th>
+                            <th class="px-2">Status</th>
+                            <th class="px-2" colspan="2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            applications.free_agent_applications.map((freeAgentApp, index) => (
+                            <tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+                                    <td class="px-2">{freeAgentApp.player.player_name}</td>
+                                    <td class="px-2">{freeAgentApp.player.rookie && 'Yes' || 'No'}</td>
+                                    <td class="px-2">{freeAgentApp.season.name}</td>
+                                    <td class="px-2">{freeAgentApp.status}</td>
+                                    {freeAgentApp.status === 'Pending' &&
+                                        <td class="px-2 py-1">
+                                            <form method="post">
+                                                <input type="text" name="action" value="accept" hidden />
+                                                <input type="text" name="value" value={freeAgentApp.id.toString()} hidden/>
+                                                <button formaction={`/manage/seasons/applications`} class="accept bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                    Accept
+                                                </button>
+                                            </form>
+                                        </td>
+                                    }
+                                    {freeAgentApp.status === 'Accepted' &&
+                                        <td class="px-2 py-1">
+                                            <div class="relative" onmouseleave={`hideAssignPopup(${freeAgentApp.id.toString()})`}>
+                                                <a onclick={`showAssignPopup(${freeAgentApp.id.toString()})`} class="assign-popup-show bg-gray-400 text-black font-bold px-2 pb-[2px] rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 hover:cursor-pointer">Assign Division</a>
+                                                <div class="absolute w-60 left-[-10px] pl-2 h-36" style="display:none;" id={`assign-popup-${freeAgentApp.id.toString()}`}>
+                                                    <form method="post" class="bg-gray-700 p-2 text-blackleft-[-5px] border-gray-400 border-2 shadow-md shadow-black mt-1 w-56 h-fit">
+                                                        <input type="text" name="action" value="assign" hidden />
+                                                        <input type="text" name="value" value={freeAgentApp.id.toString()} hidden/>
+                                                        <select name="division" class="text-black" required>
+                                                            <option selected disabled value="">Select Division</option>
+                                                            {
+                                                                freeAgentApp.divisions!.map((division) => (
+                                                                    <option value={division.id}>{division.name}</option>
+                                                                ))
+                                                            }
+                                                        </select>
+                                                        <button formaction={`/manage/seasons/applications`} class="assign bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mt-2">
+                                                            Assign
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    }
+                                    <td class="px-2 py-1">
+                                        <form method="post">
+                                            <input type="text" name="action" value="reject" hidden />
+                                            <input type="text" name="value" value={freeAgentApp.id.toString()} hidden/>
+                                            <button formaction={`/manage/seasons/applications`} class="reject bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            ))
+                        }
+                        {applications.free_agent_applications.length === 0 &&
+                            <tr class="bg-gray-600">
+                                <td colspan="100%" class="px-2 py-1">No free agent applications to show</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <script>
+                var acceptButtons = [].slice.call(document.getElementsByClassName('accept'));
+                acceptButtons.forEach(element => {
+                    //@ts-ignore
+                    element.onclick = function confirmAccept(e) {
+                        if (!confirm('Are you sure you wish to accept this application?'))
+                            e.preventDefault();
+                    }
+                });
+                var assignButtons = [].slice.call(document.getElementsByClassName('assign'));
+                assignButtons.forEach(element => {
+                    //@ts-ignore
+                    element.onclick = function confirmAccept(e) {
+                        if (!confirm('Are you sure you wish to complete this application?'))
+                            e.preventDefault();
+                    }
+                });
+                var rejectButtons = [].slice.call(document.getElementsByClassName('reject'));
+                rejectButtons.forEach(element => {
+                    //@ts-ignore
+                    element.onclick = function confirmCancel(e) {
+                        if (!confirm('Are you sure you wish to reject this application?'))
+                            e.preventDefault();
+                    }
+                });
+                //@ts-ignore
+                function showAssignPopup(appID) {
+                    const popup = document.getElementById(`assign-popup-${appID}`);
+                    //@ts-ignore
+                    popup.style.display = 'block';
+                }
+                //@ts-ignore
+                function hideAssignPopup(appID) {
+                    const popup = document.getElementById(`assign-popup-${appID}`);
+                    //@ts-ignore
+                    popup.style.display = 'none';
+                }
+            </script>
+        </div>
 	</SeasonManageLayout>
 }

@@ -61,7 +61,7 @@ if (Astro.request.method === "POST" && status === "200") {
         createSeasonDivision(div)
     })
     if (status === '200') {
-        return Astro.redirect(`/league/seasons/${season.acronym}`)
+        return Astro.redirect(`/manage/seasons/`)
     }
 } else {
     const divisions: DivisionCollection = await srlmGet('/leagues/osl/divisions').then(resp => (resp.divisions)).catch(err => {

@@ -69,7 +69,7 @@ if (Astro.request.method === "POST" && status === "200") {
         console.error(err);
     });
     if (resp) {
-        return Astro.redirect(`/league/seasons/${inputs.acronym}?cached=False`);
+        return Astro.redirect(`/manage/seasons/`);
     }
 }
 

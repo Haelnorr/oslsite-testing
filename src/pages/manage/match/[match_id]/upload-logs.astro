@@ -104,7 +104,7 @@ if (Astro.request.method === "POST" && status === "200") {
         });
 
         if (upload) {
-            return Astro.redirect(`/league/match/${match.id}`);
+            return Astro.redirect(`/manage/match`);
         }
     } catch (error) {
         if (error instanceof Error) {

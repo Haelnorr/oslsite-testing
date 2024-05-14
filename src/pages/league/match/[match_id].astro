@@ -237,13 +237,13 @@ if (Astro.request.method === "POST" && status === "200") {
                                                 {userElevated &&
                                                     <div>
                                                         <p class="mt-5">
-                                                            <a href={`upload-logs?match=${match.id}`} class="bg-green-600 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full px-5">
+                                                            <a href={`/manage/match/${match.id}/upload-logs`} class="bg-green-600 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full px-5">
                                                                 Upload Logs
                                                             </a>
                                                         </p>
                                                         {match.has_review &&
                                                             <p class="mt-5">
-                                                                <a href={`upload-logs?match=${match.id}`} class="bg-red-500 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full px-5">
+                                                                <a href={`/manage/match/${match.id}/review`} class="bg-red-500 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full px-5">
                                                                     Review Match
                                                                 </a>
                                                             </p>

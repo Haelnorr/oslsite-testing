@@ -559,3 +559,9 @@ export type SeasonApplicationList = {
     team_applications: Array<SeasonApplication>,
     free_agent_applications: Array<SeasonApplication>
 }
+
+export type MatchesList = {
+    pending_review: Array<Match>,
+    upcoming: Array<Match>,
+    completed: Array<Match>
+}

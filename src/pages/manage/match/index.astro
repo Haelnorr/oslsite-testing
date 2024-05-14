@@ -1,7 +1,8 @@
 ---
 import MatchManageLayout from '../../../layouts/MatchManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
-import { SRLMAPIError } from '../../../util/srlmUtils';
+import type { MatchesList } from '../../../util/srlmTypes';
+import { SRLMAPIError, srlmGet } from '../../../util/srlmUtils';
 import Page401 from '../../401.astro';
 import Page403 from '../../403.astro';
 import Page500 from '../../500.astro';
@@ -25,6 +26,15 @@ if (!userElevated && status === '200') {
     status = '403';
 }
 
+const matchList: MatchesList = await srlmGet('/match').catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    } else {
+        status = '500';
+    }
+	console.error(err);
+});
+
 ---
 {status === '401' &&
 	<Page401/>
@@ -40,6 +50,127 @@ if (!userElevated && status === '200') {
 }
 {status === '200' &&
 	<MatchManageLayout title="Manage Matches" page="list" userValidate={userValidate!}>
-		
+		<div class="divide-y-2 divide-gray-400 w-fit mx-auto">
+			<div class="mb-5">
+				<h2 class="text-2xl">Pending Review</h2>
+				<table class="mx-auto mt-5">
+					<thead class="bg-gray-900">
+						<tr class="divide-x-2 divide-gray-400">
+							<th class="px-2">Season</th>
+							<th class="px-2">Division</th>
+							<th class="px-2">Home Team</th>
+							<th class="px-2">Away Team</th>
+							<th class="px-2">Round</th>
+							<th class="px-2">Match Week</th>
+							<th class="px-2">Review</th>
+						</tr>
+					</thead>
+					<tbody>
+						{
+							matchList.pending_review.map((match, index) => (
+								<tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+									<td class="px-2">{match.season_division.season.name}</td>
+									<td class="px-2">{match.season_division.division.name}</td>
+									<td class="px-2">{match.home_team.name}</td>
+									<td class="px-2">{match.away_team.name}</td>
+									<td class="px-2">{match.round}</td>
+									<td class="px-2">{match.match_week}</td>
+									<td class="px-2 py-1">
+										<a href={`/manage/match/${match.id}/review`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+											Review
+										</a>
+									</td>
+								</tr>
+							))
+						}
+						{matchList.pending_review.length === 0 &&
+							<tr class="bg-gray-600"><td colspan="100%">No matches to display</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+			<div class="mb-5">
+				<h2 class="text-2xl mt-5">Upcoming</h2>
+				<table class="mx-auto mt-5">
+					<thead class="bg-gray-900">
+						<tr class="divide-x-2 divide-gray-400">
+							<th class="px-2">Season</th>
+							<th class="px-2">Division</th>
+							<th class="px-2">Home Team</th>
+							<th class="px-2">Away Team</th>
+							<th class="px-2">Round</th>
+							<th class="px-2">Match Week</th>
+							<th class="px-2">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						{
+							matchList.upcoming.map((match, index) => (
+								<tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+									<td class="px-2">{match.season_division.season.name}</td>
+									<td class="px-2">{match.season_division.division.name}</td>
+									<td class="px-2">{match.home_team.name}</td>
+									<td class="px-2">{match.away_team.name}</td>
+									<td class="px-2">{match.round}</td>
+									<td class="px-2">{match.match_week}</td>
+									<td class="px-2 py-1">
+										<a href={`/league/match/${match.id}`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+											View
+										</a>
+										<a href={`/manage/match/${match.id}/upload-logs`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+											Upload Logs
+										</a>
+									</td>
+								</tr>
+							))
+						}
+						{matchList.pending_review.length === 0 &&
+							<tr class="bg-gray-600"><td colspan="100%">No matches to display</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+			<div>
+				<h2 class="text-2xl mt-5">Completed</h2>
+				<table class="mx-auto mt-5">
+					<thead class="bg-gray-900">
+						<tr class="divide-x-2 divide-gray-400">
+							<th class="px-2">Season</th>
+							<th class="px-2">Division</th>
+							<th class="px-2">Home Team</th>
+							<th class="px-2" colspan="2">Score</th>
+							<th class="px-2">Away Team</th>
+							<th class="px-2">Round</th>
+							<th class="px-2">Match Week</th>
+							<th class="px-2">View</th>
+						</tr>
+					</thead>
+					<tbody>
+						{
+							matchList.completed.map((match, index) => (
+								<tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
+									<td class="px-2">{match.season_division.season.name}</td>
+									<td class="px-2">{match.season_division.division.name}</td>
+									<td class="px-2">{match.results.winner}</td>
+									<td class="px-2">{match.results.score_winner}</td>
+									<td class="px-2">{match.results.score_loser}</td>
+									<td class="px-2">{match.results.loser}</td>
+									<td class="px-2">{match.round}</td>
+									<td class="px-2">{match.match_week}</td>
+									<td class="px-2 py-1">
+										<a href={`/league/match/${match.id}`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+											View
+										</a>
+									</td>
+								</tr>
+							))
+						}
+						{matchList.pending_review.length === 0 &&
+							<tr class="bg-gray-600"><td colspan="100%">No matches to display</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
 	</MatchManageLayout>
 }

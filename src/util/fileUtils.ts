@@ -2,17 +2,28 @@ import fs from 'fs';
 import fsp from 'fs/promises';
 
 export async function writeFile(path: string, file: File) {
-    const filedata = await fileToUInt(file)
+    const fileData = await fileToUInt(file)
     try {
-        await fsp.writeFile(`${process.cwd()}${path}`, filedata)
+        await fsp.writeFile(`${process.cwd()}${path}`, fileData)
     } catch (err) {
         console.error(err);
     }
 }
 
-export function readFile(path: string) {
-    const file_data = fs.readFileSync(`${process.cwd()}${path}`)
-    return file_data;
+export function readFileFromDisk(path: string) {
+    const fileData = fs.readFileSync(`${process.cwd()}${path}`)
+    return fileData;
+}
+
+export async function readFile(file: File) {
+    const arrayBuffer = await file.arrayBuffer();
+    return Buffer.from(arrayBuffer).toString();
+
+}
+
+export async function readJSONFile(file: File) {
+    const fileAsString = await readFile(file);
+    return JSON.parse(fileAsString);
 }
 
 async function fileToUInt(file: File) {

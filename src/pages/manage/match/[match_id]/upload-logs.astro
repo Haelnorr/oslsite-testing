@@ -1,6 +1,7 @@
 ---
 import MatchManageLayout from '../../../../layouts/MatchManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../../util/authUtils';
+import { readJSONFile } from '../../../../util/fileUtils';
 import type { Gamemode, Match } from '../../../../util/srlmTypes';
 import { SRLMAPIError, srlmGet, srlmPost } from '../../../../util/srlmUtils';
 import Page400 from '../../../400.astro';
@@ -65,22 +66,26 @@ if (Astro.request.method === "POST" && status === "200") {
     try {
         const formData = await Astro.request.formData();
 
-        const period1data = JSON.parse(formData.get('period1data')!.toString());
-        const period2data = JSON.parse(formData.get('period2data')!.toString());
-        const period3data = JSON.parse(formData.get('period3data')!.toString());
+        const period1 = formData.get('period1') as File;
+        const period2 = formData.get('period1') as File;
+        const period3 = formData.get('period1') as File;
+
+        const period1data = await readJSONFile(period1);
+        const period2data = await readJSONFile(period2);
+        const period3data = await readJSONFile(period3);
 
         const periods = [
             {
                 log_json: period1data,
-                created: timestampFromLogFileName(formData.get('period1')!.toString())
+                created: timestampFromLogFileName(period1.name)
             },
             {
                 log_json: period2data,
-                created: timestampFromLogFileName(formData.get('period2')!.toString())
+                created: timestampFromLogFileName(period2.name)
             },
             {
                 log_json: period3data,
-                created: timestampFromLogFileName(formData.get('period3')!.toString())
+                created: timestampFromLogFileName(period3.name)
             },
         ]
 
@@ -95,7 +100,7 @@ if (Astro.request.method === "POST" && status === "200") {
             if (err instanceof SRLMAPIError) {
                 status = err.code;
             }
-            console.error(err);
+            console.error(err.data.periods);
         });
 
         if (upload) {
@@ -135,7 +140,7 @@ if (Astro.request.method === "POST" && status === "200") {
                 <div>
                     <p>{match.home_team.name} vs {match.away_team.name}</p>
                     <p>Round: {match.round} | Match week: {match.match_week}</p>
-                    <form method="post" class="mt-5">
+                    <form method="post" class="mt-5" enctype="multipart/form-data">
                         <label for="gamemode">
                             Game mode:  
                         </label>
@@ -154,79 +159,21 @@ if (Astro.request.method === "POST" && status === "200") {
                         <label>
                             Period 1:
                             <input name="period1" id="period1" type="file" accept="application/json" required/>
-                            <input class="text-black" name="period1data" id="period1data" type="text" hidden="true"/>
                             
                         </label><br>
                         <label>
                             Period 2:
                             <input name="period2" id="period2" type="file" accept="application/json" required/>
-                            <input class="text-black" name="period2data" id="period2data" type="text" hidden="true"/>
                             
                         </label><br>
                         <label>
                             Period 3:
                             <input name="period3" id="period3" type="file" accept="application/json" required/>
-                            <input class="text-black" name="period3data" id="period3data" type="text" hidden="true"/>
                             
                         </label><br><br>
                         <button class="bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
                             Upload Logs
                         </button>
-                        <script>
-                                (function(){
-    
-                                    function onChange1(event:any) {
-                                        var reader = new FileReader();
-                                        reader.onload = onReaderLoad1;
-                                        reader.readAsText(event.target.files[0]);
-                                    }
-
-                                    function onReaderLoad1(event:any){
-                                        console.log(event.target.result);
-                                        var obj = JSON.parse(event.target.result);
-                                        let data_element = document.getElementById('period1data');
-                                        //@ts-ignore
-                                        data_element.value = JSON.stringify(obj) // IGNORE THIS TYPE ERROR
-                                        // When i attempted to resolve it by casting the element as HTMLInputElement to fix the type error
-                                        // The whole script just broke and stopped working
-                                        // Works fine like this so ¯\_(ツ)_/¯
-                                    }
-                                
-                                    document.getElementById('period1')!.addEventListener('change', onChange1);
-
-                                    function onChange2(event:any) {
-                                        var reader = new FileReader();
-                                        reader.onload = onReaderLoad2;
-                                        reader.readAsText(event.target.files[0]);
-                                    }
-
-                                    function onReaderLoad2(event:any){
-                                        console.log(event.target.result);
-                                        var obj = JSON.parse(event.target.result);
-                                        let data_element = document.getElementById('period2data');
-                                        //@ts-ignore
-                                        data_element.value = JSON.stringify(obj)
-                                    }
-                                
-                                    document.getElementById('period2')!.addEventListener('change', onChange2);
-                                    
-                                    function onChange3(event:any) {
-                                        var reader = new FileReader();
-                                        reader.onload = onReaderLoad3;
-                                        reader.readAsText(event.target.files[0]);
-                                    }
-
-                                    function onReaderLoad3(event:any){
-                                        console.log(event.target.result);
-                                        var obj = JSON.parse(event.target.result);
-                                        let data_element = document.getElementById('period3data');
-                                        //@ts-ignore
-                                        data_element.value = JSON.stringify(obj)
-                                    }
-                                
-                                    document.getElementById('period3')!.addEventListener('change', onChange3);
-                                }());
-                            </script>
                     </form>
                 </div>
             </div>

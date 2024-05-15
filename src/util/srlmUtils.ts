@@ -1,8 +1,12 @@
-import { executionAsyncResource } from "async_hooks";
 import axios, { AxiosError } from "axios";
-import type { Discord, Player, Token } from "./srlmTypes";
+import type { Token } from "./srlmTypes";
 
-const api = {
+export type SRLMAPI = {
+    uri: string,
+    key: string
+}
+
+export const api: SRLMAPI = {
     uri: import.meta.env.SRLM_API_URI,
     key: import.meta.env.SRLM_API_APP_KEY
 };
@@ -214,7 +218,7 @@ export function colorCalc(color: string): string {
         if (contrast_ratio_dark > contrast_ratio_light) {
             return `background-color: #${color}; color: ${fg_dark}`;
         } else {
-            return `background-color: #${color}; font-color: ${fg_light}`;
+            return `background-color: #${color}; color: ${fg_light}`;
         }
     } else {
         return `background-color: #${color}; color: ${fg_dark}`;

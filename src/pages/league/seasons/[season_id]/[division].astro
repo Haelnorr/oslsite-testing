@@ -51,7 +51,7 @@ type Match = {
     result: string
 }
 
-const upcomingMatches: Match[] = await srlmGet(`/season_division/${results?.id}/matches?unplayed=True`).then(resp => resp['matches']).catch(err => {
+const upcomingMatches: Match[] = await srlmGet(`/season_division/${results?.id}/matches?unplayed=True&cached=false`).then(resp => resp['matches']).catch(err => {
     if (err instanceof SRLMAPIError) {
         status = err.code;
     }

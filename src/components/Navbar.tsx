@@ -78,7 +78,7 @@ function Navbar(props: Input) {
             {
                 label: 'Management Tools',
                 dest: '/manage',
-                show: userCanAccess(['admin', 'leag_coord', 'leag_comm'], props.userPerms)
+                show: userCanAccess(['admin', 'leag_coord', 'leag_comm'], userPerms)
             },
             {
                 label: 'Logout',
@@ -109,7 +109,7 @@ function Navbar(props: Input) {
     ]
 
     const [click, setClick] = useState(false);
-    const handleClick = () => setClick(!click);
+    const handleClick = () => {setClick(!click);console.log('test')}
     const closeMobileMenu = () => setClick(false);
 
     return (

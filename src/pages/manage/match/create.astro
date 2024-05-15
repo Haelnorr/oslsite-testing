@@ -1,7 +1,8 @@
 ---
+import CreateMatchesForm from '../../../components/CreateMatchesForm';
 import MatchManageLayout from '../../../layouts/MatchManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
-import { SRLMAPIError } from '../../../util/srlmUtils';
+import { SRLMAPIError, api, srlmPost } from '../../../util/srlmUtils';
 import Page400 from '../../400.astro';
 import Page401 from '../../401.astro';
 import Page403 from '../../403.astro';
@@ -28,35 +29,38 @@ if (!userElevated && status === '200') {
 
 if (Astro.request.method === "POST" && status === "200") {
 	const formData = await Astro.request.formData();
-	
-	/**
-        Use this catch block for any Post/Put requests to SRLMAPI to populate the 'errors' var.
-        const resp = await srlmPost(path:string, usertoken?:string, input:{}).catch(err => {
-            if (err instanceof SRLMAPIError) {
-                if (err.code === '409') {
-                    err.data.fields.map((err:{field:string, error: string}) => {
-                        errors[err.field] = err.error;                
-                    })
-                } else {
-                    status = err.code;
-                }
-            }
-            console.error(err);
-        });
-        if (resp) {
-            return // post/put request was successful, return a redirect or something
-        }
-	*/
+    
+    const matchData: Array<{homeTeamID:number, awayTeamID:number}> = JSON.parse(formData.get('matchData')!.toString());
+    const seasonDivisionID = +(formData.get('seasonDivisionID')!.toString());
+    const round = +(formData.get('round')!.toString());
+    const matchWeek = +(formData.get('matchWeek')!.toString());
 
-    /**
-        Use this code block to access the errors var in the HTML
-        {(errors && errors['username']) && (
-            <br/>
-            <span class="text-red-600 font-bold">
-                {errors['username']}
-            </span>  
-        )}
-     */
+    var matches: Array<{
+        season_division_id:number, 
+        home_team_id:number,
+        away_team_id:number,
+        match_week:number,
+        round:number
+    }> = [];
+    matchData.forEach((match) => {
+        matches.push({
+            season_division_id:seasonDivisionID,
+            home_team_id:match.homeTeamID,
+            away_team_id:match.awayTeamID,
+            match_week:matchWeek,
+            round:round
+        });
+    });
+    const resp = await srlmPost('/match/bulk', '', {matches:matches}).catch(err => {
+        if (err instanceof SRLMAPIError) {
+            status = err.code;
+        }
+        console.error(err);
+    });
+    if (resp) {
+        console.log(resp);
+    }
+    // data is submitted by axios request by React component, and user is redirected directly by the form, so this all happens in the background
 }
 
 ---
@@ -77,6 +81,6 @@ if (Astro.request.method === "POST" && status === "200") {
 }
 {status === '200' &&
 	<MatchManageLayout title="Create Matches" page="create" userValidate={userValidate!}>
-		
+        <CreateMatchesForm api={api} client:load/>
 	</MatchManageLayout>
 }

@@ -197,31 +197,39 @@ function hexToRgb(hex: string): RGB|null {
     } : null;
 }
 
-function rgbLuminance(rgb: RGB|null): number {
-    if (!rgb) {
-        return 0.00000000000001
-    }
-    return (rgb.r*0.2126 + rgb.g*0.7152 + rgb.b*0.0722);
+function rgbLuminance(rgb: RGB): number {
+    var RsRGB = rgb.r/255;
+    var GsRGB = rgb.g/255;
+    var BsRGB = rgb.b/255;
+
+    var R = (RsRGB <= 0.03928) ? RsRGB/12.92 : Math.pow((RsRGB+0.055)/1.055, 2.4);
+    var G = (GsRGB <= 0.03928) ? GsRGB/12.92 : Math.pow((GsRGB+0.055)/1.055, 2.4);
+    var B = (BsRGB <= 0.03928) ? BsRGB/12.92 : Math.pow((BsRGB+0.055)/1.055, 2.4);
+
+    // For the sRGB colorspace, the relative luminance of a color is defined as: 
+    var L = 0.2126 * R + 0.7152 * G + 0.0722 * B;
+
+    return L;
 }
   
 export function colorCalc(color: string): string {
-    const rgb = hexToRgb(`#${color}`);
-    const fg_light = '#f0f0f0';
-    const fg_dark = '#101010';
-    if (rgb) {
-        const bg_luminance = rgbLuminance(rgb);
-        const fg_light_luminance = rgbLuminance(hexToRgb(fg_light));
-        const fg_dark_luminance = rgbLuminance(hexToRgb(fg_dark));
-        const contrast_ratio_light = ((fg_light_luminance + 0.05)/(bg_luminance + 0.05));
-        const contrast_ratio_dark = ((bg_luminance + 0.05)/(fg_dark_luminance + 0.05));
+    const backgroundRBG = hexToRgb(`#${color}`);
+    const lightText = '#f0f0f0';
+    const darkText = '#101010';
+    if (backgroundRBG) {
+        const backgroundLuminance = rgbLuminance(backgroundRBG);
+        const lightTextLuminance = rgbLuminance(hexToRgb(lightText)!);
+        const darkTextLuminance = rgbLuminance(hexToRgb(darkText)!);
+        const contrastRatioLightText = ((lightTextLuminance + 0.05)/(backgroundLuminance + 0.05));
+        const contrastRatioDarkText = ((backgroundLuminance + 0.05)/(darkTextLuminance + 0.05));
 
-        if (contrast_ratio_dark > contrast_ratio_light) {
-            return `background-color: #${color}; color: ${fg_dark}`;
+        if (contrastRatioDarkText > contrastRatioLightText) {
+            return `background-color: #${color}; color: ${darkText}`;
         } else {
-            return `background-color: #${color}; color: ${fg_light}`;
+            return `background-color: #${color}; color: ${lightText}`;
         }
     } else {
-        return `background-color: #${color}; color: ${fg_dark}`;
+        return `background-color: #${color}; color: ${darkText}`;
     }
 }
 

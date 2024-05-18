@@ -3,7 +3,7 @@ import type { Token } from "./srlmTypes";
 
 export type SRLMAPI = {
     uri: string,
-    key: string
+    key?: string
 }
 
 export const api: SRLMAPI = {

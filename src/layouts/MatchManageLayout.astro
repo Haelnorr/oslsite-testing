@@ -16,6 +16,8 @@ function getPageTitle(page: string) {
             return 'List Matches';
         case 'create':
             return 'Create Matches';
+        case 'fixtures':
+            return 'Generate Fixures';
         case 'review':
             return 'Review Match Results';
         case 'edit':
@@ -42,6 +44,9 @@ function getPageTitle(page: string) {
                     </a>
                     <a href="/manage/match/create" class={`${(page === 'create') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
                         Create Matches
+                    </a>
+                    <a href="/manage/match/generate-fixtures" class={`${(page === 'fixtures') && 'bg-gray-800'} block hover:bg-gray-800 py-2 font-bold`}>
+                        Generate Fixtures
                     </a>
                 </div>
             </div>

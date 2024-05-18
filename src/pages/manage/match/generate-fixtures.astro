@@ -1,5 +1,5 @@
 ---
-import CreateMatchesForm from '../../../components/CreateMatchesForm';
+import CreateFixturesForm from '../../../components/CreateFixturesForm';
 import MatchManageLayout from '../../../layouts/MatchManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
 import { SRLMAPIError, api as srlmAPI, srlmPost, type SRLMAPI } from '../../../util/srlmUtils';
@@ -30,10 +30,9 @@ if (!userElevated && status === '200') {
 if (Astro.request.method === "POST" && status === "200") {
 	const formData = await Astro.request.formData();
     
-    const matchData: Array<{homeTeamID:number, awayTeamID:number}> = JSON.parse(formData.get('matchData')!.toString());
+    const matchData: Array<{homeTeamID:number, awayTeamID:number, matchWeek:number}> = JSON.parse(formData.get('matchData')!.toString());
     const seasonDivisionID = +(formData.get('seasonDivisionID')!.toString());
     const round = +(formData.get('round')!.toString());
-    const matchWeek = +(formData.get('matchWeek')!.toString());
 
     var matches: Array<{
         season_division_id:number, 
@@ -47,10 +46,11 @@ if (Astro.request.method === "POST" && status === "200") {
             season_division_id:seasonDivisionID,
             home_team_id:match.homeTeamID,
             away_team_id:match.awayTeamID,
-            match_week:matchWeek,
+            match_week:match.matchWeek,
             round:round
         });
     });
+    console.log(matches);
     const resp = await srlmPost('/match/bulk', '', {matches:matches}).catch(err => {
         if (err instanceof SRLMAPIError) {
             status = err.code;
@@ -84,7 +84,7 @@ const api: SRLMAPI = {
 	<Page503/>
 }
 {status === '200' &&
-	<MatchManageLayout title="Create Matches" page="create" userValidate={userValidate!}>
-        <CreateMatchesForm api={api} client:load/>
+	<MatchManageLayout title="Create Matches" page="fixtures" userValidate={userValidate!}>
+        <CreateFixturesForm api={api} client:load/>
 	</MatchManageLayout>
 }

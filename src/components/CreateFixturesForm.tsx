@@ -39,32 +39,7 @@ function generateFixtures(teams:Array<SelectItem>): Array<MatchData> {
         id: 0,
         name: 'Dummy'
     }
-    /**
-    // Generate all combinations of team pairs
-    const teamCombinations:  Array<[number, number]> = [];
-    for (let i = 0; i < numTeams; i++) {
-        for (let j = i + 1; j < numTeams; j++) {
-            teamCombinations.push([teams[i].id, teams[j].id]);
-        }
-    }
-    teamCombinations.forEach((combo, index) => {
-        var match = {
-            id: index+1,
-            homeTeamID:combo[0],
-            awayTeamID:combo[1]
-        }
-        if (index % 2 === 0) {
-            const swap = match.homeTeamID;
-            match.homeTeamID = match.awayTeamID;
-            match.awayTeamID = swap;
-        }
-        matchData.push(match);
-    })
-    return matchData; */
-    // the rest of the code in this function is how it used to work, instead of using the teamCombinations
-    // its currently broken and i cant figure out why
-    // with an even number of teams, it generates the corrent number of matches but there are double ups (there shouldnt be)
-    // with an odd number of teams it completely breaks and i dont know why
+
     // Check if the number of teams is odd, if so, add a "dummy" team
     var dummy = false;
     if (numTeams % 2 !== 0) {
@@ -83,23 +58,18 @@ function generateFixtures(teams:Array<SelectItem>): Array<MatchData> {
                 continue;
             }
             id += 1;
-            if (weekNum%2 === 0) {
-                const matchItem: MatchData = {
-                    id: id,
-                    homeTeamID: homeTeam,
-                    awayTeamID: awayTeam,
-                    matchWeek: weekNum+1
-                }
-                matchData.push(matchItem)
-            } else {
-                const matchItem: MatchData = {
-                    id: id,
-                    homeTeamID: awayTeam,
-                    awayTeamID: homeTeam,
-                    matchWeek: weekNum+1
-                }
-                matchData.push(matchItem)
+            var matchItem: MatchData = {
+                id: id
             }
+            if (weekNum%2 === 0) {
+                matchItem.homeTeamID = homeTeam;
+                matchItem.awayTeamID = awayTeam;
+            } else {
+                matchItem.homeTeamID = awayTeam;
+                matchItem.awayTeamID = homeTeam;
+            }
+            matchItem.matchWeek = weekNum+1;
+            matchData.push(matchItem);
         }
 
         // Rotate the teams for the next round
@@ -183,7 +153,8 @@ class Match extends React.Component<
         id:number, 
         teams:Array<SelectItem>, 
         onChange:Function, 
-        matchData:MatchData
+        matchData:MatchData,
+        matchWeek:number
     }, 
     {
         homeColors:ColorStyles, 
@@ -191,10 +162,11 @@ class Match extends React.Component<
         homeTeam?:number, 
         awayTeam?:number, 
         homeIndex?:number,
-        awayIndex?:number
+        awayIndex?:number,
+        matchWeek?:number
     }
 > {
-    constructor(props:{id:number, teams:Array<SelectItem>, onChange:Function, matchData:MatchData}) {
+    constructor(props:{id:number, teams:Array<SelectItem>, onChange:Function, matchData:MatchData, matchWeek:number}) {
         super(props);
         var homeColor:string|undefined;
         var awayColor:string|undefined;
@@ -229,7 +201,14 @@ class Match extends React.Component<
             homeColors: homeColors,
             awayColors: awayColors,
             homeIndex: homeIndex,
-            awayIndex: awayIndex
+            awayIndex: awayIndex,
+            matchWeek: this.props.matchWeek
+        }
+    }
+
+    componentDidUpdate(nextProps:{matchWeek:number}) {
+        if (nextProps.matchWeek !== this.props.matchWeek) {
+            this.setState({matchWeek:this.props.matchWeek})
         }
     }
 
@@ -253,15 +232,18 @@ class Match extends React.Component<
         };
         if (data.matchWeek) {
             matchData.matchWeek = data.matchWeek;
+            this.setState({
+                matchWeek:data.matchWeek
+            })
         }
         this.props.onChange(matchData);
     }
 
     render() {
         const {teams, matchData} = this.props;
-        const {homeColors, awayColors, homeTeam, awayTeam, homeIndex, awayIndex} = this.state;
+        const {homeColors, awayColors, homeTeam, awayTeam, homeIndex, awayIndex, matchWeek} = this.state;
         return (
-            <div className='mt-1'>
+            <div className='mt-2'>
                 <select defaultValue={`${homeTeam},${homeIndex}`} style={homeColors} 
                     onChange={(e)=>this.updateParent({homeTeam:+e.target.value.split(',')[0]}, +e.target.value.split(',')[1])} required 
                     className="rounded-sm shadow-black shadow-md outline outline-1 outline-gray-600 w-[200px]">
@@ -289,7 +271,7 @@ class Match extends React.Component<
                 </select>
                 <span className='pl-2'>
                     <label className='font-bold'>Match Week:</label>
-                    <input type="number" min="1" defaultValue={matchData.matchWeek} onChange={(e)=>this.updateParent({matchWeek:+e.target.value})} required className="ml-2 text-black rounded-sm indent-2 shadow-black shadow-md outline outline-1 outline-gray-600 w-12" />
+                    <input type="number" min="1" value={matchWeek} onChange={(e)=>this.updateParent({matchWeek:+e.target.value})} required className="ml-2 text-black rounded-sm indent-2 shadow-black shadow-md outline outline-1 outline-gray-600 w-12" />
                 </span>
             </div>
         )
@@ -297,13 +279,14 @@ class Match extends React.Component<
 }
 
 
-class Matches extends React.Component<{api:SRLMAPI, seasonDivision:string, onChange:Function}, {DataIsLoaded:boolean, teams:Array<SelectItem>, matchData:Array<MatchData>}> {
+class Matches extends React.Component<{api:SRLMAPI, seasonDivision:string, onChange:Function}, {DataIsLoaded:boolean, teams:Array<SelectItem>, matchData:Array<MatchData>, gamesPerTeamPerWeek:number}> {
     constructor(props:{api:SRLMAPI, seasonDivision:string, onChange:Function}) {
         super(props);
         this.state = {
             DataIsLoaded: false,
             teams: [],
-            matchData: []
+            matchData: [],
+            gamesPerTeamPerWeek: 2
         };
     }
 
@@ -335,12 +318,17 @@ class Matches extends React.Component<{api:SRLMAPI, seasonDivision:string, onCha
         this.props.onChange({matchRound:+matchRound});
     }
 
+    setGamesPerWeek(gamesPerWeek:number) {
+        this.setState({gamesPerTeamPerWeek:gamesPerWeek});
+    }
+
     updateMatchData(matchData:MatchData) {
         this.props.onChange({matchData:matchData});
     }
 
     render () {
-        const { DataIsLoaded, teams, matchData } = this.state;
+        const { DataIsLoaded, teams, matchData, gamesPerTeamPerWeek } = this.state;
+        const maxGamesPerWeek = teams.length + (teams.length%2) - 1;
         if (!DataIsLoaded) {
             return 'Select a Season';
         } else {
@@ -353,7 +341,13 @@ class Matches extends React.Component<{api:SRLMAPI, seasonDivision:string, onCha
                                     <label className='font-bold'>Round:</label>
                                 </td>
                                 <td className='p-1'>
-                                    <input type="number" min="0" className="text-black rounded-sm shadow-black shadow-md outline outline-1 outline-gray-600 w-12" onChange={(e)=>this.setRound(e.target.value)} required/>
+                                    <input type="number" min="1" defaultValue="1" className="text-black rounded-sm shadow-black shadow-md outline outline-1 outline-gray-600 w-12" onChange={(e)=>this.setRound(e.target.value)} required/>
+                                </td>
+                                <td className='p-1 pl-4'>
+                                    <label className='font-bold'>Matches/team/week:</label>
+                                </td>
+                                <td className='p-1'>
+                                    <input type="number" min="1" max={maxGamesPerWeek} defaultValue={gamesPerTeamPerWeek} className="text-black rounded-sm shadow-black shadow-md outline outline-1 outline-gray-600 w-12" onChange={(e)=>this.setGamesPerWeek(+e.target.value)} required/>
                                 </td>
                             </tr>
                         </tbody>
@@ -362,8 +356,26 @@ class Matches extends React.Component<{api:SRLMAPI, seasonDivision:string, onCha
                         {DataIsLoaded &&
                             <div>
                                 {
-                                    matchData.map((match:MatchData) => {
-                                        return <Match key={match.id} id={match.id} teams={teams} matchData={match} onChange={(matchData:MatchData)=>this.updateMatchData(matchData)}/>
+                                    matchData.map((match:MatchData, index) => {
+                                        const newMatchWeek = Math.ceil(match.matchWeek!/gamesPerTeamPerWeek);
+                                        const numGames = matchData.length;
+                                        const numRounds = teams.length + (teams.length%2) - 1;
+                                        const gamesPerRound = numGames/numRounds;
+                                        const endOfRound = (index+1) !== matchData.length && (index+1)%gamesPerRound === 0;
+                                        return (
+                                            <div key={match.id}>
+                                                <Match id={match.id} teams={teams} matchData={match} matchWeek={newMatchWeek} onChange={(matchData:MatchData)=>this.updateMatchData(matchData)}/>
+                                                {endOfRound &&
+                                                    <>
+                                                        {(index+1)%(gamesPerRound*gamesPerTeamPerWeek) === 0 &&
+                                                            <hr className='mt-2 border-2 border-gray-400'/>
+                                                            ||
+                                                            <hr className='mt-2 border-gray-400'/>
+                                                        }
+                                                    </>
+                                                }
+                                            </div>
+                                        )
                                     })
                                 }
                             </div>
@@ -491,7 +503,7 @@ class CreateFixturesForm extends React.Component<
                         </div>
                         <button className="mt-4 bg-blue-400 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-white font-bold py-2 rounded-md shadow-black w-full">
                             Submit
-                            </button>
+                        </button>
                     </form>
                 </div>
             );

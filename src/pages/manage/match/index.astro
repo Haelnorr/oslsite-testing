@@ -100,6 +100,7 @@ const matchList: MatchesList = await srlmGet('/match').catch(err => {
 							<th class="px-2">Away Team</th>
 							<th class="px-2">Round</th>
 							<th class="px-2">Match Week</th>
+							<th class="px-2">Cancelled?</th>
 							<th class="px-2">Action</th>
 						</tr>
 					</thead>
@@ -113,9 +114,10 @@ const matchList: MatchesList = await srlmGet('/match').catch(err => {
 									<td class="px-2">{match.away_team.name}</td>
 									<td class="px-2">{match.round}</td>
 									<td class="px-2">{match.match_week}</td>
+									<td class="px-2">{match.cancelled || 'No'}</td>
 									<td class="px-2 py-1">
-										<a href={`/league/match/${match.id}`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-											View
+										<a href={`/manage/match/${match.id}`} class="bg-gray-400 text-black text-center font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
+											Edit
 										</a>
 										<a href={`/manage/match/${match.id}/upload-logs`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
 											Upload Logs

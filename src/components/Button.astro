@@ -1,0 +1,63 @@
+---
+import Popup from './Popup.astro';
+
+
+interface Props {
+    label: string,
+    color: string,
+    fontColor: string,
+    className?: string,
+    id?: string,
+    form?: {
+        action: string,
+        value: number,
+        confirm?: string,
+        formAction: string,
+        mini?: boolean
+    }
+};
+
+const { label, color, fontColor, className='', id='', form } = Astro.props;
+
+---
+{form &&
+    <>
+        {form.confirm &&
+            <Popup name="delete" label={label} color={color} fontColor={fontColor}>
+                <p>{form.confirm}</p>
+                <form method="post" class="inline">
+                    <input type="text" name="action" value={form.action} hidden />
+                    <input type="text" name="value" value={form.value} hidden/>
+                    <button id={`${form.action}-${form.value}`} formaction={form.formAction} class={`mt-4 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-${fontColor} font-bold py-2 px-4 rounded-md shadow-black bg-${color}-400 ${className}`}>
+                        {label}
+                    </button>
+                </form>
+            </Popup>
+
+            ||
+
+            <form method="post">
+                <input type="text" name="action" value={form.action} hidden />
+                <input type="text" name="value" value={form.value} hidden/>
+                {form.mini &&
+                    <button id={`${form.action}-${form.value}`} formaction={form.formAction} class={`bg-${color}-400 text-${fontColor} font-bold px-2 rounded-md outline outline-2 outline-${color}-900 hover:bg-${color}-300`}>
+                        {label}
+                    </button>
+
+                    ||
+
+                    <button id={`${form.action}-${form.value}`} formaction={form.formAction} class={`mt-4 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-${fontColor} font-bold py-2 px-4 rounded-md shadow-black bg-${color}-400 ${className}`}>
+                        {label}
+                    </button>
+                }
+            </form>
+            
+        }
+    </>
+    
+    ||
+
+    <button id={id} class={`mt-4 bg-opacity-80 hover:shadow-md hover:bg-opacity-60 duration-200 transition-all text-${fontColor} font-bold py-2 px-4 rounded-md shadow-black bg-${color}-400 ${className}`}>
+        {label}
+    </button>
+}

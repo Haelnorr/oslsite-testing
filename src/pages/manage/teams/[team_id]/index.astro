@@ -200,44 +200,34 @@ if (team?.logo) {
                         </div>
                     </div>
                 </div>
-                <script>
-                    //@ts-ignore
+                <script is:inline>
                     var placeholder = document.getElementById('upload-preview').getAttribute('src');
                     try {
-                        //@ts-ignore
                         document.getElementById('remove').onclick = function confirmLeave(e) {
                             if (!confirm('Are you sure you wish to remove the current logo?'))
                                 e.preventDefault();
                         };
                     } catch (err) {};
                     try {
-                        //@ts-ignore
                         document.getElementById('show-upload').onclick = function showUpload() {
-                            //@ts-ignore
                             document.getElementById('upload-popup').style.display = 'block';
                         }
                     } catch (err) {};
                     try {
-                        //@ts-ignore
                         document.getElementById('hide-upload').onclick = function hideUpload() {
-                            //@ts-ignore
                             document.getElementById('upload-popup').style.display = 'none';
-                            //@ts-ignore
                             document.getElementById('file-upload').value = '';
-                            //@ts-ignore
                             document.getElementById('upload-preview').setAttribute('src', placeholder)
                         }
                     } catch (err) {};
                     const fileInput = document.getElementById('file-upload');
                     const previewLogo = () => {
-                        //@ts-ignore
                         const file = fileInput.files;
                         if (file) {
                             const fileReader = new FileReader();
                             const preview = document.getElementById('upload-preview');
 
                             fileReader.onload = event => {
-                                //@ts-ignore
                                 preview.setAttribute('src', event.target.result);
                             }
                             // for some reason the IDE freaks out if this gets called without 
@@ -245,7 +235,6 @@ if (team?.logo) {
                             const none = fileReader.readAsDataURL(file[0]);
                         }
                     }
-                    //@ts-ignore
                     fileInput.addEventListener('change', previewLogo);
                 </script>
             </div>
@@ -284,7 +273,6 @@ if (team?.logo) {
                         <tr>
                             <td class="p-2">Founded:</td>
                             <td class="p-2">
-                                {/**@ts-ignore*/}
                                 <input type="date" name="founded" id="founded" 
                                     value={team.founded}
                                     class="text-black rounded-sm outline outline-2 outline-gray-400" />
@@ -309,37 +297,26 @@ if (team?.logo) {
                         </tr>
                     </table>
                 </form>
-                <script>
-                        //@ts-ignore
+                <script is:inline>
                         const userElevated = document.getElementById('user-elevated').value;
                         const dateInput = document.getElementById('founded');
-                        //@ts-ignore
                         const userOwner = document.getElementById('user-owner').value;
-                        //@ts-ignore
                         const userManager = document.getElementById('user-manager').value;
                         const colorInput = document.getElementById('color');
-                        console.log(userManager + ' test')
                         if (userElevated === 'false') {
-                            //@ts-ignore
                             document.getElementById('name').disabled = true;
-                            //@ts-ignore
                             document.getElementById('acronym').disabled = true;
                         }
-                        //@ts-ignore
                         if (dateInput.value || (userOwner === 'false' && userManager.value === 'false')) {
-                            //@ts-ignore
                             dateInput.disabled = true;
                         }
                         if (userElevated === 'true') {
-                            //@ts-ignore
                             dateInput.disabled = false;
                         }
                         if (userOwner === 'false' && userManager === 'false') {
-                            //@ts-ignore
                             colorInput.disabled = true;
                         }
                         if (userElevated === 'true') {
-                            //@ts-ignore
                             colorInput.disabled = false;
                         }
                     </script>

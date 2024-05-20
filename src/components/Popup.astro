@@ -1,0 +1,35 @@
+---
+import Button from './Button.astro';
+import LinkButton from './LinkButton.astro';
+
+interface Props {
+    name:string,
+    label:string,
+    color:string,
+    fontColor:string,
+    className?:string
+}
+
+const { name, label, color, fontColor, className='' } = Astro.props;
+---
+<div class="w-fit inline">
+    <Button id={`popup-show-${name}`} label={label} color={color} fontColor={fontColor} className={className}/>
+    <div id={`popup-container-${name}`} style="display:none;" class="fixed flex w-screen h-screen z-50 bg-gray-900 bg-opacity-80 top-0 left-0 right-0 bottom-0">
+        <div class="mx-auto my-20 bg-gray-700 w-fit h-fit p-10 rounded-md shadow-lg shadow-black">
+            <slot/>
+            <LinkButton id={`popup-hide-${name}`} label="Cancel" color="gray" fontColor="black" href="#"/>
+        </div>
+    </div>
+    <script is:inline define:vars={{showID:`popup-show-${name}`,hideID:`popup-hide-${name}`,popupID:`popup-container-${name}`}}>
+        try {
+            document.getElementById(showID).onclick = function showPopup() {
+                document.getElementById(popupID).style.display = 'block';
+            }
+        } catch (err) {};
+        try {
+            document.getElementById(hideID).onclick = function hideUpload() {
+                document.getElementById(popupID).style.display = 'none';
+            }
+        } catch (err) {};
+    </script>
+</div>

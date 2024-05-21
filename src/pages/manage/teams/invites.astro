@@ -20,9 +20,6 @@ const userValidate = await validateUser(userToken, perms).catch(err => {
 	console.error(err);
 });
 
-const userIsElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
-const userIsOwner = false;
-const userIsManager = false;
 const userIsPlayer = false;
 const userHasTeam = false;
 
@@ -131,10 +128,9 @@ if (Astro.request.method === "POST" && status === "200") {
                             }
                         </tbody>
                     </table>
-                    <script>
+                    <script is:inline>
                         var acceptButtons = [].slice.call(document.getElementsByClassName('accept'));
                         acceptButtons.forEach(element => {
-                            //@ts-ignore
                             element.onclick = function confirmAccept(e) {
                                 if (!confirm('Are you sure you wish to accept this invite?'))
                                     e.preventDefault();
@@ -142,7 +138,6 @@ if (Astro.request.method === "POST" && status === "200") {
                         });
                         var rejectButtons = [].slice.call(document.getElementsByClassName('reject'));
                         rejectButtons.forEach(element => {
-                            //@ts-ignore
                             element.onclick = function confirmCancel(e) {
                                 if (!confirm('Are you sure you wish to reject this invite?'))
                                     e.preventDefault();

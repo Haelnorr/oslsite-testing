@@ -60,7 +60,6 @@ if (Astro.request.method === "POST" && status === "200") {
     const value = form_data.get('value')?.toString();
 
     var redirect: string = `/manage/teams/${team.id}/roster`;
-    console.log(action)
 
     switch (action) {
         case 'leave-team':
@@ -149,7 +148,7 @@ if (Astro.request.method === "POST" && status === "200") {
                     </thead>
                     <tbody>
                     {
-                        team.players.map((player, index) => (
+                        team.players.map((player) => (
                             <tr >
                                 <td class="px-2 py-2"><a href={`/league/players/${player.id}`}>{player.name}</a></td>
                                 <td class="px-2">

@@ -6,7 +6,6 @@ import ListPond from '../../../components/ListPond.astro';
 import { ArrowLeftCircle } from 'astro-feather-icons2';
 
 const { slug } = Astro.params;
-console.log(slug);
 
 const page = Articles.find(({id}) => id === slug);
 if (!page) return Astro.redirect("/404");
@@ -51,6 +50,7 @@ const { id, title, tagline, content } = page;
                         {content.body.map((body) => (
                             typeof body === 'string' ? 
                                 <p class="py-2">{body.split('\n').map((sect) => (<span>{sect}</span><br/>))}</p> : 
+                                //@ts-ignore
                                 body.type === 'list' ? <ListPond decoration={body.decoration} items={body.items} /> : <InlinePond paddingTop={4} content={body} />
                         ))}
                     </section>

@@ -232,7 +232,8 @@ if (team?.logo) {
                             }
                             // for some reason the IDE freaks out if this gets called without 
                             // assigning it to a const even though it returns void
-                            const none = fileReader.readAsDataURL(file[0]);
+                            var none = fileReader.readAsDataURL(file[0]);
+                            none = undefined;
                         }
                     }
                     fileInput.addEventListener('change', previewLogo);

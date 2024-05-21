@@ -234,10 +234,9 @@ console.log(applications)
                     </tbody>
                 </table>
             </div>
-            <script>
+            <script is:inline>
                 var acceptButtons = [].slice.call(document.getElementsByClassName('accept'));
                 acceptButtons.forEach(element => {
-                    //@ts-ignore
                     element.onclick = function confirmAccept(e) {
                         if (!confirm('Are you sure you wish to accept this application?'))
                             e.preventDefault();
@@ -245,7 +244,6 @@ console.log(applications)
                 });
                 var assignButtons = [].slice.call(document.getElementsByClassName('assign'));
                 assignButtons.forEach(element => {
-                    //@ts-ignore
                     element.onclick = function confirmAccept(e) {
                         if (!confirm('Are you sure you wish to complete this application?'))
                             e.preventDefault();
@@ -253,22 +251,17 @@ console.log(applications)
                 });
                 var rejectButtons = [].slice.call(document.getElementsByClassName('reject'));
                 rejectButtons.forEach(element => {
-                    //@ts-ignore
                     element.onclick = function confirmCancel(e) {
                         if (!confirm('Are you sure you wish to reject this application?'))
                             e.preventDefault();
                     }
                 });
-                //@ts-ignore
                 function showAssignPopup(appID) {
                     const popup = document.getElementById(`assign-popup-${appID}`);
-                    //@ts-ignore
                     popup.style.display = 'block';
                 }
-                //@ts-ignore
                 function hideAssignPopup(appID) {
                     const popup = document.getElementById(`assign-popup-${appID}`);
-                    //@ts-ignore
                     popup.style.display = 'none';
                 }
             </script>

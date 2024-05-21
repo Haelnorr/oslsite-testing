@@ -4,18 +4,53 @@ import Layout from '../../layouts/Layout.astro';
 import { Download, ArrowRightCircle, ChevronRight, ChevronLeft } from 'astro-feather-icons2';
 import Articles from '../../data/pond-articles.json';
 
+interface Props {
+    page:Page
+}
+
+type Page = {
+    start: number,
+    end: number,
+    size: number,
+    total: number,
+    currentPage: number,
+    lastPage: number,
+    url: {
+        current: string,
+        next: string,
+        prev: string
+    }
+    data: Array<PageData>
+}
+
+type PageData = {
+    id: string,
+    title: string,
+    date: string,
+    author: string,
+    tagline: string,
+    download: string,
+    content: Array<PageContent>
+}
+
+type PageContent = {
+    body: Array<any>,
+    heading?: string
+}
+
 export function compareDate(article1:any, article2:any) {
     const date1 = new Date(article1.date);
     const date2 = new Date(article2.date)
     return date1.getTime() - date2.getTime()
 }
 
-export async function getStaticPaths({ paginate }) {
-  const articles = Articles
-  return paginate(articles.sort(compareDate).reverse(), { pageSize: 5 });
+//@ts-ignore
+export async function getStaticPaths({paginate}) {
+    const articles = Articles
+    return paginate(articles.sort(compareDate).reverse(), { pageSize: 5 });
 }
 
-const { page } = Astro.props as any;
+const { page } = Astro.props;
 ---
 
 <Layout title="The Pond">

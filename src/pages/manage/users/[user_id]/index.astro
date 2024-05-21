@@ -1,9 +1,8 @@
 ---
 import UserManageLayout from "../../../../layouts/UserManageLayout.astro";
-import { permsHasOneOf, setCookies, validateUser } from "../../../../util/authUtils";
+import { permsHasOneOf, validateUser } from "../../../../util/authUtils";
 import type { User, UserPermissions } from "../../../../util/srlmTypes";
 import { SRLMAPIError, checkboxToBool, srlmGet, srlmPost, srlmPut } from "../../../../util/srlmUtils";
-import Page400 from '../../../400.astro';
 import Page401 from '../../../401.astro';
 import Page403 from '../../../403.astro';
 import Page404 from '../../../404.astro';
@@ -201,26 +200,21 @@ const teams: Team[] = await srlmGet('/teams/list').then(resp => resp.teams).catc
                     Update
                 </button>
                 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-                <script>
+                <script is:inline>
                     jQuery(function() {
-                        //@ts-ignore
                         $('.team-list-select').select2();
                     });
                     const teamManageList = document.getElementById('team-manager-list');
                     const teamManageCheckBox = document.getElementById('team-manager-checkbox');
                     
                     function checkTheBox() {
-                        //@ts-ignore
                         if (+teamManageList.value) {
-                            //@ts-ignore
                             teamManageCheckBox.checked = true;
                         }
                     }
 
                     function deselectTeam() {
-                        //@ts-ignore
                         if (+teamManageList.value) {
-                            //@ts-ignore
                             teamManageList.value = "";
                         }
                     }

@@ -17,7 +17,7 @@ if (!code) {
     return Astro.redirect('/auth/login?error=discordauth');
 }
 
-const discordLogin = await getTokens(code).catch(err => {
+const discordLogin = await getTokens(code).catch(() => {
     status = '500';
 });
 const userTokenStr = Astro.cookies.get('user_token')?.value;
@@ -39,7 +39,7 @@ if (discordLogin) {
                 }
                 console.error(err);
             });
-            const discordUser = await getUser(discordLogin.access_token).catch(err => {
+            const discordUser = await getUser(discordLogin.access_token).catch(() => {
                 status = '500';
             });
             if (discordUser) {
@@ -77,7 +77,7 @@ if (discordLogin) {
         setCookies(Astro, userToken);
     }
 
-    const userResponse = await getUser(discordLogin.access_token).catch(err => {
+    const userResponse = await getUser(discordLogin.access_token).catch(() => {
         status = '500';
     });
 

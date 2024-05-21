@@ -124,6 +124,11 @@ const pageNums = getPageNums(players);
                 <th class="px-2">First Season</th>
                 <th class="px-2">Current Team</th>
                 <th class="px-2">Awards</th>
+                {manage &&
+                    <th class="px-2">
+                        Actions
+                    </th>
+                }
             </tr>
         </thead>
         <tbody>
@@ -158,6 +163,11 @@ const pageNums = getPageNums(players);
                         <td class="px-2">
                             {player.awards}
                         </td>
+                        {manage &&
+                            <td>
+
+                            </td>
+                        }
                     </tr>
                 ))
             }

@@ -8,7 +8,7 @@ interface Props {
 }
 
 const userToken = Astro.cookies.get('user_token')?.value;
-const userValidate = await validateUser(userToken, ['admin', 'leag_coord', 'leag_comm']).catch(err => undefined);
+const userValidate = await validateUser(userToken, ['admin', 'leag_coord', 'leag_comm']).catch(()=>{});
 var userPerms:Array<string> = []
 var userLoggedIn = false;
 if (userValidate) {

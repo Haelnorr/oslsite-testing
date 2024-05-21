@@ -22,8 +22,6 @@ const userValidate = await validateUser(userToken, perms).catch(err => {
 });
 
 const userIsElevated = permsHasOneOf(userValidate, ['admin', 'leag_coord', 'leag_comm']);
-var userIsOwner = false;
-var userIsManager = false;
 
 var user: User|null = null;
 if (userValidate) {
@@ -48,8 +46,6 @@ if (user?.player.current_team) {
     });
     userIsPlayer = (user.player.current_team.id === team!.id);
     userHasTeam = true;
-    userIsManager = isTeamManager(userValidate, [team!.id]);
-    userIsOwner = isTeamOwner(userValidate, team!.id);
 }
 
 if (status === '200' && !userIsElevated) {

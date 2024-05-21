@@ -57,6 +57,7 @@ function handleError(err: AxiosError): void {
             errorMsg = "Unknown error occured";
             errorCode = '520';
         }
+        console.log(err)
         throw new SRLMAPIError(errorMsg, errorCode, errorData)
     }
 }

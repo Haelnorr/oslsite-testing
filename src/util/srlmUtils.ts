@@ -248,3 +248,19 @@ export function checkboxToBool(form_data: FormData, field: string): boolean {
         return false;
     }
 }
+
+export function prettyDate(date: string|undefined) {
+    if (!date) {
+        return null;
+    }
+    const dateObj = new Date(date)
+    return dateObj.toDateString()
+}
+
+export function prettyDateTime(date: string|undefined) {
+    if (!date) {
+        return null;
+    }
+    const dateObj = new Date(date)
+    return dateObj.toLocaleTimeString();
+}

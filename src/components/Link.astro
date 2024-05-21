@@ -1,0 +1,17 @@
+---
+
+interface Props {
+    location: string
+    itemID?: string
+    label: string
+    className?: string
+}
+
+const { location, itemID='', label, className='' } = Astro.props;
+---
+<a 
+    href={`${location}/${itemID}`}
+    class={`hover:underline hover:cursor-pointer ${className}`}
+    >
+    {label}
+</a>

@@ -1,7 +1,9 @@
 ---
+import Link from '../../../components/Link.astro';
+import LinkButton from '../../../components/LinkButton.astro';
 import MatchManageLayout from '../../../layouts/MatchManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../util/authUtils';
-import type { MatchesList } from '../../../util/srlmTypes';
+import type { Match, MatchesList } from '../../../util/srlmTypes';
 import { SRLMAPIError, srlmGet } from '../../../util/srlmUtils';
 import Page401 from '../../401.astro';
 import Page403 from '../../403.astro';
@@ -34,6 +36,16 @@ const matchList: MatchesList = await srlmGet('/match').catch(err => {
     }
 	console.error(err);
 });
+
+function getTeamID(match:Match, team:string):string {
+	if (match.home_team.name === team) {
+		return match.home_team.id.toString();
+	} else if (match.away_team.name === team) {
+		return match.away_team.id.toString();
+	} else {
+		throw new Error('Team name not found');
+	}
+}
 
 ---
 {status === '401' &&
@@ -69,16 +81,22 @@ const matchList: MatchesList = await srlmGet('/match').catch(err => {
 						{
 							matchList.pending_review.map((match, index) => (
 								<tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
-									<td class="px-2">{match.season_division.season.name}</td>
-									<td class="px-2">{match.season_division.division.name}</td>
-									<td class="px-2">{match.home_team.name}</td>
-									<td class="px-2">{match.away_team.name}</td>
+									<td class="px-2">
+										<Link label={match.season_division.season.name} itemID={match.season_division.season.acronym} location="/league/seasons"/>
+									</td>
+									<td class="px-2">
+										<Link label={match.season_division.division.name} itemID={match.season_division.division.acronym} location={`/league/seasons/${match.season_division.season.acronym}`}/>
+									</td>
+									<td class="px-2">
+										<Link label={match.home_team.name} itemID={match.home_team.id.toString()} location="/league/teams"/>
+									</td>
+									<td class="px-2">
+										<Link label={match.away_team.name} itemID={match.away_team.id.toString()} location="/league/teams"/>
+									</td>
 									<td class="px-2">{match.round}</td>
 									<td class="px-2">{match.match_week}</td>
 									<td class="px-2 py-1">
-										<a href={`/manage/match/${match.id}/review`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-											Review
-										</a>
+										<LinkButton label="Review" href={`/manage/match/${match.id}/review`} color='gray' fontColor='black' mini={true}/>
 									</td>
 								</tr>
 							))
@@ -108,25 +126,29 @@ const matchList: MatchesList = await srlmGet('/match').catch(err => {
 						{
 							matchList.upcoming.map((match, index) => (
 								<tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
-									<td class="px-2">{match.season_division.season.name}</td>
-									<td class="px-2">{match.season_division.division.name}</td>
-									<td class="px-2">{match.home_team.name}</td>
-									<td class="px-2">{match.away_team.name}</td>
+									<td class="px-2">
+										<Link label={match.season_division.season.name} itemID={match.season_division.season.acronym} location="/league/seasons"/>
+									</td>
+									<td class="px-2">
+										<Link label={match.season_division.division.name} itemID={match.season_division.division.acronym} location={`/league/seasons/${match.season_division.season.acronym}`}/>
+									</td>
+									<td class="px-2">
+										<Link label={match.home_team.name} itemID={match.home_team.id.toString()} location="/league/teams"/>
+									</td>
+									<td class="px-2">
+										<Link label={match.away_team.name} itemID={match.away_team.id.toString()} location="/league/teams"/>
+									</td>
 									<td class="px-2">{match.round}</td>
 									<td class="px-2">{match.match_week}</td>
 									<td class="px-2">{match.cancelled || 'No'}</td>
 									<td class="px-2 py-1">
-										<a href={`/manage/match/${match.id}`} class="bg-gray-400 text-black text-center font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-											Edit
-										</a>
-										<a href={`/manage/match/${match.id}/upload-logs`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-											Upload Logs
-										</a>
+										<LinkButton label="Edit" href={`/manage/match/${match.id}`} color='gray' fontColor='black' mini={true}/>
+										<LinkButton label="Upload Logs" href={`/manage/match/${match.id}/upload-logs`} color='gray' fontColor='black' mini={true}/>
 									</td>
 								</tr>
 							))
 						}
-						{matchList.pending_review.length === 0 &&
+						{matchList.upcoming.length === 0 &&
 							<tr class="bg-gray-600"><td colspan="100%">No matches to display</td></tr>
 						}
 					</tbody>
@@ -151,23 +173,29 @@ const matchList: MatchesList = await srlmGet('/match').catch(err => {
 						{
 							matchList.completed.map((match, index) => (
 								<tr class={`${(index%2===0 && 'bg-gray-600') || 'bg-gray-700'} divide-x-2 divide-gray-400`}>
-									<td class="px-2">{match.season_division.season.name}</td>
-									<td class="px-2">{match.season_division.division.name}</td>
-									<td class="px-2">{match.results.winner}</td>
+									<td class="px-2">
+										<Link label={match.season_division.season.name} itemID={match.season_division.season.acronym} location="/league/seasons"/>
+									</td>
+									<td class="px-2">
+										<Link label={match.season_division.division.name} itemID={match.season_division.division.acronym} location={`/league/seasons/${match.season_division.season.acronym}`}/>
+									</td>
+									<td class="px-2">
+										<Link label={match.results.winner} itemID={getTeamID(match, match.results.winner)} location="/league/teams"/>
+									</td>
 									<td class="px-2">{match.results.score_winner}</td>
 									<td class="px-2">{match.results.score_loser}</td>
-									<td class="px-2">{match.results.loser}</td>
+									<td class="px-2">
+										<Link label={match.results.loser} itemID={getTeamID(match, match.results.loser)} location="/league/teams"/>
+									</td>
 									<td class="px-2">{match.round}</td>
 									<td class="px-2">{match.match_week}</td>
 									<td class="px-2 py-1">
-										<a href={`/league/match/${match.id}`} class="bg-gray-400 text-black font-bold px-2 rounded-md outline outline-2 outline-gray-900 hover:bg-gray-300 mx-2">
-											View
-										</a>
+										<LinkButton label="View" href={`/league/match/${match.id}`} color='gray' fontColor='black' mini={true}/>
 									</td>
 								</tr>
 							))
 						}
-						{matchList.pending_review.length === 0 &&
+						{matchList.completed.length === 0 &&
 							<tr class="bg-gray-600"><td colspan="100%">No matches to display</td></tr>
 						}
 					</tbody>

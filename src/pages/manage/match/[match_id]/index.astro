@@ -86,35 +86,6 @@ if (Astro.request.method === "POST" && status === "200") {
             return Astro.redirect('/manage/match');
         }
     }
-	
-	/**
-        Use this catch block for any Post/Put requests to SRLMAPI to populate the 'errors' var.
-        const resp = await srlmPost(path:string, usertoken?:string, input:{}).catch(err => {
-            if (err instanceof SRLMAPIError) {
-                if (err.code === '409') {
-                    err.data.fields.map((err:{field:string, error: string}) => {
-                        errors[err.field] = err.error;                
-                    })
-                } else {
-                    status = err.code;
-                }
-            }
-            console.error(err);
-        });
-        if (resp) {
-            return // post/put request was successful, return a redirect or something
-        }
-	*/
-
-    /**
-        Use this code block to access the errors var in the HTML
-        {(errors && errors['username']) && (
-            <br/>
-            <span class="text-red-600 font-bold">
-                {errors['username']}
-            </span>  
-        )}
-     */
 }
 
 ---
@@ -165,14 +136,14 @@ if (Astro.request.method === "POST" && status === "200") {
                         </tr>
                         <tr>
                             <td colspan="2">
-                                <Button label="Update" color="blue" fontColor='white' className='w-full'/>
+                                <Button label="Update" className='w-full bg-blue-400'/>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </form>
             <div>
-                <Popup name="cancel" label="Cancel Match" color="orange" fontColor='gray-300'>
+                <Popup id={match.id.toString()} name="cancel" label="Cancel Match" className='bg-orange-400 text-gray-300'>
                     <form method="post" class="mb-5">
                         <input type="text" name="action" value="cancel-match" hidden />
                         <p class="text-left">
@@ -181,19 +152,17 @@ if (Astro.request.method === "POST" && status === "200") {
                         </p>
                         <Button 
                             label="Cancel Match"
-                            color="orange"
-                            fontColor='gray-300'
+                            className='bg-orange-400 text-gray-300'
                         />
                     </form>
                 </Popup>
                 <Button
                     label="Delete"  
-                    color="red" 
-                    fontColor='white' 
+                    className='bg-red-400 text-gray-300' 
                     form={{
                         action:'delete', 
                         value:match.id, 
-                        confirm:'Are you sure you want to delete this match?<br/>This will delete all related match data and cannot be undone.', 
+                        confirm:'Are you sure you want to delete this match?\nThis will delete all related match data and cannot be undone.', 
                         formAction:`/manage/match/${match.id}`
                     }}/>
             </div>

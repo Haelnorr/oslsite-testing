@@ -491,6 +491,58 @@ export type MatchStats = {
     }
 }
 
+export type MatchFlag = {
+    id:number,
+    type:string,
+    reason:string,
+    raised_by:string,
+    comments:string,
+    resolved:boolean,
+    resolved_by?:string,
+    resolved_on?:string
+}
+
+type PeriodReview = {
+    id: number,
+    lobby_id: number,
+    processed: boolean,
+    accepted: boolean,
+    match_id: string,
+    region: string,
+    gamemode: string,
+    created: string,
+    arena: string,
+    home_score: number,
+    away_score: number,
+    winner: string,
+    current_period: number,
+    periods_enabled: boolean,
+    custom_mercy_rule: string,
+    end_reason: string,
+    source: string,
+    player_data: Array<PlayerData>
+}
+
+export type MatchReview = {
+    match_id: number,
+    match_details: {
+        id: number,
+        home_team: Team,
+        away_team: Team,
+        result: string,
+        round: number,
+        match_week: number,
+        final: boolean,
+        scheduled_time: string,
+        current_lobby: {
+            id:number,
+            password:string
+        }
+    },
+    periods: Array<PeriodReview>,
+    flags: Array<MatchFlag>
+}
+
 export type SeasonApplication = {
     id: number,
     team: Team,

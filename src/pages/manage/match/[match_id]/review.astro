@@ -1,13 +1,16 @@
 ---
 import MatchManageLayout from '../../../../layouts/MatchManageLayout.astro';
 import { permsHasOneOf, validateUser } from '../../../../util/authUtils';
-import { SRLMAPIError } from '../../../../util/srlmUtils';
+import { SRLMAPIError, checkboxToBool, prettyDate, prettyDateTime, srlmDelete, srlmGet, srlmPut } from '../../../../util/srlmUtils';
+import type { MatchReview } from '../../../../util/srlmTypes';
 import Page400 from '../../../400.astro';
 import Page401 from '../../../401.astro';
 import Page403 from '../../../403.astro';
 import Page404 from '../../../404.astro';
 import Page500 from '../../../500.astro';
 import Page503 from '../../../503.astro';
+import Button from '../../../../components/Button.astro';
+import Popup from '../../../../components/Popup.astro';
 
 var status = '200';
 
@@ -29,8 +32,131 @@ if (!userElevated && status === '200') {
 
 const { match_id } = Astro.params;
 
+const match: MatchReview = await srlmGet(`/match/${match_id}/review?cached=false`).catch(err => {
+    if (err instanceof SRLMAPIError) {
+        status = err.code;
+    } else {
+        status = '500';
+    }
+	console.error(err);
+});
+
 if (Astro.request.method === "POST" && status === "200") {
 	const formData = await Astro.request.formData();
+    const action = formData.get('submit')!.toString();
+    const value = formData.get('value')?.toString();
+
+    console.log(`Action: ${action} || Value: ${value}`);
+
+    var resp = undefined;
+    switch (action) {
+        case 'resolve-flag':
+            resp = await srlmPut(`/match/flag/${value}`, userToken, {
+                id: +value!,
+                comments: formData.get('flag-comments')!.toString(),
+                resolved: true
+            }).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                } else {
+                    status = '500';
+                }
+                console.error(err);
+            });
+            break;
+        case 'delete-flag':
+            resp = await srlmDelete(`/match/flag/${value}`).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                } else {
+                    status = '500';
+                }
+                console.error(err);
+            });
+            break;
+        case 'resolve-all-flags':
+            resp = await srlmPut(`/match/${match_id}/flags`, userToken, {comments:formData.get('flag-comments')!.toString()}).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                } else {
+                    status = '500';
+                }
+                console.error(err);
+            });
+            break;
+        case 'delete-all-flags':
+            resp = await srlmDelete(`/match/${match_id}/flags`).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                } else {
+                    status = '500';
+                }
+                console.error(err);
+            });
+            break;
+        case 'delete-period':
+            resp = await srlmDelete(`/match/period/${value}`).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                } else {
+                    status = '500';
+                }
+                console.error(err);
+            });
+            break;
+        case 'edit-data':
+            var matchData:{periods:any[]} = {
+                periods:[]
+            };
+            match.periods.forEach(period => {
+                var periodData:{[key:string]:any, player_data:any[]} = {
+                    id: period.id,
+                    accepted: checkboxToBool(formData, `period-${period.id}-accepted`),
+                    home_score: +formData.get(`period-${period.id}-home-score`)!.toString(),
+                    away_score: +formData.get(`period-${period.id}-away-score`)!.toString(),
+                    winner: formData.get(`period-${period.id}-winner`)!.toString(),
+                    current_period: +formData.get(`period-${period.id}-current-period`)!.toString(),
+                    periods_enabled: checkboxToBool(formData, `period-${period.id}-periods-enabled`),
+                    end_reason: formData.get(`period-${period.id}-end-reason`)!.toString(),
+                    player_data: []
+                };
+                period.player_data.forEach(player => {
+                    var playerData = {
+                        id:player.id,
+                        goals:+formData.get(`period-${period.id}-${player.id}-goals`)!.toString(),
+                        shots:+formData.get(`period-${period.id}-${player.id}-shots`)!.toString(),
+                        assists:+formData.get(`period-${period.id}-${player.id}-assists`)!.toString(),
+                        saves:+formData.get(`period-${period.id}-${player.id}-saves`)!.toString(),
+                        primary_assists:+formData.get(`period-${period.id}-${player.id}-primary-assists`)!.toString(),
+                        secondary_assists:+formData.get(`period-${period.id}-${player.id}-secondary-assists`)!.toString(),
+                        passes:+formData.get(`period-${period.id}-${player.id}-passes`)!.toString(),
+                        blocks:+formData.get(`period-${period.id}-${player.id}-blocks`)!.toString(),
+                        takeaways:+formData.get(`period-${period.id}-${player.id}-takeaways`)!.toString(),
+                        turnovers:+formData.get(`period-${period.id}-${player.id}-turnovers`)!.toString(),
+                        possession_time_sec:+formData.get(`period-${period.id}-${player.id}-possession-time-sec`)!.toString(),
+                        game_winning_goals:+formData.get(`period-${period.id}-${player.id}-game-winning-goals`)!.toString(),
+                        post_hits:+formData.get(`period-${period.id}-${player.id}-post-hits`)!.toString(),
+                        faceoffs_won:+formData.get(`period-${period.id}-${player.id}-faceoffs-won`)!.toString(),
+                        faceoffs_lost:+formData.get(`period-${period.id}-${player.id}-faceoffs-lost`)!.toString(),
+                        score:+formData.get(`period-${period.id}-${player.id}-score`)!.toString(),
+                    }
+                    periodData.player_data.push(playerData);
+                });
+                matchData.periods.push(periodData);
+            });
+            resp = srlmPut(`/match/${match_id}/periods`, '', matchData).catch(err => {
+                if (err instanceof SRLMAPIError) {
+                    status = err.code;
+                } else {
+                    status = '500';
+                }
+                console.error(err);
+            });
+            break;
+    }
+    if (resp) {
+        return Astro.redirect(`/manage/match/${match_id}/review`)
+    }
 	
 	/**
         Use this catch block for any Post/Put requests to SRLMAPI to populate the 'errors' var.
@@ -83,6 +209,400 @@ if (Astro.request.method === "POST" && status === "200") {
 }
 {status === '200' &&
 	<MatchManageLayout title="Review Match" page="review" userValidate={userValidate!}>
-		
+		<div class="w-fit mx-auto divide-y-2 divide-gray-400">
+            <div>
+                <h2 class="text-2xl">Flags</h2>
+                <table class="mt-2 mx-auto">
+                    <thead class="bg-gray-900">
+                        <tr class="divide-x-2 divide-gray-400">
+                            <th class="px-2">Type</th>
+                            <th class="px-2">Reason</th>
+                            <th class="px-2">Raised by</th>
+                            <th class="px-2">Comments</th>
+                            <th class="px-2">Resolved</th>
+                            <th class="px-2">Resolved by</th>
+                            <th class="px-2">Resolved on</th>
+                            <th class="px-2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            match.flags.map((flag, index) => (
+                                <tr class={`${index%2===0 && 'bg-gray-500' || 'bg-gray-600'} divide-x-2 divide-gray-400`}>
+                                    <td class="px-2">{flag.type}</td>
+                                    <td class="px-2">{flag.reason}</td>
+                                    <td class="px-2">{flag.raised_by}</td>
+                                    <td class="px-2">{flag.comments}</td>
+                                    <td class="px-2">
+                                        {flag.resolved &&
+                                            <span class="bg-green-600 text-gray-300 px-2 rounded-md font-bold">Yes</span> ||
+                                            <span class="bg-red-500 text-gray-300 px-2 rounded-md font-bold">No</span>
+                                        }
+                                    </td>
+                                    <td class="px-2">{flag.resolved_by}</td>
+                                    <td class="px-2">{prettyDate(flag.resolved_on)}</td>
+                                    <td class="py-1 px-2">
+                                        {!flag.resolved &&
+                                            <Popup 
+                                                mini={true}
+                                                id={flag.id.toString()}
+                                                name="resolve-flag"
+                                                label="Resolve"
+                                                className='bg-green-600 text-gray-300 hover:bg-green-700 outline-green-800 mx-1'>
+                                                <form method="post" class="mb-5">
+                                                    <input type="text" name="action" value="resolve-flag" hidden />
+                                                    <input type="text" name="value" value={flag.id} hidden />
+                                                    <p class="text-left">
+                                                        <label class="font-bold">Comments:</label><br/>
+                                                        <textarea name="flag-comments" maxlength="256" class="text-black w-80 indent-1 rounded-sm shadow-black shadow-md outline outline-1 outline-gray-600" required/>
+                                                    </p>
+                                                    <Button 
+                                                        label="Resolve Flag"
+                                                        className='bg-green-600 text-gray-300'
+                                                        name="submit"
+                                                        value="resolve-flag"
+                                                    />
+                                                </form>
+                                            </Popup>
+                                        }
+                                        <Button
+                                            mini={true}
+                                            label="Delete"  
+                                            className='bg-red-500 text-gray-300 hover:bg-red-600 outline-red-800 mx-1' 
+                                            form={{
+                                                action:'delete-flag', 
+                                                value:flag.id, 
+                                                confirm:'Are you sure you want to delete this flag?', 
+                                                formAction:`/manage/match/${match.match_id}/review`
+                                            }}/>
+                                    </td>
+                                </tr>
+                            ))
+                        }
+                        {match.flags.length === 0 &&
+                            <tr class="bg-gray-500">
+                                <td colspan="100%" class="p-1">No flags to display</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <Popup 
+                    id={match.match_id.toString()}
+                    name="resolve-all-flags"
+                    label="Resolve all"
+                    className='bg-green-600 text-gray-300 hover:bg-green-700 outline-green-800'>
+                    <form method="post" class="mb-5">
+                        <input type="text" name="action" value="resolve-all-flags" hidden />
+                        <input type="text" name="value" value={match.match_id} hidden />
+                        <p class="text-left">
+                            <label class="font-bold">Comments:</label><br/>
+                            <textarea name="flag-comments" maxlength="256" class="text-black w-80 indent-1 rounded-sm shadow-black shadow-md outline outline-1 outline-gray-600" required/>
+                        </p>
+                        <Button 
+                            label="Resolve All Flags"
+                            className='bg-green-600 text-gray-300'
+                            name="submit"
+                            value="resolve-all-flags"
+                        />
+                    </form>
+                </Popup>
+                <Button
+                    label="Delete unresolved"  
+                    className='bg-red-500 text-gray-300 hover:bg-red-600 outline-red-800' 
+                    form={{
+                        action:'delete-all-flags',
+                        value:match.match_id,
+                        confirm:'Are you sure you want to delete all unresolved flags for this match?\nThis cannot be undone', 
+                        formAction:`/manage/match/${match.match_id}/review`
+                    }}/>
+            </div>
+            <div class="mt-5 pt-5">
+                <h2 class="text-2xl">Match Data</h2>
+                <form class="divide-y-2 divide-gray-400" method="post">
+                    <input type="text" name="action" value="edit-data" hidden/>
+                    {
+                        match.periods.map(period => (
+                            <div class="mx-auto w-fit pt-5 mb-5 divide-y-[1px] divide-gray-500">
+                                <div>
+                                    <table class="mx-auto mb-5">
+                                        <tbody>
+                                            <tr>
+                                                <th class="px-2">Current Period:</th>
+                                                <td class="px-2">
+                                                    <input name={`period-${period.id}-current-period`} type="number" min="1" value={period.current_period} required class="text-black indent-2 w-10 shadow-md shadow-black rounded-md"/>
+                                                </td>
+                                                <th class="px-2">Winner:</th>
+                                                <td class="px-2">
+                                                    <select name={`period-${period.id}-winner`} required class="text-black rounded-md shadow-md shadow-black">
+                                                        <option value="home" selected={period.winner === 'home' && true}>Home</option>
+                                                        <option value="away" selected={period.winner === 'away' && true}>Away</option>
+                                                    </select>
+                                                </td>
+                                                <th class="px-2">Source:</th>
+                                                <td class="px-2">{period.source}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-2">Lobby ID:</th>
+                                                <td class="px-2">{period.lobby_id}</td>
+                                                <th class="px-2">End reason:</th>
+                                                <td class="px-2">
+                                                    <select name={`period-${period.id}-end-reason`} required class="text-black rounded-md shadow-md shadow-black">
+                                                        <option value="EndOfRegulation" selected={period.end_reason === 'EndOfRegulation' && true}>EndOfRegulation</option>
+                                                        <option value="Overtime" selected={period.end_reason === 'Overtime' && true}>Overtime</option>
+                                                        <option value="HomeTeamLeft" selected={period.end_reason === 'HomeTeamLeft' && true}>HomeTeamLeft</option>
+                                                        <option value="AwayTeamLeft" selected={period.end_reason === 'AwayTeamLeft' && true}>AwayTeamLeft</option>
+                                                        <option value="MercyRule" selected={period.end_reason === 'MercyRule' && true}>MercyRule</option>
+                                                        <option value="Tie" selected={period.end_reason === 'Tie' && true}>Tie</option>
+                                                        <option value="Forfeit" selected={period.end_reason === 'Forfeit' && true}>Forfeit</option>
+                                                        <option value="Cancelled" selected={period.end_reason === 'Cancelled' && true}>Cancelled</option>
+                                                        <option value="Unknown" selected={period.end_reason === 'Unknown' && true}>Unknown</option>
+                                                    </select>
+                                                </td>
+                                                <th class="px-2">Arena:</th>
+                                                <td class="px-2">{period.arena}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-2">Region:</th>
+                                                <td class="px-2">{period.region}</td>
+                                                <th class="px-2">Home Score:</th>
+                                                <td class="px-2">
+                                                    <input name={`period-${period.id}-home-score`} type="number" min="0" value={period.home_score} required class="text-black indent-2 w-10 shadow-md shadow-black rounded-md"/>
+                                                </td>
+                                                <th class="px-2">Created time:</th>
+                                                <td class="px-2">{prettyDateTime(period.created)}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-2">Gamemode:</th>
+                                                <td class="px-2">{period.gamemode}</td>
+                                                <th class="px-2">Away Score:</th>
+                                                <td class="px-2">
+                                                    <input name={`period-${period.id}-away-score`} type="number" min="0" value={period.away_score} required class="text-black indent-2 w-10 shadow-md shadow-black rounded-md"/>
+                                                </td>
+                                                <th class="px-2">Created date:</th>
+                                                <td class="px-2">{prettyDate(period.created)}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-2">Mercy Rule:</th>
+                                                <td class="px-2">{period.custom_mercy_rule}</td>
+                                                <th class="px-2">Periods enabled:</th>
+                                                <td class="px-2">
+                                                    <input name={`period-${period.id}-periods-enabled`} type="checkbox" checked={period.periods_enabled} class="text-black shadow-md shadow-black rounded-md"/>
+                                                </td>
+                                                <th class="px-2">Match ID:</th>
+                                                <td class="px-2">{period.match_id}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-2">Processed:</th>
+                                                <td class="px-2">{period.processed && 'Yes' || 'No'}</td>
+                                                <th class="px-2">Accepted:</th>
+                                                <td class="px-2">
+                                                    <input name={`period-${period.id}-accepted`} type="checkbox" checked={period.accepted} class="text-black shadow-md shadow-black rounded-md"/>
+                                                </td>
+                                                <td colspan="2">
+                                                    <Button
+                                                        mini={true}
+                                                        label="Delete Period"  
+                                                        className='bg-red-500 text-gray-300 hover:bg-red-600 outline-red-800' 
+                                                        form={{
+                                                            action:'delete-period', 
+                                                            value:period.id, 
+                                                            confirm:'Are you sure you want to delete this period?\nAll related match/player data will be deleted and cannot be recovered', 
+                                                            formAction:`/manage/match/${match.match_id}/review`
+                                                        }}/>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pt-2">
+                                    <table>
+                                        <thead class="bg-gray-900">
+                                            <tr class="divide-x-2 divide-gray-400">
+                                                <th class="px-2">Player</th>
+                                                <th class="px-2">Team</th>
+                                                <th class="px-2">Goals</th>
+                                                <th class="px-2">Shots</th>
+                                                <th class="px-2">Assists</th>
+                                                <th class="px-2">Saves</th>
+                                                <th class="px-2">1st Ass.</th>
+                                                <th class="px-2">2nd Ass.</th>
+                                                <th class="px-2">Passes</th>
+                                                <th class="px-2">Blocks</th>
+                                                <th class="px-2">TA's</th>
+                                                <th class="px-2">TO's</th>
+                                                <th class="px-2">Pos. Time</th>
+                                                <th class="px-2">GW Goals</th>
+                                                <th class="px-2">Post Hits</th>
+                                                <th class="px-2">FO's Won</th>
+                                                <th class="px-2">FO's Lost</th>
+                                                <th class="px-2">Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {
+                                                period.player_data.map((playerData, index) => (
+                                                    <tr class={`${index%2===0&&'bg-gray-500'||'bg-gray-600'} divide-x-2 divide-gray-400`}>
+                                                        <td class="p-2">{playerData.player}</td>
+                                                        <td class="p-2">{playerData.team}</td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-goals`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.goals} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-shots`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.shots} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-assists`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.assists} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-saves`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.saves} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-primary-assists`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.primary_assists} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-secondary-assists`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.secondary_assists} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-passes`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.passes} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-blocks`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.blocks} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-takeaways`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.takeaways} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-turnovers`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.turnovers} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td><td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-possession-time-sec`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.possession_time_sec} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-14 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-game-winning-goals`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.game_winning_goals} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-post-hits`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.post_hits} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-faceoffs-won`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.faceoffs_won} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-faceoffs-lost`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.faceoffs_lost} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-10 shadow-black shadow-md"/>
+                                                        </td>
+                                                        <td class="p-2">
+                                                            <input 
+                                                                name={`period-${period.id}-${playerData.id}-score`} 
+                                                                type="number" 
+                                                                min="0" 
+                                                                value={playerData.score} 
+                                                                required 
+                                                                class="text-black rounded-md indent-2 w-16 shadow-black shadow-md"/>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ))
+                    }
+                    {match.periods.length > 0 &&
+                        <Button label="Update Match Data" className="bg-blue-400" name="submit" value="edit-data"/>
+                        ||
+                        <p>No match data yet</p>
+                    }
+                </form>
+            </div>
+        </div>
 	</MatchManageLayout>
 }

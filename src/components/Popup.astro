@@ -5,31 +5,60 @@ import LinkButton from './LinkButton.astro';
 interface Props {
     name:string,
     label:string,
-    color:string,
-    fontColor:string,
-    className?:string
+    className?:string,
+    mini?:boolean,
+    id:string
 }
 
-const { name, label, color, fontColor, className='' } = Astro.props;
+const { name, label, className='', mini, id } = Astro.props;
 ---
 <div class="w-fit inline">
-    <Button id={`popup-show-${name}`} label={label} color={color} fontColor={fontColor} className={className}/>
-    <div id={`popup-container-${name}`} style="display:none;" class="fixed flex w-screen h-screen z-50 bg-gray-900 bg-opacity-80 top-0 left-0 right-0 bottom-0">
+    <Button id={`popup-show-${name}-${id}`} label={label} className={className} mini={mini} type="button"/>
+    <div id={`popup-container-${name}-${id}`} style="display:none;" class="fixed flex w-screen h-screen z-50 bg-gray-900 bg-opacity-80 top-0 left-0 right-0 bottom-0">
         <div class="mx-auto my-20 bg-gray-700 w-fit h-fit p-10 rounded-md shadow-lg shadow-black">
             <slot/>
-            <LinkButton id={`popup-hide-${name}`} label="Cancel" color="gray" fontColor="black" href="#"/>
+            <LinkButton id={`popup-hide-${name}-${id}`} label="Cancel" color="gray" fontColor="black" href="#"/>
         </div>
     </div>
-    <script is:inline define:vars={{showID:`popup-show-${name}`,hideID:`popup-hide-${name}`,popupID:`popup-container-${name}`}}>
+    <script is:inline define:vars={{showID:`popup-show-${name}-${id}`,hideID:`popup-hide-${name}-${id}`,popupID:`popup-container-${name}-${id}`}}>
+
         try {
             document.getElementById(showID).onclick = function showPopup() {
+                disableScroll();
                 document.getElementById(popupID).style.display = 'block';
             }
         } catch (err) {};
         try {
-            document.getElementById(hideID).onclick = function hideUpload() {
+            document.getElementById(hideID).onclick = function hidePopup() {
                 document.getElementById(popupID).style.display = 'none';
+                enableScroll();
             }
         } catch (err) {};
+        function disableScroll() {
+            // Get the current page scroll position
+            scrollTop =
+                window.scrollY ||
+                document.documentElement.scrollTop;
+            scrollLeft =
+                window.scrollX ||
+                document.documentElement.scrollLeft,
+
+                // if any scroll is attempted,
+                // set this to the previous value
+                window.onscroll = function () {
+                    window.scrollTo(scrollLeft, scrollTop);
+                };
+        }
+        function enableScroll() {
+            scrollTop =
+                window.scrollY ||
+                document.documentElement.scrollTop;
+            scrollLeft =
+                window.scrollX ||
+                document.documentElement.scrollLeft,
+
+            window.onscroll = function () { };
+            window.scrollTo(scrollLeft, scrollTop);
+        }
     </script>
 </div>
